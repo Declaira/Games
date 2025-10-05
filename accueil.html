@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Déclaira</title>
+  <link rel="icon" href="logo/logo.png" type="image/x-icon">
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@600&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Quicksand', sans-serif;
+      background: linear-gradient(to bottom right, #fff3cd, #ffe5b4, #ffd1d1, #ffc4e1);
+      color: #2c3e50;
+    }
+
+    header {
+      position: relative;
+      background: linear-gradient(to right, #ff9a00, #ff4e00);
+      color: white;
+      padding: 25px;
+      text-align: center;
+      font-size: 2.5em;
+      letter-spacing: 2px;
+      animation: fadeInSlide 1.2s ease-out;
+    }
+
+    @keyframes fadeInSlide {
+      0% {
+        opacity: 0;
+        transform: translateY(-30px);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .container {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+      padding: 40px 20px;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .card {
+      min-height: 25vh; /* hauteur réduite */
+      background: white;
+      border-radius: 15px;
+      padding: 20px 15px;
+      text-align: center;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      transition: transform 0.3s;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+    }
+
+    .card.jeu   { background: #fff3cd; }
+    .card.geo   { background: #ffe5b4; }
+    .card.quiz  { background: #ffd1d1; }
+    .card.culture { background: #ffc4e1; }
+
+    .card h2 {
+      margin-bottom: 20px;
+      font-size: 1.8em;
+    }
+
+    .logo {
+      max-width: 400px;
+      width: 80%;
+      height: auto;
+      display: block;
+      margin: 0 auto;
+      animation: fadeInSlide 1.2s ease-out;
+    }
+
+    .music-icon {
+      position: absolute;
+      top: 25px;
+      left: 25px;
+      font-size: 1.5em;
+      text-decoration: none;
+      color: white;
+      transition: transform 0.2s, color 0.3s;
+    }
+
+    .music-icon:hover {
+      transform: scale(1.2);
+      color: #ffeaa7;
+    }
+
+    .buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .buttons a {
+      text-decoration: none;
+      padding: 12px 20px;
+      border-radius: 10px;
+      background-color: #ff6f00;
+      color: white;
+      font-weight: bold;
+      transition: background-color 0.3s, transform 0.2s;
+    }
+
+    .buttons a:hover {
+      background-color: #e65c00;
+      transform: scale(1.05);
+    }
+    .btn-icon {
+      height: 24px;     /* ajuste la taille */
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+    @media (max-width: 960px) {
+      .container {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <a href="musique/musique.html" class="music-icon" title="Musique">🎵</a>
+    <img src="logo/declaira_logo.png" alt="Déclaira" class="logo">
+  </header>
+
+  <div class="container">
+    <div class="card jeu">
+      <h2>🎮 Jeux</h2>
+      <div class="buttons">
+        <a href="jeux/Démineur.html">💣 Démineur</a>
+        <a href="jeux/snake.html">🐍 Snake</a>
+      </div>
+    </div>
+
+    <div class="card geo">
+      <h2>🗺️ Géographie</h2>
+      <div class="buttons">
+        <a href="géographie/monde.html">🌍 Carte du Monde</a>
+        <a href="géographie/france.html">🥖 Carte de France</a>
+      </div>
+    </div>
+
+    <div class="card quiz">
+      <h2>❓ Quiz</h2>
+      <div class="buttons">
+        <a href="quiz/quiz.html">🧠 Mes Quiz</a>
+        <a href="quiz/blind_test.html">🎵 Blind Test</a>
+      </div>
+    </div>
+
+    <div class="card culture">
+    <h2>🧩 Défis Quotidiens</h2>
+    <div class="buttons">
+      <a href="Defis_Quotidiens/OnePieceDle.html">
+        <img src="Defis_Quotidiens/images_onepiece/icone.png" alt="Onepiecedle" class="btn-icon"> OnePieceDle
+      </a>
+      <a href="Defis_Quotidiens/PokemonDle.html">
+        <img src="Defis_Quotidiens/images_pokemon/pokeball.png" alt="PokéDLE" class="btn-icon"> PokéDle
+      </a>
+    </div>
+    </div>
+  </div>
+
+</body>
+</html>

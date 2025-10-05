@@ -1,0 +1,255 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>💣 Démineur</title>
+  <link rel="icon" href="../logo/logo.png" type="image/x-icon">
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@600&display=swap" rel="stylesheet">
+  <style>
+    html, body {
+      font-family: 'Quicksand', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(to bottom right, #fff3cd, #ffe5b4, #ffd1d1);
+      color: #333;
+
+    }
+    #main-container {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      width: 100%;
+      max-width: 98vw;
+    }
+    #sidebar-left, #sidebar-right {
+      width: 20%;
+      margin: 10px;
+      padding: 30px;
+    }
+    #game-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    #status {display: flex; justify-content: center; align-items: flex-start; margin: 10px 0; font-size: 18px; }
+    #hud { margin: 10px; font-size: 16px; }
+    #game {
+      display: grid;
+      gap: 1px;
+      user-select: none;
+      width: 80vmin;
+      height: 80vmin;
+    }
+    .cell {
+      background-color: #999;
+      color: #000;
+      font-weight: bold;
+      font-size: 1.2em;
+      text-align: center;
+      cursor: pointer;
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.2s ease;
+    }
+    .cell.revealed { background-color: #ddd; cursor: default; }
+    .cell.bomb {
+      background-color: red;
+      color: white;
+      animation: explode 0.5s ease;
+    }
+    .cell.flag { background-color: #ffc; color: red; }
+    @keyframes explode {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.5); }
+      100% { transform: scale(1); }
+    }
+    input {
+      padding: 6px;
+      margin: 5px 0;
+      font-size: 14px;
+      width: 100%;
+    }
+    button {
+      display: inline-block;
+      width: 105%;
+      margin: 10px auto;
+      padding: 10px 20px;
+      background-color: #ff6f00;
+      color: white;
+      border: none;
+      cursor: pointer;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      }
+    button:hover {
+      background-color: #e65c00;
+    }
+  </style>
+</head>
+<body>
+  <script src="../header.js"></script>
+    <script>
+      injectHeader({
+        title: "Démineur",
+        homeLink: "../accueil.html",
+        showHome: true
+      });
+    </script>
+  </script>
+  <h1> </h1>
+  <div id="main-container">
+    <div id="sidebar-left">
+      <div id="status">Cliquez pour commencer</div>
+      <label>Grille (Max 20x20): <input type="number" id="rows" value="20"> x <input type="number" id="cols" value="20"></label>
+      <label>Bombes: <input type="number" id="bombs" value="50"></label>
+      <button onclick="createBoard()">Rejouer</button>
+      <div id="hud">
+        ⏱️ Temps: <span id="timer">0</span>s<br>
+        🚩 Drapeaux restants: <span id="flagsLeft">0</span>
+      </div>
+    </div>
+    <div id="game-wrapper">
+      <div id="game"></div>
+    </div>
+    <div id="sidebar-right">
+      <div id="scoreboard">
+        <h2>🏆 Meilleurs temps</h2>
+        <ul id="highScores"></ul>
+      </div>
+    </div>
+  </div>
+  <script>
+    let board = [], gameOver = false, timer = 0, interval, revealed = 0, flags = 0;
+    let rows, cols, bombs;
+    const game = document.getElementById("game");
+    const timerDisplay = document.getElementById("timer");
+    const flagsLeftDisplay = document.getElementById("flagsLeft");
+    const status = document.getElementById("status");
+
+    function createBoard() {
+      rows = +document.getElementById("rows").value;
+      cols = +document.getElementById("cols").value;
+      bombs = +document.getElementById("bombs").value;
+      board = []; gameOver = false; revealed = 0; flags = 0; timer = 0;
+      game.innerHTML = "";
+      clearInterval(interval);
+      interval = setInterval(() => { if (!gameOver) timer++; timerDisplay.textContent = timer; }, 1000);
+      flagsLeftDisplay.textContent = bombs;
+      game.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+
+      for (let r = 0; r < rows; r++) {
+        board[r] = [];
+        for (let c = 0; c < cols; c++) {
+          const cell = document.createElement("div");
+          cell.className = "cell";
+          cell.dataset.row = r;
+          cell.dataset.col = c;
+          cell.addEventListener("click", () => reveal(r, c));
+          cell.addEventListener("contextmenu", e => {
+            e.preventDefault();
+            toggleFlag(r, c);
+          });
+          game.appendChild(cell);
+          board[r][c] = { bomb: false, count: 0, revealed: false, flagged: false, el: cell };
+        }
+      }
+
+      let placed = 0;
+      while (placed < bombs) {
+        let r = Math.floor(Math.random() * rows), c = Math.floor(Math.random() * cols);
+        if (!board[r][c].bomb) {
+          board[r][c].bomb = true;
+          placed++;
+        }
+      }
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          if (!board[r][c].bomb) {
+            let count = 0;
+            for (let dr = -1; dr <= 1; dr++)
+              for (let dc = -1; dc <= 1; dc++) {
+                const nr = r + dr, nc = c + dc;
+                if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && board[nr][nc].bomb) count++;
+              }
+            board[r][c].count = count;
+          }
+        }
+      }
+
+      status.textContent = "Bonne chance !";
+    }
+
+    function reveal(r, c) {
+      const tile = board[r][c];
+      if (tile.revealed || tile.flagged || gameOver) return;
+      tile.revealed = true;
+      tile.el.classList.add("revealed");
+      if (tile.bomb) {
+        tile.el.classList.add("bomb");
+        tile.el.textContent = "💣";
+        gameOver = true;
+        status.textContent = "💥 BOOM ! Perdu.";
+        clearInterval(interval);
+        return;
+      }
+
+      revealed++;
+      if (tile.count > 0) tile.el.textContent = tile.count;
+      else {
+        for (let dr = -1; dr <= 1; dr++)
+          for (let dc = -1; dc <= 1; dc++) {
+            const nr = r + dr, nc = c + dc;
+            if (nr >= 0 && nr < rows && nc >= 0 && nc < cols) reveal(nr, nc);
+          }
+      }
+
+      if (revealed === rows * cols - bombs) {
+        gameOver = true;
+        status.textContent = "🎉 Bravo, gagné !";
+        clearInterval(interval);
+        saveHighScore(timer, rows, cols, bombs);
+      }
+    }
+
+    function toggleFlag(r, c) {
+      const tile = board[r][c];
+      if (tile.revealed || gameOver) return;
+      tile.flagged = !tile.flagged;
+      tile.el.textContent = tile.flagged ? "🚩" : "";
+      flags += tile.flagged ? 1 : -1;
+      flagsLeftDisplay.textContent = bombs - flags;
+    }
+
+    function saveHighScore(time, rows, cols, bombs) {
+      const entry = {
+        time,
+        size: `${rows}x${cols}`,
+        bombs,
+        date: new Date().toLocaleString()
+      };
+      let scores = JSON.parse(localStorage.getItem("minesweeperHighScores") || "[]");
+      scores.push(entry);
+      scores.sort((a, b) => a.time - b.time);
+      localStorage.setItem("minesweeperHighScores", JSON.stringify(scores.slice(0, 5)));
+      renderHighScores();
+    }
+
+    function renderHighScores() {
+      const scores = JSON.parse(localStorage.getItem("minesweeperHighScores") || "[]");
+      const list = document.getElementById("highScores");
+      list.innerHTML = scores.map(s => `<li>${s.time}s - ${s.size}, 💣 ${s.bombs}<br><small>${s.date}</small></li>`).join("");
+    }
+
+    window.onload = () => {
+      renderHighScores();
+      createBoard();
+    };
+  </script>
+</body>
+</html>

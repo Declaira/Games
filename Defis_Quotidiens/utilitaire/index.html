@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="fr">
+    <link href="https://fonts.googleapis.com/css2?family=Pirata+One&display=swap" rel="stylesheet">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="images/icone.png">
+    <link rel="stylesheet" href="style.css">
+    <title>OnePieceDle</title>
+</head>
+<body>
+    <img src="images/titre.png" alt="Titre du jeu" id="game-title">
+    <div class="modeBtn-bg">
+    <button id="modeBtn">Mode : Facile</button>
+    </div>
+    <p id="gameMessage" class="game-message">Devinez le personnage One Piece !</p>
+    <input type="text" id="guessInput" placeholder="Entrez un nom..." autocomplete="off" />
+    <div id="suggestions" class="suggestions"></div>
+    <p id="feedback"></p>
+
+    <div id="victoryScreen" style="display: none; text-align: center; margin-top: 20px;">
+    <img id="victoryImage" src="" alt="Personnage trouvé" style="width: 300px; border-radius: 15px; box-shadow: 0 0 15px gold;">
+    <h2 id="victoryName" style="font-size: 2.5rem; margin: 15px 0; color: #fff;"></h2>
+    <button id="replayBtn" style="padding: 12px 25px; font-size: 18px; font-family: 'Pirata One', cursive; background: #ffcc00; color: #222; border: none; border-radius: 10px; cursor: pointer; transition: transform 0.3s, background 0.3s;">
+        🔄 Rejouer
+    </button>
+    </div>
+
+    <div id="attempts"></div>
+</div>
+
+    <script src="script.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+</body>
+</html>

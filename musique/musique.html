@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>🎵 Ma Musique 🎵</title>
+    <link rel="icon" type="image/png" href="icon.png">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #1d2b64, #f8cdda);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      color: #fff;
+      padding: 40px 20px;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+      font-size: 2.5rem;
+      animation: fadeInDown 1s ease-out;
+      text-align: center;
+    }
+
+    .file-info {
+      margin-bottom: 20px;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    .search-input {
+      margin-bottom: 15px;
+      padding: 10px;
+      width: 300px;
+      border-radius: 10px;
+      border: none;
+      font-size: 1rem;
+    }
+
+    .playlist {
+      max-height: 200px;
+      overflow-y: auto;
+      width: 100%;
+      max-width: 350px;
+      margin-bottom: 20px;
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 15px;
+      padding: 10px;
+    }
+
+    .playlist-item {
+      padding: 8px 12px;
+      cursor: pointer;
+      border-radius: 8px;
+      transition: 0.2s;
+      font-size: 0.95rem;
+    }
+
+    .playlist-item:hover {
+      background: rgba(255,255,255,0.2);
+    }
+
+    .playlist-item.active {
+      background: rgba(255,255,255,0.3);
+      font-weight: bold;
+    }
+
+    .player {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+      text-align: center;
+      animation: fadeInUp 1s ease-out;
+      width: 320px;
+    }
+
+    .title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 10px;
+      min-height: 24px;
+    }
+
+    .progress-container {
+      width: 100%;
+      background: rgba(255,255,255,0.2);
+      height: 8px;
+      border-radius: 5px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    .progress-bar {
+      width: 0%;
+      height: 100%;
+      background: #fff;
+      transition: width 0.1s linear;
+    }
+
+    .controls {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .controls button {
+      background: #ffffff22;
+      border: none;
+      border-radius: 50%;
+      width: 45px;
+      height: 45px;
+      font-size: 18px;
+      color: #fff;
+      cursor: pointer;
+      transition: background 0.3s, transform 0.2s;
+    }
+
+    .controls button:hover {
+      background: #ffffff55;
+      transform: scale(1.1);
+    }
+
+    .volume-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    input[type="range"] {
+      width: 180px;
+    }
+
+    label {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.9rem;
+      margin-top: 10px;
+    }
+
+    audio {
+      display: none;
+    }
+
+    .upload {
+      margin-bottom: 10px;
+    }
+
+    #fileInput {
+      display: none;
+    }
+
+    .upload label {
+      padding: 10px 20px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background 0.3s;
+      font-weight: 600;
+    }
+
+    .upload label:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    @keyframes fadeInDown {
+      from {opacity: 0; transform: translateY(-30px);}
+      to {opacity: 1; transform: translateY(0);}
+    }
+
+    @keyframes fadeInUp {
+      from {opacity: 0; transform: translateY(30px);}
+      to {opacity: 1; transform: translateY(0);}
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🎵 Ma Musique 🎵</h1>
+
+  <div class="upload">
+    <input type="file" id="fileInput" webkitdirectory directory multiple accept=".mp3" />
+    <label for="fileInput" id="uploadLabel">📁 Sélectionner un dossier</label>
+  </div>
+
+  <div class="file-info" id="folderName">Aucun dossier sélectionné</div>
+
+  <input type="text" class="search-input" id="searchInput" placeholder="🔍 Rechercher une musique..." />
+
+  <div class="playlist" id="playlist"></div>
+
+  <div class="player">
+    <div class="title" id="trackTitle">Aucune piste</div>
+    <div class="progress-container">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+
+    <div class="controls">
+      <button onclick="prevTrack()">⏮️</button>
+      <button onclick="togglePlay()">▶️/⏸️</button>
+      <button onclick="nextTrack()">⏭️</button>
+    </div>
+
+    <div class="volume-container">
+      🔊 <input type="range" id="volume" min="0" max="1" step="0.01" value="0.8" />
+    </div>
+
+    <label><input type="checkbox" id="shuffle"> Lecture aléatoire 🔀</label>
+  </div>
+
+  <audio id="audio" controls></audio>
+
+  <script>
+    const audio = document.getElementById("audio");
+    const fileInput = document.getElementById("fileInput");
+    const volumeSlider = document.getElementById("volume");
+    const shuffleCheckbox = document.getElementById("shuffle");
+    const trackTitle = document.getElementById("trackTitle");
+    const progressBar = document.getElementById("progressBar");
+    const playlistContainer = document.getElementById("playlist");
+    const searchInput = document.getElementById("searchInput");
+    const folderName = document.getElementById("folderName");
+
+    let playlist = [];
+    let currentTrack = 0;
+
+    fileInput.addEventListener("change", () => {
+      playlist = Array.from(fileInput.files).filter(f => f.name.endsWith(".mp3"));
+      if (!playlist.length) return;
+
+      if (shuffleCheckbox.checked) {
+        playlist.sort(() => Math.random() - 0.5);
+      }
+
+      const pathParts = playlist[0].webkitRelativePath.split("/");
+      folderName.textContent = `📁 ${pathParts[0]}`;
+
+      buildPlaylist();
+      currentTrack = 0;
+      playTrack(currentTrack);
+    });
+
+    function buildPlaylist(filter = "") {
+      playlistContainer.innerHTML = "";
+
+      playlist.forEach((file, index) => {
+        const fileName = file.name;
+        if (!fileName.toLowerCase().includes(filter.toLowerCase())) return;
+
+        const div = document.createElement("div");
+        div.className = "playlist-item" + (index === currentTrack ? " active" : "");
+        div.textContent = fileName;
+        div.onclick = () => {
+          currentTrack = index;
+          playTrack(currentTrack);
+        };
+        playlistContainer.appendChild(div);
+      });
+    }
+
+    function playTrack(index) {
+      if (!playlist.length) return;
+      const file = playlist[index];
+      const url = URL.createObjectURL(file);
+      audio.src = url;
+      audio.play();
+      trackTitle.textContent = file.name;
+
+      buildPlaylist(searchInput.value);
+    }
+
+    function togglePlay() {
+      if (audio.paused) {
+        audio.play();
+      } else {
+        audio.pause();
+      }
+    }
+
+    function nextTrack() {
+      currentTrack = (currentTrack + 1) % playlist.length;
+      playTrack(currentTrack);
+    }
+
+    function prevTrack() {
+      currentTrack = (currentTrack - 1 + playlist.length) % playlist.length;
+      playTrack(currentTrack);
+    }
+
+    audio.addEventListener("ended", () => {
+      nextTrack();
+    });
+
+    volumeSlider.addEventListener("input", () => {
+      audio.volume = volumeSlider.value;
+    });
+
+    audio.volume = volumeSlider.value;
+
+    audio.addEventListener("timeupdate", () => {
+      const progress = (audio.currentTime / audio.duration) * 100;
+      progressBar.style.width = progress + "%";
+    });
+
+    searchInput.addEventListener("input", () => {
+      buildPlaylist(searchInput.value);
+    });
+  </script>
+
+</body>
+</html>

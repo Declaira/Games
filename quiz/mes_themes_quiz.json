@@ -1,0 +1,22 @@
+{
+  "test": [
+    {
+      "question": "Quelle est cette molécule.png",
+      "answer": "h2o"
+    },
+    {
+      "question": "Quelle planète est appelée la planète rouge ?",
+      "answer": "Mars"
+    }
+  ],
+  "Son": [
+    {
+      "question": "Quel est ce son.mp3",
+      "answer": "goutte"
+    },
+    {
+      "question": "Qu'est-ce que de l'eau solide ?",
+      "answer": "glace"
+    }
+  ]
+}

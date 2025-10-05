@@ -1,0 +1,42 @@
+[
+  {
+    "question": "Quel est l'élément chimique dont le symbole est O ?",
+    "answer": "Oxygène"
+  },
+  {
+    "question": "Quel organe du corps humain pompe le sang ?",
+    "answer": "Cœur"
+  },
+  {
+    "question": "Combien de planètes tournent autour du Soleil dans notre système solaire ?",
+    "answer": "8"
+  },
+  {
+    "question": "Quel est le plus grand os du corps humain ?",
+    "answer": "Fémur"
+  },
+  {
+    "question": "Quelle est la formule chimique de l'eau ?",
+    "answer": "H2O"
+  },
+  {
+    "question": "Comment appelle-t-on le changement d’un liquide en gaz ?",
+    "answer": "Évaporation"
+  },
+  {
+    "question": "Quel est l'unité de mesure de la force ?",
+    "answer": "Newton"
+  },
+  {
+    "question": "Quelle planète est surnommée la planète rouge ?",
+    "answer": "Mars"
+  },
+  {
+    "question": "Quel scientifique a proposé la théorie de la relativité ?",
+    "answer": "Einstein"
+  },
+  {
+    "question": "Quel gaz les plantes absorbent-elles pour faire la photosynthèse ?",
+    "answer": "Dioxyde de carbone"
+  }
+]

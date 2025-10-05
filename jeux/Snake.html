@@ -1,0 +1,306 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>🐍 Snake</title>
+  <link rel="icon" href="../logo/logo.png" type="image/x-icon">
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Quicksand', sans-serif;
+      margin: 0;
+      background: linear-gradient(to bottom right, #fff3cd, #ffe5b4, #ffd1d1);
+      color: #333;
+      display: flex;
+      flex-direction: column;
+    }
+    #container {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      width: 100%;
+      max-width: 98vw;
+    }
+    #left-panel, #right-panel {
+      width: 20%;
+      padding: 10px;
+    }
+    #gameCanvas {
+      background-color: #fff3cd;
+      display: block;
+      flex: 1;
+      max-height: 90vh; /* 🔽 Limite la hauteur à 60% de la fenêtre */
+      max-width: 90vh;  /* 🔄 Garde le canvas carré */
+    }
+    #scoreDisplay {
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+    #scoreboard ul {
+      list-style: none;
+      padding: 0;
+    }
+    #scoreboard li {
+      background: #fff3cd;
+      margin: 4px 0;
+      padding: 6px 10px;
+      border-radius: 5px;
+    }
+    button {
+    padding: 10px;
+    font-size: 16px;
+    width: 100%;
+    margin-top: 10px;
+    background-color: #ff6f00;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    }
+    button:hover {
+      background-color: #e65c00;
+    }
+  </style>
+</head>
+<body>
+  <script src="../header.js"></script>
+  <script>
+    injectHeader({
+      title: "Snake",
+      homeLink: "../accueil.html",
+      showHome: true
+    });
+  </script>
+    </script>
+  <h1> </h1>
+  <div id="container">
+    <div id="left-panel">
+      <div id="scoreDisplay">Score: 0</div>
+      <div style="margin-top: 10px; background: #fff3cd; padding: 10px; border-radius: 8px;">
+        <strong style="color: #00ffff;">🎮 Contrôles</strong><br>
+        ⬆️ Z / ↑ = Haut<br>
+        ⬇️ S / ↓ = Bas<br>
+        ⬅️ Q / ← = Gauche<br>
+        ➡️ D / → = Droite
+      </div>
+      <button onclick="init()">Rejouer</button>
+<div id="gameOverMessage" style="margin-top:10px; color: #ff5555; font-size: 16px;"></div>
+    </div>
+    <canvas id="gameCanvas"></canvas>
+    <div id="right-panel">
+      <div id="scoreboard">
+        <h2>🏆 Scores</h2>
+        <ul id="highScores"></ul>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const headImg = new Image();
+    const tailImg = new Image();
+    const appleImg = new Image();
+
+    let imagesLoaded = 0;
+    function checkAllImagesLoaded() {
+      imagesLoaded++;
+      if (imagesLoaded === 3) {
+        init();
+        renderHighScores();
+      }
+    }
+
+    headImg.onload = checkAllImagesLoaded;
+    tailImg.onload = checkAllImagesLoaded;
+    appleImg.onload = checkAllImagesLoaded;
+
+    headImg.src = "head_.png";
+    tailImg.src = "tail_.png";
+    appleImg.src = "apple_.png";
+
+    let tileSize, rows, cols;
+    let snake = [];
+    let direction = { x: 1, y: 0 };
+    let apple = { x: 0, y: 0 };
+    let score = 0;
+    const speed = 100;
+    let interval;
+    let gameStarted = false;
+
+    function resizeCanvas() {
+      const size = Math.min(window.innerWidth, window.innerHeight) * 0.6;
+      canvas.width = canvas.height = size;
+      tileSize = Math.floor(size / 20);
+      rows = cols = Math.floor(size / tileSize);
+    }
+
+    function drawBoard() {
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          ctx.fillStyle = (x + y) % 2 === 0 ? "#6aaa64" : "#538d4e";
+          ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+        }
+      }
+    }
+
+    function drawSnake() {
+      if (!snake.length) return;
+      snake.forEach((part, i) => {
+        const x = part.x * tileSize;
+        const y = part.y * tileSize;
+
+        if (i === 0 && snake[1]) {
+          const next = snake[1];
+          const dx = part.x - next.x;
+          const dy = part.y - next.y;
+          let angle = 0;
+          if (dx === 1) angle = Math.PI / 2;      // droite
+          else if (dx === -1) angle = -Math.PI / 2; // gauche
+          else if (dy === 1) angle = Math.PI;      // bas
+          else if (dy === -1) angle = 0;           // haut
+
+          ctx.save();
+          ctx.translate(x + tileSize / 2, y + tileSize / 2);
+          ctx.rotate(angle);
+          ctx.drawImage(headImg, -tileSize / 2, -tileSize / 2, tileSize, tileSize);
+          ctx.restore();
+        } else if (i === snake.length - 1 && snake[i - 1]) {
+          const before = snake[i - 1];
+          const dx = before.x - part.x;
+          const dy = before.y - part.y;
+          let angle = 0;
+          if (dx === 1) angle = Math.PI / 2;      // droite
+          else if (dx === -1) angle = -Math.PI / 2; // gauche
+          else if (dy === 1) angle = Math.PI;      // bas
+          else if (dy === -1) angle = 0;           // haut
+
+
+          ctx.save();
+          ctx.translate(x + tileSize / 2, y + tileSize / 2);
+          ctx.rotate(angle);
+          ctx.drawImage(tailImg, -tileSize / 2, -tileSize / 2, tileSize, tileSize);
+          ctx.restore();
+        } else {
+          ctx.fillStyle = "#0000ff";
+          ctx.fillRect(x, y, tileSize, tileSize);
+        }
+      });
+    }
+
+    function drawApple() {
+      ctx.drawImage(
+        appleImg,
+        apple.x * tileSize,
+        apple.y * tileSize,
+        tileSize,
+        tileSize
+      );
+    }
+
+    function randomPosition() {
+      return {
+        x: Math.floor(Math.random() * cols),
+        y: Math.floor(Math.random() * rows)
+      };
+    }
+
+    function moveSnake() {
+      if (!snake.length) return;
+      const head = { ...snake[0] };
+      head.x += direction.x;
+      head.y += direction.y;
+
+      if (
+        head.x < 0 || head.y < 0 ||
+        head.x >= cols || head.y >= rows ||
+        snake.some(part => part.x === head.x && part.y === head.y)
+      ) {
+        clearInterval(interval);
+        saveScore(score);
+        document.getElementById("gameOverMessage").textContent = "💀 Game Over ! Score : " + score;
+        return;
+      }
+
+      snake.unshift(head);
+
+      if (head.x === apple.x && head.y === apple.y) {
+        score++;
+        document.getElementById("scoreDisplay").textContent = "Score: " + score;
+        apple = randomPosition();
+
+        canvas.style.transition = "background-color 0.2s ease";
+        canvas.style.backgroundColor = "#225522";
+        setTimeout(() => {
+          canvas.style.backgroundColor = "#111";
+        }, 150);
+      } else {
+        snake.pop();
+      }
+
+      drawGame();
+    }
+
+    function drawGame() {
+      drawBoard();
+      drawApple();
+      drawSnake();
+    }
+
+    function init() {
+      resizeCanvas();
+      window.onresize = init;
+
+      score = 0;
+      document.getElementById("scoreDisplay").textContent = "Score: 0";
+  document.getElementById("gameOverMessage").textContent = "";
+      direction = { x: 1, y: 0 };
+      snake = [
+      { x: 5, y: 5 },
+      { x: 4, y: 5 }
+    ];
+      apple = randomPosition();
+      gameStarted = false;
+      clearInterval(interval);
+      drawGame();
+    }
+
+    function startGame() {
+      if (!gameStarted) {
+        gameStarted = true;
+        interval = setInterval(moveSnake, speed);
+      }
+    }
+
+    function saveScore(score) {
+      const scores = JSON.parse(localStorage.getItem("snakeScores") || "[]");
+      scores.push({ score, date: new Date().toLocaleString() });
+      scores.sort((a, b) => b.score - a.score);
+      localStorage.setItem("snakeScores", JSON.stringify(scores.slice(0, 5)));
+      renderHighScores();
+    }
+
+    function renderHighScores() {
+      const scores = JSON.parse(localStorage.getItem("snakeScores") || "[]");
+      const list = document.getElementById("highScores");
+      list.innerHTML = scores.map(s => `<li>${s.score} pts<br><small>${s.date}</small></li>`).join("");
+    }
+
+    window.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    init();
+    return;
+  }
+      const key = e.key.toLowerCase();
+      if ((key === "arrowup" || key === "z") && direction.y !== 1) direction = { x: 0, y: -1 };
+      if ((key === "arrowdown" || key === "s") && direction.y !== -1) direction = { x: 0, y: 1 };
+      if ((key === "arrowleft" || key === "q") && direction.x !== 1) direction = { x: -1, y: 0 };
+      if ((key === "arrowright" || key === "d") && direction.x !== -1) direction = { x: 1, y: 0 };
+      startGame();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,403 @@
+/* === One Piece Style === */
+body {
+  font-family: 'Pirata One', cursive;
+  background: url('images/bg.png') no-repeat center center fixed;
+  background-size: cover;
+  color: #fff;
+  text-align: center;
+  padding: 20px;
+}
+
+h1 {
+  font-size: 3rem;
+  color: #ffd700;
+  text-shadow: 3px 3px #000;
+  margin-bottom: 20px;
+}
+
+#game-container {
+  background: rgba(0, 0, 0, 0.7);
+  border: 4px solid #ffd700;
+  border-radius: 15px;
+  padding: 20px;
+  max-width: 900px;
+  margin: auto;
+  box-shadow: 0 0 20px #000, inset 0 0 15px #444;
+}
+#game-title {
+  display: block;
+  margin: 10px auto; /* centre l'image */
+  max-width: 80%; /* s'adapte à l'écran */
+  height: auto; /* conserve le ratio */
+}
+
+.game-message {
+  font-family: 'Pirata One', cursive;
+  font-size: 2.2rem;
+  color: #ffd700;
+  text-shadow: 2px 2px 6px #222, 0 0 12px #fff;
+  margin: 18px 0 10px 0;
+  letter-spacing: 1px;
+  transition: color 0.4s, text-shadow 0.4s;
+}
+.game-message.found {
+  color: #38d46a;
+  text-shadow: 2px 2px 10px #222, 0 0 18px #38d46a;
+  animation: pop 0.7s;
+}
+/* Input style */
+#guessInput {
+  font-family: 'Pirata One', cursive;
+  font-size: 1.5rem;
+  padding: 10px;
+  border-radius: 10px;
+  border: 3px solid #ffd700;
+  width: 60%;
+  text-align: center;
+  margin-bottom: 15px;
+  margin: 0 auto 15px auto; /* top 0, right auto, bottom 15px, left auto */
+}
+
+#modeBtn {
+  font-family: 'Pirata One', cursive;
+  padding: 8px 18px;
+  font-size: 16px;
+  border-radius: 8px;
+  background: #38d46a;
+  color: #fff;
+  cursor: pointer;
+  border: 2px solid #fff; /* Ajout d'un contour blanc */
+  transition: background 0.4s cubic-bezier(.4,0,.2,1), transform 0.2s, box-shadow 0.4s;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.18), 0 0 0 4px rgba(255,255,255,0.15); /* Ombre plus forte */
+  z-index: 2; /* S'assure qu'il est au-dessus du fond */
+  position: relative;
+}
+#modeBtn.difficile {
+  background: red;
+  color: #fff;
+  transform: scale(1.07) rotate(-2deg);
+  border-color: #fff;
+}
+#modeBtn.facile {
+  background: green;
+  color: #fff;
+  transform: scale(1.07) rotate(2deg);
+  border-color: #fff;
+}
+.modeBtn-bg {
+  background: rgba(0,0,0,0.25);
+  border-radius: 12px;
+  padding: 4px;
+  display: inline-block;
+  position: absolute;    /* positionne en haut à gauche */
+  top: 24px;             /* espace depuis le haut */
+  right: 24px;            /* espace depuis la gauche */
+  z-index: 20;
+}
+#modeBtn:active {
+  transform: scale(0.97);
+}
+.suggestions {
+  max-height: 320px;
+  overflow-y: auto;
+  width: 60%;
+  margin: 0 auto 10px auto;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.18);
+  background: rgba(255,255,255,0.95);
+  position: relative;
+  z-index: 10;
+  border: 2px solid #ffd700;
+  padding-right: 4px; /* Laisse la place au slider */
+  box-sizing: border-box; /* Ajouté */
+  scrollbar-width: thin;
+  scrollbar-color: #ffd700 #fff8dc;
+}
+
+/* Pour Chrome, Edge, Safari */
+.suggestions::-webkit-scrollbar {
+  width: 10px;
+  border-radius: 4px; /* Rayon réduit pour suivre le bord */
+  background: #fff8dc;
+}
+.suggestions::-webkit-scrollbar-thumb {
+  background: #ffd700;
+  border-radius: 4px;
+  border: 2px solid #fff8dc;
+}
+.suggestions::-webkit-scrollbar-track {
+  background: #fff8dc;
+  border-radius: 4px;
+}
+.suggestion-item {
+  background: #fff8dc;
+  color: #000;
+  border-bottom: 1px solid #ffd700;
+  padding: 28px 12px;              /* plus de hauteur */
+  cursor: pointer;
+  display: flex;
+  justify-content: center;          /* centre le contenu horizontalement */
+  align-items: center;              /* centre verticalement */
+  border-radius: 10px;
+  margin: 8px auto;                 /* plus d'espace entre les items */
+  transition: background 0.3s, color 0.3s, box-shadow 0.3s;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.08);
+  font-size: 2.5rem;                /* texte encore plus grand */
+  gap: 32px;
+}
+
+.suggestion-item img {
+  width: 3rem;   /* même taille que le texte */
+  height: 3rem;
+  min-width: 3rem;
+  min-height: 3rem;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: top;
+  display: block;
+}
+
+.suggestion-item:hover,
+.suggestion-item.selected {
+  background: #ffd700;
+  color: #222;
+  box-shadow: 0 2px 12px rgba(255,215,0,0.18);
+}
+
+#feedback {
+  color: #000; /* ou une couleur visible selon ton fond */
+  font-weight: bold;
+  margin-top: 10px;
+  min-height: 1.5em; /* pour éviter un saut quand le texte apparaît */
+}
+
+/* === Table des comparaisons === */
+table#attemptsTable {
+  border-collapse: separate !important;
+  border-spacing: 10px 8px; /* espace vertical entre les lignes */
+  margin-top: 15px;
+  width: 100%;
+  background: none;
+}
+
+table#attemptsTable th,
+table#attemptsTable td {
+  border: none !important; /* retire tous les contours blancs */
+  font-size: 1.1rem;
+  padding: 12px 10px;
+  color: #fff;
+  background: rgba(34,34,34,0.85);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  transition: background 0.3s, box-shadow 0.3s;
+}
+
+table#attemptsTable th {
+  color: #ffd700;
+  background: rgba(34,34,34,0.95);
+  font-size: 1.2rem;
+  border-radius: 16px 16px 0 0;
+}
+
+table#attemptsTable tr {
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+#attemptsTable td:first-child {
+  padding: 0;
+  width: 80px;
+  height: auto;
+  min-height: 80px;
+  background: transparent !important;
+  border-radius: 14px !important; /* bords arrondis comme les autres cases */
+  box-shadow: none !important;
+  overflow: hidden;
+  position: relative;
+  border: none !important;
+  vertical-align: middle;
+}
+
+#attemptsTable td:first-child img {
+  width: 100%;
+  height: 100%;
+  min-height: 60px;
+  object-fit: cover;
+  object-position: top;
+  display: block;
+  border-radius: 14px !important; /* bords arrondis sur l'image aussi */
+  background: transparent;
+}
+
+table#attemptsTable td:last-child {
+  border-radius: 0 18px 18px 0;
+}
+
+table#attemptsTable td {
+  border-radius: 14px !important; /* arrondi sur toutes les cases */
+  background: rgba(34,34,34,0.85);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  transition: background 0.3s, box-shadow 0.3s;
+}
+
+table#attemptsTable tr {
+  margin-bottom: 8px;
+  display: table-row;
+}
+
+table#attemptsTable tbody tr {
+  background: none;
+}
+
+table#attemptsTable td[style*="background:green"] {
+  background-color: #2ecc71 !important;
+  color: #222;
+}
+
+table#attemptsTable td[style*="background:red"] {
+  background-color: #e74c3c !important;
+}
+
+table#attemptsTable td[style*="background:yellow"] {
+  background-color: #f1c40f !important;
+  color: #222;
+}
+
+/* === Animation des attributs === */
+.reveal {
+  opacity: 0;
+  transform: rotateY(90deg);
+  animation: flipReveal 0.6s forwards;
+}
+
+@keyframes flipReveal {
+  0% {
+    opacity: 0;
+    transform: rotateY(90deg);
+  }
+  100% {
+    opacity: 1;
+    transform: rotateY(0deg);
+  }
+}
+
+/* Couleurs pour feedback */
+td[style*="background:green"] {
+  background-color: #2ecc71 !important; /* Vert One Piece */
+  color: #000;
+}
+
+td[style*="background:red"] {
+  background-color: #e74c3c !important; /* Rouge */
+}
+
+td[style*="background:yellow"] {
+  background-color: #f1c40f !important; /* Jaune */
+}
+
+.arrow-up {
+  background-image: url('images/arrow-up.png');
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 32px 32px;
+}
+
+.arrow-down {
+  background-image: url('images/arrow-down.png');
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 32px 32px;
+}
+
+/* Légende */
+#attempts h3 {
+  font-family: 'Pirata One', cursive;
+  color: #ffd700;
+  font-size: 2rem;
+  text-shadow: 2px 2px 8px #222, 0 0 12px #fff;
+  margin-bottom: 10px;
+  letter-spacing: 1px;
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Pirata+One&display=swap');
+
+#victoryScreen {
+  animation: fadeIn 1s ease forwards;
+}
+
+#victoryImage {
+  animation: pop 1s ease forwards;
+}
+
+#victoryName {
+  font-family: 'Pirata One', cursive;
+  color: #ffcc00;
+  text-shadow: 3px 3px #222;
+}
+
+#replayBtn:hover {
+  transform: scale(1.1);
+  background: #ffd633;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes pop {
+  0% { transform: scale(0); opacity: 0; }
+  70% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+.berry-icon {
+  width: 16px;
+  vertical-align: middle;
+  margin-left: 4px;
+  filter: brightness(0) invert(1); /* rend l'image noire */
+}
+
+/* Légende avec indicateurs colorés */
+.legend {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 10px;
+  font-family: 'Pirata One', cursive;
+  font-size: 1.4rem;
+  color: #ffd700;
+  text-shadow: 1px 1px 4px #222;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.legend-box {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.legend-correct { background-color: green !important; }   /* Vert */
+.legend-wrong   { background-color: red !important; }   /* Rouge */
+.legend-up {
+  background-image: url('images/arrow-up.png');
+  background-size: cover;
+  width: 24px;
+  height: 24px;
+  display: inline-block;
+  border-radius: 6px;
+}
+
+.legend-down {
+  background-image: url('images/arrow-down.png');
+  background-size: cover;
+  width: 24px;
+  height: 24px;
+  display: inline-block;
+  border-radius: 6px;  
+}
