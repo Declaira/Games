@@ -1,5 +1,6 @@
 # Déclaira Games
-Site regroupant les jeux que j'ai créés
+Site regroupant les jeux que j'ai créés.
+
 Lien : https://declaira.github.io/Games/accueil.html
 
 Avec des jeux classiques:
