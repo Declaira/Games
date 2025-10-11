@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Quiz Joueur</title>
+<link rel="icon" href="logo/logo.png" type="image/x-icon">
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@600&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: 'Quicksand', sans-serif;
+  background: linear-gradient(to bottom right, #fff3cd, #ffe5b4, #ffd1d1, #ffc4e1);
+  color: #2c3e50;
+  text-align: center;
+}
+header {
+  background: linear-gradient(to right, #ff9a00, #ff4e00);
+  color: white;
+  padding: 25px;
+  font-size: 2.5em;
+  letter-spacing: 2px;
+  animation: fadeInSlide 1.2s ease-out;
+}
+@keyframes fadeInSlide {
+  0% { opacity: 0; transform: translateY(-30px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.container { max-width: 600px; margin: 30px auto; padding: 20px; }
+input, button, textarea { width: 90%; padding: 10px; margin: 8px 0; border-radius: 8px; border: 1px solid #ccc; font-family: 'Quicksand', sans-serif; }
+button { cursor: pointer; background: #ff6f00; color: white; font-weight: bold; transition: transform 0.2s, background-color 0.3s; }
+button:hover { transform: scale(1.05); background-color: #e65c00; }
+#questionBox, #resultBox, #scoreBox { display: none; margin-top: 20px; background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+</style>
+</head>
+<body>
+<header>🎮 Quiz Multijoueur</header>
+<div class="container">
+  <div id="loginBox">
+    <input type="text" id="pseudo" placeholder="Entre ton pseudo"><br>
+    <button onclick="startGame()">Commencer</button>
+  </div>
+
+  <div id="questionBox">
+    <h3 id="questionText">Question</h3>
+    <textarea id="answer" placeholder="Écris ta réponse ici"></textarea><br>
+    <button onclick="sendAnswer()">Envoyer la réponse</button>
+  </div>
+
+  <div id="resultBox">
+    <h3>Réponses révélées</h3>
+    <div id="revealText"></div>
+  </div>
+
+  <div id="scoreBox">
+    <strong>Ton score actuel : </strong><span id="score">0</span>
+  </div>
+</div>
+
+<script>
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwZcOoCcxpkaRPCIDLyRWo5BPaHget6-OqQ88WhqTTjwXTnoENDRiKZb1aoFwC-mMziVA/exec";
+let pseudo = "", currentQuestion = 0, interval;
+
+function startGame() {
+  pseudo = document.getElementById("pseudo").value.trim();
+  if (!pseudo) return alert("Entre ton pseudo !");
+  document.getElementById("loginBox").style.display = "none";
+  document.getElementById("scoreBox").style.display = "block";
+  interval = setInterval(syncData, 2000);
+  syncData();
+}
+
+async function fetchData() {
+  const res = await fetch(SCRIPT_URL);
+  return res.json();
+}
+
+async function syncData() {
+  try {
+    const data = await fetchData();
+    const question = data.currentQuestion;
+    const showAnswers = data.showAnswers;
+    const questionText = data.questionText;
+
+    if (question != currentQuestion) {
+      currentQuestion = question;
+      document.getElementById("questionBox").style.display = "block";
+      document.getElementById("resultBox").style.display = "none";
+      document.getElementById("questionText").textContent = questionText;
+      document.getElementById("answer").value = "";
+    }
+
+    if (showAnswers === "oui") {
+      document.getElementById("questionBox").style.display = "none";
+      document.getElementById("resultBox").style.display = "block";
+      const players = data.data.filter(d => d.Question == currentQuestion);
+      let text = "";
+      players.forEach(p => { text += `${p.Pseudo} : ${p.Reponse} (Score: ${p.Score})\n`; });
+      document.getElementById("revealText").textContent = text;
+    }
+
+    const myData = data.data.find(d => d.Pseudo == pseudo && d.Question == currentQuestion);
+    document.getElementById("score").textContent = myData ? myData.Score : 0;
+  } catch (err) { console.error(err); }
+}
+
+async function sendAnswer() {
+  const reponse = document.getElementById("answer").value.trim();
+  if (!reponse) return alert("Écris une réponse !");
+  await fetch(SCRIPT_URL, {
+    method: "POST",
+    body: JSON.stringify({type: "playerAnswer", pseudo, question: currentQuestion, reponse})
+  });
+  alert("Réponse envoyée !");
+  document.getElementById("answer").value = "";
+}
+</script>
+</body>
+</html>
