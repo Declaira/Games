@@ -138,72 +138,14 @@ td.flip { transform: rotateY(90deg); }
 .legend-down { background-image: url('images_onepiece/arrow-down.png'); background-size: cover; width: 24px; height: 24px; display: inline-block; border-radius: 6px; }
 
 /* === MOBILE / PORTRAIT === */
-@media (max-width: 600px) {
-  #game { max-width: 100%; padding: 10px; }
-  
-  /* Barre de recherche agrandie */
-  #inputWrapper { width: 100%; }
-  #guessInput {
-    font-size: 20px;
-    padding: 12px;
-  }
-  
-  /* Suggestions agrandies */
-  #suggestions {
-    width: 100%;
-    font-size: 18px;
-  }
-  .suggestion-item { padding: 10px; }
-
-  #titreImage { height: 20vh; }
-
-  /* Tableau transformé en cartes verticales */
-  #attemptsTable, #attemptsTable thead, #attemptsTable tbody, #attemptsTable tr, #attemptsTable th, #attemptsTable td {
-    display: block;
-    width: 100%;
-  }
-  #attemptsTable tr {
-    margin-bottom: 10px;
-    background: rgba(255,255,255,0.9);
-    border-radius: 8px;
-    padding: 10px;
-  }
-  #attemptsTable td {
-    text-align: left;
-    padding: 6px 0;
-    border: none;
-    display: flex;
-    justify-content: space-between;
-    font-size: 16px;
-  }
-  #attemptsTable td:before {
-    content: attr(data-label);
-    font-weight: bold;
-    flex: 1;
-  }
-  #attemptsTable td span.value {
-    flex: 1;
-    text-align: right;
-  }
-  .pokemon-img { width: 36px; height: 36px; margin-right: 6px; }
-
-  /* Légende adaptative */
-  .legend { flex-wrap: wrap; gap: 10px; font-size: 1rem; }
-
-  /* Menu Générations agrandi */
-  #genButton {
-    font-size: 18px;
-    padding: 12px 16px;
-  }
-  #genDropdown {
-    width: 90vw;  /* quasi toute la largeur de l'écran */
-    padding: 12px;
-  }
-  .gen-option { font-size: 16px; padding: 8px 0; }
-  #toggleAllBtn, #applyGenBtn {
-    font-size: 16px;
-    padding: 10px 12px;
-  }
+/* === RESPONSIVE MOBILE === */
+@media (max-width: 480px) {
+  #genMenu { top: 15px; right: 10px; }
+  #genDropdown { width: 95vw; max-width: 95vw; padding: 12px; }
+  #guessInput { font-size: 20px; padding: 14px; }
+  #suggestions { font-size: 18px; max-height: 200px; }
+  #attemptsTable th, #attemptsTable td { font-size: 16px; padding: 8px; }
+  #replayBtn { font-size: 18px; padding: 12px 14px; }
 }
 </style>
 </head>
