@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -8,11 +7,74 @@
 <style>
 body {
   background: url("images_pokemon/bg2.png") no-repeat center center fixed;
-  background-size: cover; /* l’image prend tout l’écran */
-  font-family:'Verdana',sans-serif;
-  color:#333;
-  padding:20px;
+  background-size: cover;
+  font-family: 'Verdana', sans-serif;
+  color: #333;
+  padding: 20px;
+  position: relative;
 }
+
+/* === MENU GÉNÉRATIONS === */
+#genMenu {
+  position: absolute;
+  top: 20px;
+  right: 30px;
+  font-size: 14px;
+  color: #1976d2;
+  z-index: 1000;
+}
+
+#genButton {
+  background: rgba(255, 255, 255, 0.95);
+  border: 2px solid #1976d2;
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-weight: bold;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+  transition: background 0.2s;
+}
+#genButton:hover { background: #e3f2fd; }
+
+#genDropdown {
+  display: none;
+  position: absolute;
+  right: 0;
+  margin-top: 5px;
+  background: white;
+  border: 2px solid #1976d2;
+  border-radius: 8px;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+  padding: 10px;
+  width: 220px;
+}
+
+.gen-option { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+.gen-option label { cursor: pointer; flex-grow: 1; }
+
+#genControls {
+  border-top: 1px solid #ccc;
+  margin-top: 8px;
+  padding-top: 8px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+#toggleAllBtn, #applyGenBtn {
+  background: #1976d2;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.2s;
+}
+#toggleAllBtn:hover, #applyGenBtn:hover { background: #0d47a1; }
+
+/* === STRUCTURE DU JEU === */
 #game {
   max-width:950px;
   margin:0 auto;
@@ -24,20 +86,30 @@ body {
   flex-direction:column;
   align-items:center;
 }
+
+#titreImage { display:block; margin:0 auto 20px auto; max-width:100%; height:30vh; }
+
 #inputWrapper { position: relative; width: 320px; margin-bottom: 10px; }
 #guessInput { width: 100%; padding: 8px; font-size: 16px; border-radius: 8px; border: 2px solid #ccc; text-align: center; }
-#suggestions { position: absolute; top: 100%; left: 0; width: 100%; border:2px solid #ccc; max-height:150px; overflow:auto; background:#fff; border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,0.2); z-index:100; display:none; }
+#suggestions { position: absolute; top: 100%; left: 0px; width: calc(100% + 17px); border:2px solid #ccc; max-height:150px; overflow:auto; background:#fff; border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,0.2); z-index:100; display:none;}
+#suggestions::-webkit-scrollbar { width: 10px; }
+#suggestions::-webkit-scrollbar-track { background: transparent; margin-right: 5px; }
+#suggestions::-webkit-scrollbar-thumb { background-color: #1976d2; border-radius: 8px; border: 3px solid #fff; }
+
 .suggestion-item { padding:6px; cursor:pointer; border-bottom:1px solid #eee; }
 .suggestion-item:hover, .suggestion-item.selected { background:#cce7ff; }
+
 #attemptsTable { border-collapse: separate; border-spacing:0; width:100%; margin-top:20px; font-size:14px; border-radius:12px; overflow:hidden; }
 #attemptsTable th, #attemptsTable td { text-align:center; padding:6px; transition: transform 0.4s, background 0.4s; transform-style: preserve-3d; backface-visibility: hidden; border-radius: 8px; overflow: hidden; }
 #attemptsTable thead { background:#0055aa; color:white; font-weight:bold; }
 #attemptsTable tbody tr { background:#f8f8f8; }
 #attemptsTable tbody tr:nth-child(even) { background:#e0f0ff; }
+
 td.green { background:green; color:white; font-weight:bold; }
 td.red { background:red; color:white; font-weight:bold; }
 td.orange { background:orange; color:white; font-weight:bold; }
 td.flip { transform: rotateY(90deg); }
+
 #feedback { margin-top:10px; font-weight:bold; font-size:16px; text-align:center; color:#1976d2; }
 #victoryScreen { display:none; text-align:center; margin-bottom:10px; }
 #victoryScreen h1 { color:#e3350d; text-shadow:1px 1px #fff; }
@@ -45,9 +117,7 @@ td.flip { transform: rotateY(90deg); }
 #replayBtn { display:none; margin-top:10px; padding:8px 16px; font-size:14px; border:none; border-radius:8px; background:#1976d2; color:white; cursor:pointer; box-shadow:0 3px 6px rgba(0,0,0,0.3); }
 #replayBtn:hover { background:#1565c0; }
 .pokemon-img { width:40px; height:40px; object-fit:contain; vertical-align:middle; margin-right:4px; }
-#titreImage {display:block;margin: 0 auto 20px auto;max-width: 100%;height: 30vh;}
 
-/* Légende avec indicateurs colorés  https://www.serebii.net/scarletviolet/paldeanforms.shtml https://www.serebii.net/sunmoon/alolaforms.shtml https://www.serebii.net/swordshield/galarianforms.shtml*/
 .legend {
   display: flex;
   justify-content: center;
@@ -59,47 +129,78 @@ td.flip { transform: rotateY(90deg); }
   color: #fff;
   text-shadow: 1px 1px 4px #222;
 }
+.legend-item { display: flex; align-items: center; gap: 8px; }
+.legend-box { width: 24px; height: 24px; border-radius: 4px; display: inline-block; }
+.legend-correct { background-color: green !important; }
+.legend-orange  { background-color: orange !important; }
+.legend-wrong   { background-color: red !important; }
+.legend-up { background-image: url('images_onepiece/arrow-up.png'); background-size: cover; width: 24px; height: 24px; display: inline-block; border-radius: 6px; }
+.legend-down { background-image: url('images_onepiece/arrow-down.png'); background-size: cover; width: 24px; height: 24px; display: inline-block; border-radius: 6px; }
 
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
+/* === MOBILE / PORTRAIT === */
+@media (max-width: 600px) {
+  #game { max-width: 100%; padding: 10px; }
+  #inputWrapper { width: 100%; }
+  #suggestions { width: 100%; left: 0; }
+  #titreImage { height: 20vh; }
 
-.legend-box {
-  width: 24px;
-  height: 24px;
-  border-radius: 4px;
-  display: inline-block;
-}
-
-.legend-correct { background-color: green !important; }   /* Vert */
-.legend-orange  { background-color: orange !important; } /* Orange */
-.legend-wrong   { background-color: red !important; }   /* Rouge */
-.legend-up {
-  background-image: url('images_onepiece/arrow-up.png');
-  background-size: cover;
-  width: 24px;
-  height: 24px;
-  display: inline-block;
-  border-radius: 6px;
-}
-
-.legend-down {
-  background-image: url('images_onepiece/arrow-down.png');
-  background-size: cover;
-  width: 24px;
-  height: 24px;
-  display: inline-block;
-  border-radius: 6px;  
+  #attemptsTable, #attemptsTable thead, #attemptsTable tbody, #attemptsTable tr, #attemptsTable th, #attemptsTable td {
+    display: block;
+    width: 100%;
+  }
+  #attemptsTable tr {
+    margin-bottom: 10px;
+    background: rgba(255,255,255,0.9);
+    border-radius: 8px;
+    padding: 10px;
+  }
+  #attemptsTable td {
+    text-align: left;
+    padding: 4px 0;
+    border: none;
+    display: flex;
+    justify-content: space-between;
+  }
+  #attemptsTable td:before {
+    content: attr(data-label);
+    font-weight: bold;
+    flex: 1;
+  }
+  #attemptsTable td span.value {
+    flex: 1;
+    text-align: right;
+  }
+  .pokemon-img { width: 30px; height: 30px; margin-right: 4px; }
+  .legend { flex-wrap: wrap; gap: 10px; font-size: 0.9rem; }
 }
 </style>
 </head>
 <body>
+
+<!-- === MENU GÉNÉRATIONS === -->
+<div id="genMenu">
+  <div id="genButton">🎮 Générations ▾</div>
+  <div id="genDropdown">
+    <div class="gen-option"><input type="checkbox" value="1" checked> <label>Génération 1</label></div>
+    <div class="gen-option"><input type="checkbox" value="2" checked> <label>Génération 2</label></div>
+    <div class="gen-option"><input type="checkbox" value="3" checked> <label>Génération 3</label></div>
+    <div class="gen-option"><input type="checkbox" value="4" checked> <label>Génération 4</label></div>
+    <div class="gen-option"><input type="checkbox" value="5" checked> <label>Génération 5</label></div>
+    <div class="gen-option"><input type="checkbox" value="6" checked> <label>Génération 6</label></div>
+    <div class="gen-option"><input type="checkbox" value="7" checked> <label>Génération 7</label></div>
+    <div class="gen-option"><input type="checkbox" value="8" checked> <label>Génération 8</label></div>
+    <div class="gen-option"><input type="checkbox" value="9" checked> <label>Génération 9</label></div>
+    <div id="genControls">
+      <button id="toggleAllBtn">Tout désélectionner</button>
+      <button id="applyGenBtn">Appliquer</button>
+    </div>
+  </div>
+</div>
+
 <div id="game">
   <img src="images_pokemon/titre.png" alt="PokémonDle" id="titreImage">
 
-  <div id="victoryScreen">
+  <div id="victoryScreen" style="display:none;">
     <h1>Félicitations ! Tu as trouvé !</h1>
     <img id="victoryImage" src="" alt="Pokémon">
   </div>
@@ -111,39 +212,29 @@ td.flip { transform: rotateY(90deg); }
 
   <div id="feedback"></div>
 
-<table id="attemptsTable" style="display:none;">
-  <thead>
-    <tr>
-      <th>Nom</th><th>Type 1</th><th>Type 2</th><th>Couleur</th><th>Stade d'évolution</th><th>Génération</th><th>Taille</th><th>Poids</th>
-    </tr>
-  </thead>
-  <tbody></tbody>
-</table>
+  <table id="attemptsTable" style="display:none;">
+    <thead>
+      <tr>
+        <th>Nom</th><th>Type 1</th><th>Type 2</th><th>Couleur</th><th>Évolution</th><th>Génération</th><th>Taille</th><th>Poids</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 
-<!-- Légende -->
 <div class="legend" id="legend" style="display:none;">
-  <div class="legend-item">
-    <span class="legend-box legend-correct"></span> Correct
-  </div>
-  <div class="legend-item">
-    <span class="legend-box legend-wrong"></span> Incorrect
-  </div>
-  <div class="legend-item">
-    <span class="legend-box legend-orange"></span> Type mal placé
-  </div>
-  <div class="legend-item">
-    <span class="legend-box legend-up"></span> Plus grand
-  </div>
-  <div class="legend-item">
-    <span class="legend-box legend-down"></span> Plus petit
-  </div>
+  <div class="legend-item"><span class="legend-box legend-correct"></span> Correct</div>
+  <div class="legend-item"><span class="legend-box legend-wrong"></span> Incorrect</div>
+  <div class="legend-item"><span class="legend-box legend-orange"></span> Type mal placé</div>
+  <div class="legend-item"><span class="legend-box legend-up"></span> Plus grand</div>
+  <div class="legend-item"><span class="legend-box legend-down"></span> Plus petit</div>
 </div>
 
-
-  <button id="replayBtn">Rejouer</button>
+<button id="replayBtn">Rejouer</button>
 </div>
 
 <script>
+// === VARIABLES ET UTILITAIRES ===
+
 const pokemons = [
   {
     "numero": "1",
@@ -13119,13 +13210,10 @@ const pokemons = [
   }
 ];
 
-// === Utilitaire pour enlever les accents ===
-function normalize(str){
-  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-}
 
+
+let filteredPokemons = pokemons;
 let selectedPokemon = pokemons[Math.floor(Math.random()*pokemons.length)];
-console.log("Pokémon choisi (réponse):", selectedPokemon.nom); // 🔥 Debug
 let attempts = [];
 let selectedIndex = -1;
 
@@ -13136,179 +13224,145 @@ const tbody = document.querySelector("#attemptsTable tbody");
 const victoryScreen = document.getElementById('victoryScreen');
 const victoryImage = document.getElementById('victoryImage');
 const replayBtn = document.getElementById('replayBtn');
+const genButton = document.getElementById('genButton');
+const genDropdown = document.getElementById('genDropdown');
+const genCheckboxes = genDropdown.querySelectorAll('input[type=checkbox]');
+const toggleAllBtn = document.getElementById('toggleAllBtn');
+const applyGenBtn = document.getElementById('applyGenBtn');
+const genMenu = document.getElementById('genMenu');
 
+function normalize(str){
+  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
+// === MENU GÉNÉRATIONS ===
+genButton.addEventListener('click', ()=>{ genDropdown.style.display = genDropdown.style.display==='block'?'none':'block'; });
+document.addEventListener('click',(e)=>{ if(!genMenu.contains(e.target)) genDropdown.style.display='none'; });
+toggleAllBtn.addEventListener('click', ()=>{
+  const allChecked = Array.from(genCheckboxes).every(cb=>cb.checked);
+  genCheckboxes.forEach(cb=>cb.checked=!allChecked);
+  toggleAllBtn.textContent = allChecked ? "Tout sélectionner" : "Tout désélectionner";
+});
+applyGenBtn.addEventListener('click', ()=>{
+  const selectedGens = Array.from(genCheckboxes).filter(cb=>cb.checked).map(cb=>cb.value);
+  filteredPokemons = pokemons.filter(p=>selectedGens.includes(p.generation));
+  if(filteredPokemons.length===0){ feedbackDiv.textContent="Aucun Pokémon disponible."; return; }
+  startNewGame(); genDropdown.style.display='none';
+});
+
+// === COMPARAISON ===
 function comparePokemonGuess(guess, target){
   const result = {};
-
-  // type1
-  if(guess.type1 === target.type1){
-    result.type1 = "green";
-  } else if(guess.type1 && (guess.type1 === target.type2)){
-    result.type1 = "orange"; // correspond à l'autre type
-  } else {
-    result.type1 = "red";
-  }
-
-  // type2
-  if(guess.type2 === target.type2){
-    result.type2 = "green";
-  } else if(guess.type2 && (guess.type2 === target.type1)){
-    result.type2 = "orange"; // correspond à l'autre type
-  } else {
-    result.type2 = "red";
-  }
-
-  // couleur
-  result.couleur = guess.couleur === target.couleur ? "green" : "red";
-
-  // évolution avec flèche
-  if(guess.evolution === target.evolution){
-    result.evolution = "green";
-  } else if(guess.evolution < target.evolution){
-    result.evolution = "up";
-  } else {
-    result.evolution = "down";
-  }
-
-  // génération avec flèche
-  if(guess.generation === target.generation){
-    result.generation = "green";
-  } else if(guess.generation < target.generation){
-    result.generation = "up";
-  } else {
-    result.generation = "down";
-  }
-
-  // taille et poids
-  const tailleGuess = parseFloat(guess.taille);
-  const tailleTarget = parseFloat(target.taille);
-  const poidsGuess = parseFloat(guess.poids);
-  const poidsTarget = parseFloat(target.poids);
-
-  result.taille = tailleGuess === tailleTarget ? "green" :
-                  (tailleGuess < tailleTarget ? "up" : "down");
-  result.poids = poidsGuess === poidsTarget ? "green" :
-                (poidsGuess < poidsTarget ? "up" : "down");
-
+  result.type1 = guess.type1===target.type1 ? "green" : guess.type1===target.type2 ? "orange" : "red";
+  result.type2 = guess.type2===target.type2 ? "green" : guess.type2===target.type1 ? "orange" : "red";
+  result.couleur = guess.couleur===target.couleur ? "green" : "red";
+  result.evolution = guess.evolution===target.evolution ? "green" : guess.evolution<target.evolution ? "up" : "down";
+  result.generation = guess.generation===target.generation ? "green" : guess.generation<target.generation ? "up" : "down";
+  const tailleGuess = parseFloat(guess.taille), tailleTarget = parseFloat(target.taille);
+  const poidsGuess = parseFloat(guess.poids), poidsTarget = parseFloat(target.poids);
+  result.taille = tailleGuess===tailleTarget ? "green" : tailleGuess<tailleTarget ? "up" : "down";
+  result.poids = poidsGuess===poidsTarget ? "green" : poidsGuess<poidsTarget ? "up" : "down";
   return result;
 }
 
-
+// === RENDER ESSAI ===
 function renderAttempt(guess){
-  // Afficher le tableau et la légende si c'est le premier essai
-  if(attempts.length === 1){
-    document.getElementById('attemptsTable').style.display = "table";
-    document.getElementById('legend').style.display = "flex";
-  }
-
-  const row = document.createElement("tr");
-  const comparison = comparePokemonGuess(guess, selectedPokemon);
-
-  const cells = [
-    {value:`<img class="pokemon-img" src="${guess.image_path}" alt="${guess.nom}">${guess.nom}`, color:"white"},
-    {value:guess.type1, color:comparison.type1},
-    {value:guess.type2||"-", color:comparison.type2},
-    {value:guess.couleur, color:comparison.couleur},
-    {value:guess.evolution, color:comparison.evolution},
-    {value:guess.generation, color:comparison.generation},
-    {value:guess.taille, color:comparison.taille},
-    {value:guess.poids, color:comparison.poids}
+  if(attempts.length===1){ document.getElementById('attemptsTable').style.display="table"; document.getElementById('legend').style.display="flex"; }
+  const row=document.createElement("tr");
+  const cmp=comparePokemonGuess(guess,selectedPokemon);
+  const cells=[
+    {value:`<img class="pokemon-img" src="${guess.image_path}" alt="${guess.nom}">${guess.nom}`,color:"white"},
+    {value:guess.type1,color:cmp.type1},
+    {value:guess.type2||"-",color:cmp.type2},
+    {value:guess.couleur,color:cmp.couleur},
+    {value:guess.evolution,color:cmp.evolution},
+    {value:guess.generation,color:cmp.generation},
+    {value:guess.taille,color:cmp.taille},
+    {value:guess.poids,color:cmp.poids}
   ];
-
   cells.forEach(()=>row.appendChild(document.createElement("td")));
-  tbody.insertBefore(row, tbody.firstChild);
-
+  tbody.insertBefore(row,tbody.firstChild);
   cells.forEach((cell,i)=>{
     setTimeout(()=>{
-      const td = row.children[i];
+      const td=row.children[i];
       td.classList.add("flip");
+      td.setAttribute("data-label", ["Nom","Type 1","Type 2","Couleur","Évolution","Génération","Taille","Poids"][i]);
       setTimeout(()=>{
-        td.innerHTML = cell.value;
-        // gestion couleurs et flèches comme avant
-        if(i===4||i===5||i===6||i===7){
-          if(cell.color==="green"){ td.className="green"; td.style.backgroundImage="none"; }
-          else{
-            td.style.backgroundImage = cell.color==="up"?"url('images_onepiece/arrow-up.png')":cell.color==="down"?"url('images_onepiece/arrow-down.png')":"none";
-            td.style.backgroundRepeat="no-repeat"; td.style.backgroundPosition="center"; td.style.backgroundSize="100% 100%";
-          }
-          td.style.color="white"; td.style.fontWeight="bold";
-        } else { td.className = cell.color; td.style.backgroundImage="none"; }
+        td.innerHTML=`<span class="value">${cell.value}</span>`;
+        if(["up","down"].includes(cell.color)){
+          td.style.backgroundImage=`url('images_onepiece/arrow-${cell.color}.png')`;
+          td.style.backgroundRepeat="no-repeat";
+          td.style.backgroundPosition="center";
+          td.style.backgroundSize="100% 100%";
+        } else td.className=cell.color;
         td.classList.remove("flip");
       },200);
     },i*150);
   });
 }
 
-
-// === Suggestions dynamiques ===
-input.addEventListener('input', ()=>{
+// === SUGGESTIONS DYNAMIQUES ===
+input.addEventListener('input',()=>{
   const query = normalize(input.value.trim());
   selectedIndex = -1;
-  if(!query){ suggestionsDiv.style.display="none"; return; }
+  if(!query){ suggestionsDiv.style.display = "none"; return; }
 
-  const startsWith = pokemons.filter(
-    p => normalize(p.nom).startsWith(query) && !attempts.some(a=>a.nom===p.nom)
-  );
-  const contains = pokemons.filter(
-    p => normalize(p.nom).includes(query) && !normalize(p.nom).startsWith(query) && !attempts.some(a=>a.nom===p.nom)
-  );
+  const starts = filteredPokemons.filter(p => normalize(p.nom).startsWith(query) && !attempts.some(a => a.nom === p.nom));
+  const contains = filteredPokemons.filter(p => normalize(p.nom).includes(query) && !normalize(p.nom).startsWith(query) && !attempts.some(a => a.nom === p.nom));
+  const filtered = [...starts, ...contains].slice(0, 1000);
 
-  // On met ceux qui commencent d'abord, puis ceux qui contiennent
-  const filtered = [...startsWith, ...contains].slice(0, 1000);
-
-  suggestionsDiv.innerHTML="";
-  filtered.forEach(p=>{
+  suggestionsDiv.innerHTML = "";
+  filtered.forEach(p => {
     const div = document.createElement("div");
-    div.className="suggestion-item";
-    div.innerHTML = `<img class="pokemon-img" src="${p.image_path}" alt="${p.nom}"> ${p.nom}`;
-    div.addEventListener('click', ()=>handleGuess(p.nom));
+    div.className = "suggestion-item";
+    div.innerHTML = `<img class="pokemon-img" src="${p.image_path}" alt="${p.nom}">${p.nom}`;
+    div.addEventListener('click', () => handleGuess(p.nom));
     suggestionsDiv.appendChild(div);
   });
 
-  suggestionsDiv.style.display = filtered.length>0?"block":"none";
-  suggestionsDiv.scrollTop = 0;
+  suggestionsDiv.style.display = filtered.length > 0 ? "block" : "none";
+  if (filtered.length > 0) suggestionsDiv.scrollTop = 0;
 });
 
-// === Navigation clavier ===
-input.addEventListener('keydown', (e)=>{
-  const items = suggestionsDiv.querySelectorAll('.suggestion-item');
-  if(items.length===0) return;
-
-  if(e.key==='ArrowDown'){ e.preventDefault(); selectedIndex=(selectedIndex+1)%items.length; updateSelection(items); }
-  if(e.key==='ArrowUp'){ e.preventDefault(); selectedIndex=(selectedIndex-1+items.length)%items.length; updateSelection(items); }
-  if(e.key==='Enter'){ e.preventDefault(); if(selectedIndex>=0 && selectedIndex<items.length) items[selectedIndex].click(); else handleGuess(input.value); }
+// === NAVIGATION CLAVIER ===
+input.addEventListener('keydown',(e)=>{
+  const items=suggestionsDiv.querySelectorAll('.suggestion-item');
+  if(items.length===0)return;
+  if(e.key==='ArrowDown'){e.preventDefault();selectedIndex=(selectedIndex+1)%items.length;updateSelection(items);}
+  if(e.key==='ArrowUp'){e.preventDefault();selectedIndex=(selectedIndex-1+items.length)%items.length;updateSelection(items);}
+  if(e.key==='Enter'){e.preventDefault();if(selectedIndex>=0)items[selectedIndex].click();else handleGuess(input.value);}
 });
+function updateSelection(items){ items.forEach((item,i)=>item.classList.toggle('selected',i===selectedIndex)); }
 
-function updateSelection(items){
-  items.forEach((item,i)=>{
-    if(i===selectedIndex) item.classList.add('selected');
-    else item.classList.remove('selected');
-  });
-}
-
+// === GESTION TENTATIVE ===
 function handleGuess(nom){
-  const guess = pokemons.find(p=>normalize(p.nom)===normalize(nom));
-  if(!guess){ feedbackDiv.textContent="Pokémon non trouvé !"; return; }
+  const guess=filteredPokemons.find(p=>normalize(p.nom)===normalize(nom));
+  if(!guess){feedbackDiv.textContent="Pokémon non trouvé !";return;}
   feedbackDiv.textContent=""; attempts.push(guess);
   renderAttempt(guess); suggestionsDiv.style.display="none"; input.value="";
-
   if(guess.nom===selectedPokemon.nom){
-    input.style.display="none"; suggestionsDiv.style.display="none";
-    victoryImage.src = selectedPokemon.image_path; victoryScreen.style.display="block";
+    input.style.display="none";
+    suggestionsDiv.style.display="none";
+    victoryImage.src=selectedPokemon.image_path;
+    victoryScreen.style.display="block";
     replayBtn.style.display="inline-block";
-    document.activeElement.blur();
   }
 }
 
-// === Rejouer ===
-replayBtn.addEventListener('click', ()=>{
-  selectedPokemon = pokemons[Math.floor(Math.random()*pokemons.length)];
-  console.log("Nouveau Pokémon choisi (réponse):", selectedPokemon.nom); // 🔥 Debug
+// === NOUVELLE PARTIE ===
+function startNewGame(){
+  selectedPokemon=filteredPokemons[Math.floor(Math.random()*filteredPokemons.length)];
   attempts=[]; tbody.innerHTML=""; feedbackDiv.textContent="";
   input.disabled=false; input.style.display="block"; input.value="";
   suggestionsDiv.style.display="none"; victoryScreen.style.display="none"; replayBtn.style.display="none";
-});
+  document.getElementById('attemptsTable').style.display="none"; document.getElementById('legend').style.display="none";
+}
+
+// === REJOUER ===
+replayBtn.addEventListener('click',startNewGame);
+
+// === INITIALISATION ===
+startNewGame();
 </script>
 </body>
 </html>
-
