@@ -140,10 +140,24 @@ td.flip { transform: rotateY(90deg); }
 /* === MOBILE / PORTRAIT === */
 @media (max-width: 600px) {
   #game { max-width: 100%; padding: 10px; }
+  
+  /* Barre de recherche agrandie */
   #inputWrapper { width: 100%; }
-  #suggestions { width: 100%; left: 0; }
+  #guessInput {
+    font-size: 20px;
+    padding: 12px;
+  }
+  
+  /* Suggestions agrandies */
+  #suggestions {
+    width: 100%;
+    font-size: 18px;
+  }
+  .suggestion-item { padding: 10px; }
+
   #titreImage { height: 20vh; }
 
+  /* Tableau transformé en cartes verticales */
   #attemptsTable, #attemptsTable thead, #attemptsTable tbody, #attemptsTable tr, #attemptsTable th, #attemptsTable td {
     display: block;
     width: 100%;
@@ -156,10 +170,11 @@ td.flip { transform: rotateY(90deg); }
   }
   #attemptsTable td {
     text-align: left;
-    padding: 4px 0;
+    padding: 6px 0;
     border: none;
     display: flex;
     justify-content: space-between;
+    font-size: 16px;
   }
   #attemptsTable td:before {
     content: attr(data-label);
@@ -170,8 +185,25 @@ td.flip { transform: rotateY(90deg); }
     flex: 1;
     text-align: right;
   }
-  .pokemon-img { width: 30px; height: 30px; margin-right: 4px; }
-  .legend { flex-wrap: wrap; gap: 10px; font-size: 0.9rem; }
+  .pokemon-img { width: 36px; height: 36px; margin-right: 6px; }
+
+  /* Légende adaptative */
+  .legend { flex-wrap: wrap; gap: 10px; font-size: 1rem; }
+
+  /* Menu Générations agrandi */
+  #genButton {
+    font-size: 18px;
+    padding: 12px 16px;
+  }
+  #genDropdown {
+    width: 90vw;  /* quasi toute la largeur de l'écran */
+    padding: 12px;
+  }
+  .gen-option { font-size: 16px; padding: 8px 0; }
+  #toggleAllBtn, #applyGenBtn {
+    font-size: 16px;
+    padding: 10px 12px;
+  }
 }
 </style>
 </head>
