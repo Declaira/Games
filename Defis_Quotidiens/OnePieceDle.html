@@ -70,6 +70,14 @@ h1 {
   margin: 0 auto 15px auto; /* top 0, right auto, bottom 15px, left auto */
 }
 
+.title-with-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px; /* espace entre le texte et le bouton */
+  margin-bottom: 20px;
+}
+
 #modeBtn {
   font-family: 'Pirata One', cursive;
   padding: 8px 18px;
@@ -78,23 +86,20 @@ h1 {
   background: #38d46a;
   color: #fff;
   cursor: pointer;
-  border: 2px solid #fff; /* Ajout d'un contour blanc */
-  transition: background 0.4s cubic-bezier(.4,0,.2,1), transform 0.2s, box-shadow 0.4s;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.18), 0 0 0 4px rgba(255,255,255,0.15); /* Ombre plus forte */
-  z-index: 2; /* S'assure qu'il est au-dessus du fond */
+  border: 2px solid #fff;
+  transition: background 0.4s, transform 0.2s, box-shadow 0.4s;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.18), 0 0 0 4px rgba(255,255,255,0.15);
   position: relative;
 }
+
 #modeBtn.difficile {
   background: red;
-  color: #fff;
   transform: scale(1.07) rotate(-2deg);
-  border-color: #fff;
 }
+
 #modeBtn.facile {
   background: green;
-  color: #fff;
   transform: scale(1.07) rotate(2deg);
-  border-color: #fff;
 }
 .modeBtn-bg {
   background: rgba(0,0,0,0.25);
@@ -418,8 +423,8 @@ td[style*="background:yellow"] {
 </head>
 <body>
     <img id="game-title" src="images_onepiece/titre.png" alt="OnePieceDle - Devinez le personnage One Piece !">
-  <!-- Ton bouton mode comme avant -->
-  <div class="modeBtn-bg">
+  <div class="title-with-button">
+    <p id="gameMessage" class="game-message">Devinez le personnage One Piece !</p>
     <button id="modeBtn">Mode : Facile</button>
   </div>
 
@@ -432,7 +437,6 @@ td[style*="background:yellow"] {
     })();
   </script>
 
-  <p id="gameMessage" class="game-message">Devinez le personnage One Piece !</p>
   <input type="text" id="guessInput" placeholder="Entrez un nom..." autocomplete="off" />
   <div id="suggestions" class="suggestions"></div>
   <p id="feedback"></p>
@@ -447,7 +451,7 @@ td[style*="background:yellow"] {
 
   <div id="attempts"></div>
 <script>
-const data = [
+  const data = [
   {
     "name": "A O",
     "gender": "Masculin",
