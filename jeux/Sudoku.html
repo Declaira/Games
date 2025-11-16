@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Déclaira — Sudoku</title>
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@600&display=swap" rel="stylesheet">
+  <style>
+  body {
+    margin: 0;
+    font-family:'Quicksand',sans-serif;
+    background: linear-gradient(135deg,#fff3cd,#ffe5b4,#ffd1d1,#ffc4e1);
+    color: #2c3e50;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 980px;
+    display: flex;
+    padding-top: 10px;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  header {
+  text-align: center;
+  width: 100%;
+}
+    .controls{display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:center;margin-bottom:16px}
+    select,button{padding:10px 14px;border-radius:10px;border:0;font-weight:600}
+    button{background:#ff6f00;color:#fff;cursor:pointer}
+
+    #timer {
+      background:#ffffff55;
+      padding:8px 14px;
+      border-radius:8px;
+      font-size:1.2rem;
+      font-weight:700;
+      min-width:100px;
+      text-align:center;
+    }
+
+    .game-wrapper{display:flex;flex-direction:column;align-items:center}
+
+    .sudoku{width:480px;height:480px;display:grid;grid-template-columns:repeat(9,1fr);grid-template-rows:repeat(9,1fr);border-radius:12px;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,0.12);}
+    .cell{border:1px solid rgba(0,0,0,.18);position:relative;display:flex;align-items:center;justify-content:center;background:transparent}
+    .cell input{width:100%;height:100%;text-align:center;border:0;background:transparent;font-size:1.6rem;font-weight:700;pointer-events:none}
+
+    .cell.error input {background-color: #ff9999; font-weight: bold;}
+    .prefilled{background:rgba(0,0,0,0.06)}
+
+    .cell:nth-child(3n){border-right:2px solid rgba(0,0,0,0.22)}
+    .cell:nth-child(n+19):nth-child(-n+27), .cell:nth-child(n+46):nth-child(-n+54), .cell:nth-child(n+73):nth-child(-n+81){border-bottom:2px solid rgba(0,0,0,0.22)}
+
+    .selected{outline:3px solid rgba(255,111,0,0.9)}
+    .highlight-row{background:rgba(0,0,0,0.06)!important}
+    .highlight-col{background:rgba(0,0,0,0.06)!important}
+    .highlight-box{background:rgba(0,0,0,0.10)!important}
+
+    /* 🔶 Surlignage des chiffres identiques */
+    .highlight-same {background-color: #ffd47a99 !important;}
+
+    .num-pad{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px;justify-content:center}
+    .num-pad button{width:54px;height:52px;border-radius:10px;border:0;background:#ff9a00;color:#fff;font-weight:700;font-size:1.1rem}
+    .num-pad button.zero{background:#d9534f}
+
+    /* Désactivation automatique */
+    .num-pad button.disabled {
+      background: #bbbbbb !important;
+      cursor: not-allowed !important;
+      opacity: 0.6;
+    }
+
+    @media (max-width:540px){.sudoku{width:92vw;height:92vw}.num-pad button{width:10vw;height:10vw}}
+    .pencil-notes{position:absolute;inset:0;pointer-events:none;font-size:0.6rem;display:flex;align-items:flex-start;justify-content:flex-start}
+    .cell.pencil-mode{outline:3px dashed rgba(0,0,0,0.35);}
+    .pencil-notes > div{width:100%;height:100%}
+    #notes-panel button{background:#ffefdc;border:0;border-radius:6px;padding:6px;font-weight:700}
+  </style>
+</head>
+<body>
+  <script src="../header.js"></script>
+  <script>
+    injectHeader({
+      title: "Sudoku",
+      homeLink: "../accueil.html",
+      showHome: true
+    });
+  </script>
+    </script>
+  <div class="container">
+
+    <div class="controls">
+      <label for="difficulty">Difficulté</label>
+      <select id="difficulty">
+        <option value="35">Facile</option>
+        <option value="45" selected>Moyen</option>
+        <option value="55">Difficile</option>
+      </select>
+      <button id="newBtn">Nouvelle grille</button>
+
+      <div id="timer">00:00</div>
+    </div>
+
+    <div class="game-wrapper">
+      <div id="sudoku" class="sudoku"></div>
+
+      <div class="num-pad">
+        <button data-num="1">1</button>
+        <button data-num="2">2</button>
+        <button data-num="3">3</button>
+        <button data-num="4">4</button>
+        <button data-num="5">5</button>
+        <button data-num="6">6</button>
+        <button data-num="7">7</button>
+        <button data-num="8">8</button>
+        <button data-num="9">9</button>
+        <button data-num="0" class="zero"><img src="gomme.png" alt="Gomme" style="width:24px;height:24px;"></button>
+
+      </div>
+    </div>
+  </div>
+
+<script>
+/* ---------------- TIMER ---------------- */
+let timerInterval = null;
+let secondsElapsed = 0;
+
+function startTimer() {
+  clearInterval(timerInterval);
+  secondsElapsed = 0;
+  updateTimerDisplay();
+
+  timerInterval = setInterval(() => {
+    secondsElapsed++;
+    updateTimerDisplay();
+  }, 1000);
+}
+
+function updateTimerDisplay() {
+  const m = String(Math.floor(secondsElapsed / 60)).padStart(2,'0');
+  const s = String(secondsElapsed % 60).padStart(2,'0');
+  document.getElementById("timer").textContent = `${m}:${s}`;
+}
+
+/* ---------------- FONCTIONS SUDOKU ---------------- */
+
+function range(n){return [...Array(n).keys()];}
+function clone(g){return g.map(r=>r.slice());}
+
+function generateSolved(){
+  let g=Array.from({length:9},()=>Array(9).fill(0));
+  function valid(r,c,v){
+    for(let i=0;i<9;i++)
+      if(g[r][i]===v||g[i][c]===v) return false;
+    let br=r-r%3, bc=c-c%3;
+    for(let rr=0;rr<3;rr++)
+      for(let cc=0;cc<3;cc++)
+        if(g[br+rr][bc+cc]===v) return false;
+    return true;
+  }
+  function back(i=0){
+    if(i>=81) return true;
+    let r=Math.floor(i/9), c=i%9;
+    let nums=[1,2,3,4,5,6,7,8,9].sort(()=>Math.random()-0.5);
+    for(let v of nums){
+      if(valid(r,c,v)){
+        g[r][c]=v;
+        if(back(i+1)) return true;
+        g[r][c]=0;
+      }
+    }
+    return false;
+  }
+  back();
+  return g;
+}
+
+function makePuzzle(sol,empty){
+  let p=clone(sol);
+  let cells=range(81).sort(()=>Math.random()-0.5);
+  let removed=0;
+  for(let idx of cells){
+    if(removed>=empty) break;
+    let r=Math.floor(idx/9), c=idx%9;
+    if(p[r][c]===0) continue;
+    p[r][c]=0;
+    removed++;
+  }
+  return p;
+}
+
+let solution=null, puzzle=null, state=null;
+let selected=null;
+
+// Notes structure: for each cell a Set of pencil marks (1-9)
+let notes = Array.from({length:9},()=>Array.from({length:9},()=>new Set()));
+let pencilMode = false; // true when a cell was selected with right-click to edit notes
+
+const gridEl=document.getElementById('sudoku');
+
+function buildGrid(){
+  gridEl.innerHTML='';
+  for(let r=0;r<9;r++) for(let c=0;c<9;c++){
+    const cell=document.createElement('div');
+    cell.className='cell';
+    cell.dataset.r=r;
+    cell.dataset.c=c;
+    cell.id=`cell-${r}-${c}`;
+
+    const inp=document.createElement('input');
+    inp.className='value';
+    inp.maxLength=1;
+
+    // container for pencil marks
+    const notesEl = document.createElement('div');
+    notesEl.className = 'pencil-notes';
+    cell.appendChild(notesEl);
+
+    cell.appendChild(inp);
+    gridEl.appendChild(cell);
+    
+    cell.addEventListener('click',()=>selectCell(cell));
+    // Right-click selects cell and enters pencil/notes mode (keyboard and num-pad toggle notes)
+    cell.addEventListener('contextmenu',(e)=>{
+      e.preventDefault();
+      selectCell(cell);
+      enterPencilMode(+cell.dataset.r, +cell.dataset.c);
+    });
+  }
+}
+
+function enterPencilMode(r,c){
+  pencilMode = true;
+  document.querySelectorAll('.cell.pencil-mode').forEach(el=>el.classList.remove('pencil-mode'));
+  const cell = document.getElementById(`cell-${r}-${c}`);
+  if(cell) cell.classList.add('pencil-mode');
+}
+
+function exitPencilMode(){
+  pencilMode = false;
+  document.querySelectorAll('.cell.pencil-mode').forEach(el=>el.classList.remove('pencil-mode'));
+  notesPanel.style.display = 'none';
+}
+
+// Create a floating notes panel (built once)
+const notesPanel = document.createElement('div');
+notesPanel.id = 'notes-panel';
+notesPanel.style.position = 'fixed';
+notesPanel.style.zIndex = 9999;
+notesPanel.style.display = 'none';
+notesPanel.style.background = 'white';
+notesPanel.style.padding = '8px';
+notesPanel.style.border = '1px solid rgba(0,0,0,0.12)';
+notesPanel.style.borderRadius = '8px';
+notesPanel.style.boxShadow = '0 6px 20px rgba(0,0,0,0.12)';
+notesPanel.style.userSelect='none';
+document.body.appendChild(notesPanel);
+
+function buildNotesPanel(){
+  notesPanel.innerHTML='';
+  const info = document.createElement('div');
+  info.style.display='grid';
+  info.style.gridTemplateColumns='repeat(3,36px)';
+  info.style.gap='6px';
+
+  for(let n=1;n<=9;n++){
+    const b = document.createElement('button');
+    b.textContent = n;
+    b.style.width='36px';
+    b.style.height='36px';
+    b.style.borderRadius='6px';
+    b.style.border='0';
+    b.style.cursor='pointer';
+    b.dataset.num = n;
+    b.addEventListener('click', (e)=>{
+      const r = +notesPanel.dataset.r, c = +notesPanel.dataset.c;
+      toggleNote(r,c,+b.dataset.num);
+      renderNotesForCell(r,c);
+    });
+    info.appendChild(b);
+  }
+
+  const clr = document.createElement('button');
+  clr.textContent='Effacer';
+  clr.style.gridColumn = '1 / -1';
+  clr.style.marginTop = '6px';
+  clr.addEventListener('click',()=>{
+    const r = +notesPanel.dataset.r, c = +notesPanel.dataset.c;
+    notes[r][c].clear();
+    renderNotesForCell(r,c);
+  });
+
+  notesPanel.appendChild(info);
+  notesPanel.appendChild(clr);
+}
+
+buildNotesPanel();
+
+function openNotesPanel(x,y,r,c){
+  if(puzzle && puzzle[r][c]) return; // don't allow notes on prefilled
+  notesPanel.style.left = x + 'px';
+  notesPanel.style.top = y + 'px';
+  notesPanel.dataset.r = r;
+  notesPanel.dataset.c = c;
+  notesPanel.style.display = 'block';
+}
+
+// Close panel when clicking elsewhere
+document.addEventListener('click',(e)=>{
+  if(!notesPanel.contains(e.target)) notesPanel.style.display='none';
+});
+
+function toggleNote(r,c,n){
+  const s = notes[r][c];
+  if(s.has(n)) s.delete(n); else s.add(n);
+}
+
+function renderNotesForCell(r,c){
+  const cell = document.getElementById(`cell-${r}-${c}`);
+  const notesEl = cell.querySelector('.pencil-notes');
+  notesEl.innerHTML='';
+  if(state[r][c]) return; // don't show notes if a value is set
+
+  // arrange in 3x3 grid
+  const arr = Array.from({length:9},(_,i)=>i+1);
+  const container = document.createElement('div');
+  container.style.display='grid';
+  container.style.gridTemplateColumns='repeat(3,1fr)';
+  container.style.width='100%';
+  container.style.height='100%';
+  container.style.fontSize='0.6rem';
+  container.style.lineHeight='1';
+  container.style.color='rgba(0,0,0,0.6)';
+  container.style.padding='6px';
+
+  for(let n of arr){
+    const sp = document.createElement('div');
+    sp.style.display='flex';
+    sp.style.alignItems='center';
+    sp.style.justifyContent='center';
+    sp.textContent = notes[r][c].has(n)? n : '';
+    container.appendChild(sp);
+  }
+
+  notesEl.appendChild(container);
+}
+
+/* ---------------- Surlignage des chiffres identiques ---------------- */
+function highlightSameNumbers(val){
+  document.querySelectorAll('.cell').forEach(cell=>{
+    cell.classList.remove('highlight-same');
+    const v = cell.querySelector('input').value;
+    if(v && v == val) cell.classList.add('highlight-same');
+  });
+}
+
+/* ---------------- Sélection de case ---------------- */
+function selectCell(cell){
+  document.querySelectorAll('.cell.selected').forEach(el=>el.classList.remove('selected'));
+  selected=cell;
+  cell.classList.add('selected');
+  // selecting a cell via left-click exits pencil mode
+  exitPencilMode();
+
+  const v = cell.querySelector('input').value;
+  if(v) highlightSameNumbers(v);
+  else highlightSameNumbers(null);
+}
+
+function highlightErrors() {
+  let full = true;
+  document.querySelectorAll('.cell').forEach(cell => {
+    cell.classList.remove('error');
+    const r=+cell.dataset.r, c=+cell.dataset.c;
+    const val=+cell.querySelector('input').value;
+    if (!val) full = false;
+    else if (solution[r][c] !== val) cell.classList.add('error');
+  });
+  return full;
+}
+
+/* ---------- Mise à jour des boutons 1–9 ---------- */
+function updateNumPad(){
+  for(let n=1; n<=9; n++){
+    const btn=document.querySelector(`.num-pad button[data-num="${n}"]`);
+    let count=0;
+
+    for(let r=0; r<9; r++){
+      for(let c=0; c<9; c++){
+        if(state[r][c] === n) count++;
+      }
+    }
+
+    if(count >= 9){
+      btn.classList.add("disabled");
+      btn.disabled = true;
+    } else {
+      btn.classList.remove("disabled");
+      btn.disabled = false;
+    }
+  }
+}
+
+/* ---------- Placer un nombre ---------- */
+function placeNumber(n){
+  if(!selected) return;
+  const r=+selected.dataset.r, c=+selected.dataset.c;
+  if(puzzle[r][c]) return;
+
+  const inp=selected.querySelector('input');
+
+  if(n===0){
+    state[r][c]=0;
+    inp.value='';
+    highlightSameNumbers(null);
+  } else {
+    state[r][c]=n;
+    inp.value=n;
+    highlightSameNumbers(n);
+    // remove pencil notes for this cell when a definitive number is placed
+    notes[r][c].clear();
+    renderNotesForCell(r,c);
+  }
+
+  // placing a definitive number exits pencil mode
+  exitPencilMode();
+
+  updateNumPad();
+
+  const full=highlightErrors();
+  if(full){
+    const err=document.querySelectorAll('.cell.error').length;
+    if(err===0){
+      clearInterval(timerInterval);
+      alert('Bravo ! Grille correcte.');
+    } else {
+      alert(`Il y a ${err} erreurs dans la grille.`);
+    }
+  }
+}
+
+/* ---------- Gestion clavier ---------- */
+document.addEventListener('keydown',(e)=>{
+  if(!selected) return;
+  const key=e.key;
+
+  // When in pencil/notes mode (activated by right-click), number keys toggle notes
+  if(pencilMode){
+    if(key>='1'&&key<='9'){
+      e.preventDefault();
+      const n = +key;
+      const r=+selected.dataset.r, c=+selected.dataset.c;
+      toggleNote(r,c,n);
+      renderNotesForCell(r,c);
+      return;
+    }
+    if(key==='0'||key==='Backspace'||key==='Delete'){
+      e.preventDefault();
+      const r=+selected.dataset.r, c=+selected.dataset.c;
+      notes[r][c].clear();
+      renderNotesForCell(r,c);
+      return;
+    }
+    if(key==='Escape'){
+      // exit pencil mode
+      exitPencilMode();
+      return;
+    }
+  } else {
+    if(key>='1'&&key<='9'){e.preventDefault(); placeNumber(+key);}
+    if(key==='0'||key==='Backspace'||key==='Delete'){e.preventDefault(); placeNumber(0);}    
+  }
+
+  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(key)){
+    e.preventDefault();
+    const r=+selected.dataset.r, c=+selected.dataset.c;
+    const moves={ArrowUp:[-1,0],ArrowDown:[1,0],ArrowLeft:[0,-1],ArrowRight:[0,1]};
+    const [dr,dc]=moves[key];
+    const nr=(r+dr+9)%9, nc=(c+dc+9)%9;
+    selectCell(document.getElementById(`cell-${nr}-${nc}`));
+    // keep pencil mode active when navigating if it was active
+    if(pencilMode) enterPencilMode(nr,nc);
+  }
+});
+
+/* ---------- Pavé numérique ---------- */
+document.addEventListener('click',(e)=>{
+  const btn=e.target.closest('.num-pad button');
+  if(!btn) return;
+  // if we're in pencil mode, toggle notes instead of placing a definitive number
+  if(pencilMode && selected){
+    const r=+selected.dataset.r, c=+selected.dataset.c;
+    const n = +btn.dataset.num;
+    if(n===0){ notes[r][c].clear(); renderNotesForCell(r,c); }
+    else { toggleNote(r,c,n); renderNotesForCell(r,c); }
+  } else {
+    placeNumber(+btn.dataset.num);
+  }
+});
+
+/* ---------- Nouvelle grille ---------- */
+function newPuzzle(){
+  const empty=+document.getElementById('difficulty').value;
+  solution=generateSolved();
+  puzzle=makePuzzle(solution, empty);
+  state=clone(puzzle);
+  // reset notes
+  notes = Array.from({length:9},()=>Array.from({length:9},()=>new Set()));
+  exitPencilMode();
+
+  document.querySelectorAll('.cell').forEach(cell=>{
+    const r=+cell.dataset.r, c=+cell.dataset.c;
+    const v=puzzle[r][c];
+    const inp=cell.querySelector('input');
+    inp.value=v||'';
+    inp.disabled=!!v;
+    cell.classList.toggle('prefilled',!!v);
+    renderNotesForCell(r,c);
+  });
+
+  updateNumPad();
+  highlightSameNumbers(null);
+  startTimer();
+}
+
+buildGrid();
+newPuzzle();
+
+document.getElementById('newBtn').addEventListener('click',newPuzzle);
+</script>
+</body>
+</html>
