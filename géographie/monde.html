@@ -14,6 +14,45 @@ body {
   padding: 0;
 }
 
+/* Styles pour le panneau de sélection des continents */
+#continent-selector {
+  background: transparent !important;
+  border: none !important;
+  padding: 6px 0 0 0 !important;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+#continent-selector .continent-checkbox {
+  margin: 0;
+  margin-left: 8px;
+}
+#continent-selector label {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  font-size: 14px;
+  margin: 0;
+  width: 250px;
+}
+#continent-selector label span {
+  min-width: 170px;
+}
+
+#toggle-continents {
+  display: inline-block;
+  margin-bottom: 6px;
+  padding: 6px 10px;
+  font-size: 13px;
+  border-radius: 6px;
+  border: 1px solid rgba(0,0,0,0.08);
+  background: transparent;
+  cursor: pointer;
+  color: #000;
+  font-weight: 600;
+}
+#toggle-continents:hover { opacity: 0.95 }
+
 .container {
   display: flex;
   flex-wrap: wrap;
@@ -143,13 +182,30 @@ path.incorrect {
   <audio id="audio-correct" src="correct.mp3"></audio><audio id="audio-wrong" src="wrong.mp3"></audio>
   <div class="container">
     <div class="quiz-section">
+      <button id="toggle-continents" onclick="toggleContinentSelector()">Cacher sélection</button>
+      <div id="continent-selector" style="text-align:left; margin-bottom:10px; padding:6px 0;">
+        <strong>Choisir les continents :</strong>
+        <div style="font-size:13px; margin-top:6px;">
+          <label><span>Tous</span><input class="continent-checkbox" id="continent-all" type="checkbox" value="All" checked></label>
+          <label><span>Afrique</span><input class="continent-checkbox" type="checkbox" value="Africa" checked></label>
+          <label><span>Asie</span><input class="continent-checkbox" type="checkbox" value="Asia" checked></label>
+          <label><span>Europe</span><input class="continent-checkbox" type="checkbox" value="Europe" checked></label>
+          <label><span>Amérique du Nord</span><input class="continent-checkbox" type="checkbox" value="North America" checked></label>
+          <label><span>Amérique du Sud</span><input class="continent-checkbox" type="checkbox" value="South America" checked></label>
+          <label><span>Océanie</span><input class="continent-checkbox" type="checkbox" value="Oceania" checked></label>
+        </div>
+        <div style="margin-top:8px; display:flex; gap:8px; align-items:center">
+          <button onclick="applyContinentFilter()">Appliquer</button>
+          <span id="selected-preview" style="font-size:13px; color:#333">Pays sélectionnés : <span id="preview-count">196</span></span>
+        </div>
+      </div>
       <p id="country-display" style="font-weight: bold; font-size: 20px; color: #2c3e50;"></p>
       <img id="flag" src="" alt="Drapeau du pays">
       <input type="text" id="country" placeholder="Nom du pays">
       <input type="text" id="capital" placeholder="Capitale">
-      <button onclick="checkCountryAnswer()">Valider</button>
+      <button id="validate-btn" onclick="checkCountryAnswer()">Valider</button>
       <p id="result"></p>
-      <p>Score : <span id="score" style="font-weight: bold; font-size: 20px; color: #2c3e50;">0</span> /196</p>
+      <p>Score : <span id="score" style="font-weight: bold; font-size: 20px; color: #2c3e50;">0</span> / <span id="total-count">196</span></p>
       <button id="replay" style="display: none;" onclick="location.reload()">🔁 Rejouer</button>
     </div>
   <div class="zoom-wrapper" id="zoomContainer">
@@ -985,20 +1041,32 @@ path.incorrect {
   { id: "ZW", name: "Zimbabwe", capital: "Harare", flag: "https://flagcdn.com/zw.svg" },
 ];
 
-let remainingCountries = [...allCountries]; // Copie de travail
+// Mapping séparé code-pays -> continent (utilisé pour enrichir `allCountries` à l'exécution)
+const continentMap = {
+  AF: 'Asia', AL: 'Europe', DZ: 'Africa', AD: 'Europe', AO: 'Africa', AG: 'North America', AR: 'South America', AM: 'Asia', AU: 'Oceania', AT: 'Europe', AZ: 'Asia', BS: 'North America', BH: 'Asia', BD: 'Asia', BB: 'North America', BY: 'Europe', BE: 'Europe', BZ: 'North America', BJ: 'Africa', BT: 'Asia', BO: 'South America', BA: 'Europe', BW: 'Africa', BR: 'South America', BN: 'Asia', BG: 'Europe', BF: 'Africa', BI: 'Africa', CV: 'Africa', KH: 'Asia', CM: 'Africa', CA: 'North America', CF: 'Africa', TD: 'Africa', CL: 'South America', CN: 'Asia', CO: 'South America', KM: 'Africa', CG: 'Africa', CD: 'Africa', CR: 'North America', CI: 'Africa', HR: 'Europe', CU: 'North America', CY: 'Asia', CZ: 'Europe', DK: 'Europe', DJ: 'Africa', DM: 'North America', DO: 'North America', EC: 'South America', EG: 'Africa', SV: 'North America', GQ: 'Africa', ER: 'Africa', EE: 'Europe', SZ: 'Africa', ET: 'Africa', FJ: 'Oceania', FI: 'Europe', FR: 'Europe', GA: 'Africa', GM: 'Africa', GE: 'Asia', DE: 'Europe', GH: 'Africa', GR: 'Europe', GD: 'North America', GT: 'North America', GN: 'Africa', GW: 'Africa', GY: 'South America', HT: 'North America', HN: 'North America', HU: 'Europe', IS: 'Europe', IN: 'Asia', ID: 'Asia', IR: 'Asia', IQ: 'Asia', IE: 'Europe', IL: 'Asia', IT: 'Europe', JM: 'North America', JP: 'Asia', JO: 'Asia', KZ: 'Asia', KE: 'Africa', KI: 'Oceania', KW: 'Asia', KG: 'Asia', LA: 'Asia', LV: 'Europe', LB: 'Asia', LS: 'Africa', LR: 'Africa', LY: 'Africa', LI: 'Europe', LT: 'Europe', LU: 'Europe', MG: 'Africa', MW: 'Africa', MY: 'Asia', MV: 'Asia', ML: 'Africa', MT: 'Europe', MH: 'Oceania', MR: 'Africa', MU: 'Africa', MX: 'North America', FM: 'Oceania', MD: 'Europe', MC: 'Europe', MN: 'Asia', ME: 'Europe', MA: 'Africa', MZ: 'Africa', MM: 'Asia', NA: 'Africa', NR: 'Oceania', NP: 'Asia', NL: 'Europe', NZ: 'Oceania', NI: 'North America', NE: 'Africa', NG: 'Africa', KP: 'Asia', MK: 'Europe', NO: 'Europe', OM: 'Asia', PK: 'Asia', PW: 'Oceania', PS: 'Asia', PA: 'North America', PG: 'Oceania', PY: 'South America', PE: 'South America', PH: 'Asia', PL: 'Europe', PT: 'Europe', QA: 'Asia', RO: 'Europe', RU: 'Europe', RW: 'Africa', KN: 'North America', LC: 'North America', VC: 'North America', WS: 'Oceania', SM: 'Europe', ST: 'Africa', SA: 'Asia', SN: 'Africa', RS: 'Europe', SC: 'Africa', SL: 'Africa', SG: 'Asia', SK: 'Europe', SI: 'Europe', SB: 'Oceania', SO: 'Africa', ZA: 'Africa', KR: 'Asia', SS: 'Africa', ES: 'Europe', LK: 'Asia', SD: 'Africa', SR: 'South America', SE: 'Europe', CH: 'Europe', SY: 'Asia', TJ: 'Asia', TW: 'Asia', TZ: 'Africa', TH: 'Asia', TL: 'Asia', TG: 'Africa', TO: 'Oceania', TT: 'North America', TN: 'Africa', TR: 'Asia', TM: 'Asia', TV: 'Oceania', UG: 'Africa', UA: 'Europe', AE: 'Asia', GB: 'Europe', US: 'North America', UY: 'South America', UZ: 'Asia', VU: 'Oceania', VA: 'Europe', VE: 'South America', VN: 'Asia', YE: 'Asia', ZM: 'Africa', ZW: 'Africa'
+};
+
+// Enrichit `allCountries` avec `continent` quand il manque
+allCountries.forEach(c => {
+  if (!c.continent) c.continent = continentMap[c.id] || 'Unknown';
+});
+
+let remainingCountries = []; // initialisé via le filtre de continents
 let current = {};
 let score = 0;
+let totalToGuess = 0; // nombre de pays dans la session filtrée
 
 function getRandomCountry() {
   if (remainingCountries.length === 0) {
     document.getElementById("country-display").textContent = "✔️ Terminé !";
-    document.getElementById("result").textContent = `🎉 Quiz terminé ! Score final : ${score}/${allCountries.length}`;
+    const total = totalToGuess || allCountries.length;
+    document.getElementById("result").textContent = `🎉 Quiz terminé ! Score final : ${score}/${total}`;
 
     // Masquer les champs et le bouton
     document.getElementById("flag").style.display = "none";
     document.getElementById("country").style.display = "none";
     document.getElementById("capital").style.display = "none";
-    document.querySelector("button").style.display = "none";
+    document.getElementById('validate-btn').style.display = "none";
     document.getElementById("replay").style.display = "block";
 
   return;
@@ -1029,6 +1097,115 @@ function playSound(resultType) {
   const wrongSound = document.getElementById("audio-wrong");
   if (resultType === "correct") correctSound.play();
   else if (resultType === "incorrect") wrongSound.play();
+}
+
+// Sauvegarde la sélection des continents dans localStorage
+function saveSelection() {
+  const boxes = Array.from(document.querySelectorAll('.continent-checkbox'));
+  const checked = boxes.filter(b => b.checked).map(b => b.value);
+  localStorage.setItem('quizContinents', JSON.stringify(checked));
+}
+
+// Charge la sélection depuis localStorage si présente
+function loadSelection() {
+  try {
+    const raw = localStorage.getItem('quizContinents');
+    if (!raw) return;
+    const checked = JSON.parse(raw);
+    const boxes = Array.from(document.querySelectorAll('.continent-checkbox'));
+    boxes.forEach(b => {
+      b.checked = checked.includes(b.value) || (checked.includes('All') && b.value === 'All');
+    });
+    // If stored checked contains All, ensure all boxes checked
+    if (checked.includes('All')) boxes.forEach(b => b.checked = true);
+  } catch (e) {
+    console.warn('Erreur lecture selection continents', e);
+  }
+}
+
+// Met à jour l'aperçu du nombre de pays sélectionnés (preview)
+function updateSelectedPreview() {
+  const boxes = Array.from(document.querySelectorAll('.continent-checkbox'));
+  const checked = boxes.filter(b => b.checked).map(b => b.value);
+  let count = 0;
+  if (checked.length === 0 || checked.includes('All')) count = allCountries.length;
+  else count = allCountries.filter(c => checked.includes(c.continent)).length;
+  const preview = document.getElementById('preview-count');
+  if (preview) preview.textContent = count;
+  const totalSpan = document.getElementById('total-count');
+  if (totalSpan && (!totalToGuess || totalToGuess === 0)) totalSpan.textContent = count;
+}
+
+// Gestion de la logique "All" vs les autres cases
+function handleContinentCheckboxChange(e) {
+  const boxes = Array.from(document.querySelectorAll('.continent-checkbox'));
+  const allBox = document.getElementById('continent-all');
+  if (e.target.id === 'continent-all') {
+    // cocher/décocher tout
+    boxes.forEach(b => b.checked = allBox.checked);
+  } else {
+    // si une case individuelle est décochée, décocher All
+    const others = boxes.filter(b => b.id !== 'continent-all');
+    const allChecked = others.every(b => b.checked);
+    if (allBox) allBox.checked = allChecked;
+  }
+  updateSelectedPreview();
+  // sauvegarde immédiate pour rester synchronisé
+  saveSelection();
+}
+
+// Basculer l'affichage du panneau de sélection
+function toggleContinentSelector() {
+  const panel = document.getElementById('continent-selector');
+  const btn = document.getElementById('toggle-continents');
+  if (!panel) return;
+  if (panel.style.display === 'none') {
+    panel.style.display = 'block';
+    if (btn) btn.textContent = 'Cacher sélection';
+  } else {
+    panel.style.display = 'none';
+    if (btn) btn.textContent = 'Afficher sélection';
+  }
+}
+
+function applyContinentFilter() {
+  const boxes = Array.from(document.querySelectorAll('#continent-selector input[type=checkbox]'));
+  const checked = boxes.filter(b => b.checked).map(b => b.value);
+
+  // Si 'All' est coché ou rien de spécifié => tout
+  if (checked.length === 0 || checked.includes('All')) {
+    remainingCountries = [...allCountries];
+  } else {
+    remainingCountries = allCountries.filter(c => checked.includes(c.continent));
+  }
+
+  totalToGuess = remainingCountries.length;
+  score = 0;
+  document.getElementById('score').textContent = score;
+  document.getElementById('total-count').textContent = totalToGuess;
+
+  // Met à jour aussi l'aperçu
+  const preview = document.getElementById('preview-count');
+  if (preview) preview.textContent = totalToGuess;
+
+  // Sauvegarde la sélection
+  saveSelection();
+
+  // Cache le panneau de sélection
+  const panel = document.getElementById('continent-selector');
+  if (panel) panel.style.display = 'none';
+  const btn = document.getElementById('toggle-continents');
+  if (btn) btn.textContent = 'Afficher sélection';
+
+  // Réinitialise l'affichage
+  document.getElementById('flag').style.display = 'none';
+  document.getElementById('country').style.display = 'block';
+  document.getElementById('capital').style.display = 'block';
+  const validateBtn = document.getElementById('validate-btn');
+  if (validateBtn) validateBtn.style.display = 'inline-block';
+  document.getElementById('replay').style.display = 'none';
+
+  getRandomCountry();
 }
 
 function normalize(str) {
@@ -1080,8 +1257,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
   countryInput.addEventListener("keydown", handleKey);
   capitalInput.addEventListener("keydown", handleKey);
+  // Initialise la logique du sélecteur de continents
+  const boxes = Array.from(document.querySelectorAll('.continent-checkbox'));
+  boxes.forEach(b => b.addEventListener('change', handleContinentCheckboxChange));
 
-  getRandomCountry();
+  // Charger la sélection précédemment sauvegardée (si présente)
+  loadSelection();
+  // Met à jour l'aperçu dynamique
+  updateSelectedPreview();
+  // Applique le filtre et démarre le quiz
+  applyContinentFilter();
 });
 
 </script>
