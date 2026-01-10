@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panneau d'Administration du Quiz</title>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f4f7f6; color: #333; }
         .container { max-width: 900px; margin: 0 auto; padding: 25px; background-color: #fff; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
@@ -31,38 +29,28 @@
         .control-panel button:hover { background-color: #2980b9; }
         .control-panel button:disabled { background-color: #cccccc; cursor: not-allowed; }
         .quiz-status { font-size: 1.1em; margin-bottom: 15px; color: #555; }
-
         .question-content { margin-top: 15px; font-size: 1.2em; font-weight: bold; color: #34495e; }
         .question-options { list-style: none; padding: 0; margin-top: 10px; }
         .question-options li { background-color: #ecf0f1; padding: 8px 12px; margin-bottom: 5px; border-radius: 4px; }
-
         .responses-list { margin-top: 20px; }
         .response-item { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px dashed #eee; padding: 10px 0; }
         .response-item:last-child { border-bottom: none; }
         .response-item span { flex: 1; margin-right: 15px; }
         .response-item .score-controls { display: flex; align-items: center; }
         .response-item input[type="number"] { width: 60px; padding: 5px; border: 1px solid #ccc; border-radius: 4px; text-align: center; margin-right: 10px; }
-        .response-item .correct-indicator {
-            width: 20px; height: 20px; border-radius: 50%; display: inline-block;
-            margin-left: 10px;
-            vertical-align: middle;
-        }
-        .correct-indicator.true { background-color: #2ecc71; } /* Vert */
-        .correct-indicator.false { background-color: #e74c3c; } /* Rouge */
-        .correct-indicator.pending { background-color: #f39c12; } /* Orange */
-
-
+        .correct-indicator { width: 20px; height: 20px; border-radius: 50%; display: inline-block; margin-left: 10px; vertical-align: middle; }
+        .correct-indicator.true { background-color: #2ecc71; }
+        .correct-indicator.false { background-color: #e74c3c; }
+        .correct-indicator.pending { background-color: #f39c12; }
         .leaderboard-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         .leaderboard-table th, .leaderboard-table td { border: 1px solid #ddd; padding: 10px; text-align: left; }
         .leaderboard-table th { background-color: #e9eef2; color: #333; font-weight: bold; }
         .leaderboard-table tr:nth-child(even) { background-color: #f9f9f9; }
-        .leaderboard-table tr:hover { background-color: #f1f1f1; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Panneau d'Administration du Quiz</h1>
-
         <div class="control-panel">
             <h2>Contrôle du Quiz</h2>
             <div class="quiz-status">
@@ -75,59 +63,52 @@
             <button id="saveScoresBtn" disabled>Enregistrer les Points (Correction)</button>
             <button id="endQuizBtn" disabled>Terminer le Quiz</button>
         </div>
-
         <div class="current-question-display">
             <h2>Question Actuelle</h2>
             <div id="questionContent">Aucune question active.</div>
             <div id="questionOptions"></div>
             <div id="correctAnswerInfo" style="margin-top: 15px; font-weight: bold; color: #27ae60;"></div>
         </div>
-
         <div class="responses-section">
             <h2>Réponses des Participants</h2>
-            <div id="responsesList">
-                <p>Aucune réponse pour le moment.</p>
-            </div>
+            <div id="responsesList"><p>Aucune réponse pour le moment.</p></div>
         </div>
-
         <div class="leaderboard-section">
             <h2>Classement Final</h2>
-            <div id="leaderboard">
-                <p>Le classement sera affiché à la fin du quiz.</p>
-            </div>
+            <div id="leaderboard"><p>Le classement sera affiché à la fin du quiz.</p></div>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-        import { getDatabase, ref, push, set } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
-    
+        import { getDatabase, ref, onValue, set, update, get } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
         const firebaseConfig = {
             apiKey: "AIzaSyB29fMpTwBgsqkjijkNoQJ2kGChSeQDX_w",
             authDomain: "quiz-ea203.firebaseapp.com",
-            databaseURL: "https://quiz-ea203-default-rtdb.europe-west1.firebasedatabase.app", 
+            databaseURL: "https://quiz-ea203-default-rtdb.europe-west1.firebasedatabase.app",
             projectId: "quiz-ea203",
             storageBucket: "quiz-ea203.firebasestorage.app",
             messagingSenderId: "605137421110",
             appId: "1:605137421110:web:289e0876fe06108deaa997",
             measurementId: "G-8JVMQRJTD5"
         };
-    
-        // --- CORRECTION : Initialisation ---
+
+        // Initialisation
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
 
-        // Références aux nœuds de la base de données
-        const controlRef = database.ref('control');
-        const questionsRef = database.ref('questions');
-        const responsesRef = database.ref('responses');
-        const scoresRef = database.ref('scores'); // Pour stocker les scores finaux
+        // Références
+        const controlRef = ref(database, 'control');
+        const questionsRef = ref(database, 'questions');
+        const responsesRef = ref(database, 'responses');
+        const scoresRef = ref(database, 'scores');
 
-        let allQuestions = {}; // Cache pour toutes les questions
+        let allQuestions = {};
         let currentQuizState = { currentQ: 0, questionText: "Bienvenue", showAnswers: false };
-        let participantResponses = {}; // Cache pour les réponses des participants
+        let participantResponses = {};
 
-        // --- Éléments du DOM ---
+        // DOM Elements
         const currentQuizStateElem = document.getElementById('currentQuizState');
         const currentQuestionDisplayElem = document.getElementById('currentQuestionDisplay');
         const questionContentElem = document.getElementById('questionContent');
@@ -142,25 +123,21 @@
         const saveScoresBtn = document.getElementById('saveScoresBtn');
         const endQuizBtn = document.getElementById('endQuizBtn');
 
-        // --- Fonctions de mise à jour de l'UI ---
-
+        // Fonctions UI
         function updateControlPanelButtons() {
             const { currentQ, showAnswers } = currentQuizState;
             const totalQuestions = Object.keys(allQuestions).length;
 
-            startQuizBtn.disabled = !(currentQ === 0 || currentQ === -1); // Active si bienvenue ou fin de quiz
-            nextQuestionBtn.disabled = !(currentQ > 0 && currentQ <= totalQuestions && showAnswers); // Active si correction faite
-            revealAnswersBtn.disabled = !(currentQ > 0 && currentQ <= totalQuestions && !showAnswers); // Active si question en cours, réponses cachées
-            saveScoresBtn.disabled = !(currentQ > 0 && currentQ <= totalQuestions && showAnswers); // Active si réponses révélées
-            endQuizBtn.disabled = !(currentQ === totalQuestions && showAnswers); // Active si toutes questions passées et corrigées
-            // Le bouton nextQuestionBtn gérera aussi la transition "Bienvenue" -> Q1
+            startQuizBtn.disabled = !(currentQ === 0 || currentQ === -1);
+            nextQuestionBtn.disabled = !(currentQ >= 0 && currentQ < totalQuestions && (showAnswers || currentQ === 0));
+            revealAnswersBtn.disabled = !(currentQ > 0 && currentQ <= totalQuestions && !showAnswers);
+            saveScoresBtn.disabled = !(currentQ > 0 && currentQ <= totalQuestions && showAnswers);
+            endQuizBtn.disabled = !(currentQ === totalQuestions && showAnswers);
+
             if (currentQ === 0) {
-                 nextQuestionBtn.textContent = "Démarrer Q1";
-                 nextQuestionBtn.disabled = false; // Permet de passer de bienvenue à Q1
-            } else if (currentQ > 0 && currentQ <= totalQuestions) {
+                nextQuestionBtn.textContent = "Démarrer Q1";
+            } else {
                 nextQuestionBtn.textContent = "Question Suivante";
-            } else if (currentQ === totalQuestions) {
-                nextQuestionBtn.textContent = "Afficher Classement";
             }
         }
 
@@ -173,296 +150,153 @@
             questionOptionsElem.innerHTML = '';
             correctAnswerInfoElem.innerHTML = '';
 
-            if (currentQ > 0 && currentQ <= Object.keys(allQuestions).length) {
-                const qKey = Object.keys(allQuestions)[currentQ - 1]; // Firebase keys are not necessarily q1, q2...
+            const keys = Object.keys(allQuestions);
+            if (currentQ > 0 && currentQ <= keys.length) {
+                const qKey = keys[currentQ - 1];
                 const question = allQuestions[qKey];
                 if (question) {
                     questionContentElem.textContent = `${currentQ}. ${question.text}`;
-
                     if (question.type === "multipleChoice") {
-                        const optionsList = document.createElement('ul');
-                        optionsList.classList.add('question-options');
-                        for (const optKey in question.options) {
+                        const ul = document.createElement('ul');
+                        ul.className = 'question-options';
+                        for (const opt in question.options) {
                             const li = document.createElement('li');
-                            li.textContent = `${optKey.toUpperCase()}: ${question.options[optKey]}`;
-                            optionsList.appendChild(li);
+                            li.textContent = `${opt.toUpperCase()}: ${question.options[opt]}`;
+                            ul.appendChild(li);
                         }
-                        questionOptionsElem.appendChild(optionsList);
-                        if (showAnswers) {
-                            correctAnswerInfoElem.textContent = `Bonne réponse : ${question.correctAnswer.toUpperCase()} (${question.options[question.correctAnswer]})`;
-                        }
-                    } else if (question.type === "textAnswer") {
-                         if (showAnswers) {
-                            correctAnswerInfoElem.textContent = `Bonne réponse attendue : "${question.correctAnswerText}"`;
-                        }
+                        questionOptionsElem.appendChild(ul);
+                        if (showAnswers) correctAnswerInfoElem.textContent = `Bonne réponse : ${question.correctAnswer.toUpperCase()}`;
+                    } else if (question.type === "textAnswer" && showAnswers) {
+                        correctAnswerInfoElem.textContent = `Réponse attendue : ${question.correctAnswerText}`;
                     }
                 }
             } else if (currentQ === -1) {
-                questionContentElem.textContent = "Le quiz est terminé ! Voir le classement ci-dessous.";
+                questionContentElem.textContent = "Quiz terminé !";
             } else {
-                 questionContentElem.textContent = "Bienvenue ! Cliquez sur 'Démarrer le Quiz' pour commencer.";
+                questionContentElem.textContent = "Prêt à démarrer ?";
             }
             updateControlPanelButtons();
         }
 
         function renderResponsesUI() {
-            responsesListElem.innerHTML = ''; // Nettoyer la liste existante
+            responsesListElem.innerHTML = '';
             const { currentQ, showAnswers } = currentQuizState;
-            if (currentQ <= 0 || currentQ > Object.keys(allQuestions).length) {
-                responsesListElem.innerHTML = '<p>Aucune question active pour afficher les réponses.</p>';
+            const keys = Object.keys(allQuestions);
+            
+            if (currentQ <= 0 || currentQ > keys.length) {
+                responsesListElem.innerHTML = '<p>En attente du début...</p>';
                 return;
             }
 
-            const qKey = Object.keys(allQuestions)[currentQ - 1];
+            const qKey = keys[currentQ - 1];
             const currentQuestionData = allQuestions[qKey];
-
             let hasResponses = false;
+
             for (const userId in participantResponses) {
-                if (participantResponses[userId] && participantResponses[userId][qKey]) {
+                if (participantResponses[userId][qKey]) {
                     hasResponses = true;
-                    const response = participantResponses[userId][qKey];
-                    const userName = participantResponses[userId].name || `Joueur ${userId.substring(0, 4)}`; // Assurez-vous d'avoir un nom d'utilisateur si possible
+                    const resp = participantResponses[userId][qKey];
+                    const div = document.createElement('div');
+                    div.className = 'response-item';
+                    div.innerHTML = `<span><strong>${participantResponses[userId].name || userId}</strong>: ${resp.answer}</span>`;
 
-                    const responseItem = document.createElement('div');
-                    responseItem.classList.add('response-item');
+                    const controls = document.createElement('div');
+                    controls.className = 'score-controls';
 
-                    const responseTextSpan = document.createElement('span');
-                    let displayAnswer = response.answer;
-
-                    // Si c'est une question à choix multiple et les réponses sont révélées, affiche l'option complète
-                    if (currentQuestionData.type === "multipleChoice" && showAnswers && currentQuestionData.options) {
-                        displayAnswer = `${response.answer.toUpperCase()} (${currentQuestionData.options[response.answer]})`;
-                    }
-                    responseTextSpan.innerHTML = `<strong>${userName}</strong>: ${displayAnswer}`;
-                    responseItem.appendChild(responseTextSpan);
-
-                    const scoreControls = document.createElement('div');
-                    scoreControls.classList.add('score-controls');
-
-                    const scoreInput = document.createElement('input');
-                    scoreInput.type = "number";
-                    scoreInput.min = "0";
-                    scoreInput.max = "1"; // Par défaut, 0 ou 1 point
-                    scoreInput.value = response.scorePoints !== undefined ? response.scorePoints : 0;
-                    scoreInput.disabled = !showAnswers; // Désactiver l'édition avant la révélation
-
-                    const correctIndicator = document.createElement('span');
-                    correctIndicator.classList.add('correct-indicator');
-                    if (response.isCorrect === true) {
-                        correctIndicator.classList.add('true');
-                    } else if (response.isCorrect === false) {
-                        correctIndicator.classList.add('false');
+                    if (showAnswers) {
+                        if (currentQuestionData.type === "multipleChoice") {
+                            const isCorrect = resp.answer.toLowerCase() === currentQuestionData.correctAnswer.toLowerCase();
+                            resp.isCorrect = isCorrect;
+                            resp.scorePoints = isCorrect ? 1 : 0;
+                            controls.innerHTML = isCorrect ? "✅" : "❌";
+                        } else {
+                            const input = document.createElement('input');
+                            input.type = 'number'; input.value = resp.scorePoints || 0;
+                            input.addEventListener('change', (e) => {
+                                resp.scorePoints = parseInt(e.target.value);
+                                resp.isCorrect = resp.scorePoints > 0;
+                            });
+                            controls.appendChild(input);
+                        }
                     } else {
-                        correctIndicator.classList.add('pending'); // Orange si non corrigé
+                        controls.textContent = "Saisie en cours...";
                     }
-
-                    if (currentQuestionData.type === "textAnswer" && showAnswers) {
-                        // Pour les questions textuelles, l'admin peut corriger manuellement
-                        scoreControls.appendChild(scoreInput);
-                        scoreInput.addEventListener('change', (e) => {
-                            // Mettre à jour localement l'état et marquer comme corrigé
-                            participantResponses[userId][qKey].scorePoints = parseInt(e.target.value);
-                            participantResponses[userId][qKey].isCorrect = parseInt(e.target.value) > 0;
-                            renderResponsesUI(); // Re-render pour mettre à jour l'indicateur
-                        });
-                    } else if (currentQuestionData.type === "multipleChoice" && showAnswers) {
-                         // Pour les questions à choix multiples, on peut automatiquement marquer correct/incorrect
-                         const isCorrect = (response.answer === currentQuestionData.correctAnswer);
-                         scoreControls.textContent = isCorrect ? "✅ Correct" : "❌ Incorrect";
-                         response.isCorrect = isCorrect; // Mettre à jour localement
-                         response.scorePoints = isCorrect ? 1 : 0; // Mettre à jour localement
-                    } else {
-                        scoreControls.textContent = "En attente...";
-                    }
-                     scoreControls.appendChild(correctIndicator);
-                    responseItem.appendChild(scoreControls);
-                    responsesListElem.appendChild(responseItem);
+                    div.appendChild(controls);
+                    responsesListElem.appendChild(div);
                 }
             }
-            if (!hasResponses) {
-                 responsesListElem.innerHTML = '<p>Aucune réponse pour cette question pour le moment.</p>';
-            }
+            if (!hasResponses) responsesListElem.innerHTML = '<p>Pas encore de réponses.</p>';
         }
 
+        // Actions Admin
+        window.startQuiz = async () => {
+            await set(controlRef, { currentQ: 0, questionText: "Bienvenue", showAnswers: false });
+            await set(scoresRef, {});
+        };
 
-        function renderLeaderboardUI(finalScores) {
-            leaderboardElem.innerHTML = ''; // Nettoyer l'existant
-            if (finalScores.length === 0) {
-                leaderboardElem.innerHTML = '<p>Pas encore de scores à afficher.</p>';
-                return;
-            }
-
-            const table = document.createElement('table');
-            table.classList.add('leaderboard-table');
-            const thead = document.createElement('thead');
-            const tbody = document.createElement('tbody');
-
-            thead.innerHTML = `<tr><th>Rang</th><th>Nom du Participant</th><th>Score Total</th></tr>`;
-
-            // Trier les scores par ordre décroissant
-            finalScores.sort((a, b) => b.totalScore - a.totalScore);
-
-            finalScores.forEach((scoreEntry, index) => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `<td>${index + 1}</td><td>${scoreEntry.name}</td><td>${scoreEntry.totalScore}</td>`;
-                tbody.appendChild(tr);
-            });
-
-            table.appendChild(thead);
-            table.appendChild(tbody);
-            leaderboardElem.appendChild(table);
-        }
-
-        // --- Fonctions de contrôle du Quiz (Écriture dans la DB) ---
-
-        async function startQuiz() {
-            await controlRef.update({
-                currentQ: 0, // Retour à l'état Bienvenue
-                questionText: "Bienvenue",
-                showAnswers: false
-            });
-            await scoresRef.set({}); // Réinitialise les scores au début d'un nouveau quiz
-            console.log("Quiz démarré/réinitialisé à l'état Bienvenue.");
-        }
-
-        async function goToNextQuestion() {
-            const totalQuestions = Object.keys(allQuestions).length;
-            let nextQ = currentQuizState.currentQ + 1;
-
-            if (nextQ <= totalQuestions) {
-                const qKey = Object.keys(allQuestions)[nextQ - 1];
-                const nextQuestionData = allQuestions[qKey];
-                await controlRef.update({
+        window.goToNextQuestion = async () => {
+            const nextQ = currentQuizState.currentQ + 1;
+            const keys = Object.keys(allQuestions);
+            if (nextQ <= keys.length) {
+                await update(controlRef, {
                     currentQ: nextQ,
-                    questionText: nextQuestionData ? `Question ${nextQ}: ${nextQuestionData.text}` : `Question ${nextQ}`,
-                    showAnswers: false // Cacher les réponses pour la nouvelle question
+                    questionText: `Question ${nextQ}: ${allQuestions[keys[nextQ-1]].text}`,
+                    showAnswers: false
                 });
-                console.log(`Passage à la question ${nextQ}.`);
-            } else if (nextQ > totalQuestions) {
-                // Toutes les questions sont passées, on va vers l'état de fin
-                await endQuiz();
-            } else {
-                console.warn("Impossible de passer à la question suivante.");
             }
-        }
+        };
 
-        async function revealAnswers() {
-            await controlRef.update({ showAnswers: true });
-            console.log("Réponses révélées.");
-        }
+        window.revealAnswers = () => update(controlRef, { showAnswers: true });
 
-        async function saveManualScores() {
-            const { currentQ } = currentQuizState;
-            if (currentQ <= 0 || currentQ > Object.keys(allQuestions).length) {
-                alert("Impossible d'enregistrer les scores, aucune question active.");
-                return;
-            }
-
-            const qKey = Object.keys(allQuestions)[currentQ - 1];
+        window.saveManualScores = async () => {
+            const qKey = Object.keys(allQuestions)[currentQuizState.currentQ - 1];
             const updates = {};
             const scoreUpdates = {};
 
             for (const userId in participantResponses) {
-                const response = participantResponses[userId][qKey];
-                if (response) {
-                    updates[`${userId}/${qKey}/isCorrect`] = response.isCorrect;
-                    updates[`${userId}/${qKey}/scorePoints`] = response.scorePoints;
-
-                    // Mettre à jour le score total du participant
-                    if (!scoreUpdates[userId]) {
-                        scoreUpdates[userId] = { name: participantResponses[userId].name || `Joueur ${userId.substring(0, 4)}`, totalScore: 0 };
+                const r = participantResponses[userId][qKey];
+                if (r) {
+                    updates[`${userId}/${qKey}/isCorrect`] = r.isCorrect || false;
+                    updates[`${userId}/${qKey}/scorePoints`] = r.scorePoints || 0;
+                    
+                    let total = 0;
+                    for(const k in participantResponses[userId]) {
+                        if(k !== 'name' && participantResponses[userId][k].scorePoints) total += participantResponses[userId][k].scorePoints;
                     }
-                    // Recalculer le score total pour ce participant
-                    let userTotalScore = 0;
-                    for (const key in participantResponses[userId]) {
-                        if (key !== 'name' && participantResponses[userId][key].scorePoints !== undefined) {
-                             userTotalScore += participantResponses[userId][key].scorePoints;
-                        }
-                    }
-                    scoreUpdates[userId].totalScore = userTotalScore;
+                    scoreUpdates[userId] = { name: participantResponses[userId].name, totalScore: total + (r.scorePoints || 0) };
                 }
             }
+            await update(responsesRef, updates);
+            await update(scoresRef, scoreUpdates);
+            alert("Scores enregistrés !");
+        };
 
-            try {
-                await responsesRef.update(updates);
-                await scoresRef.update(scoreUpdates);
-                alert("Scores et corrections enregistrés pour la question actuelle.");
-                console.log("Scores enregistrés :", updates);
-            } catch (error) {
-                console.error("Erreur lors de l'enregistrement des scores :", error);
-                alert("Erreur lors de l'enregistrement des scores. Voir console.");
-            }
-        }
+        window.endQuiz = () => update(controlRef, { currentQ: -1, questionText: "Terminé", showAnswers: true });
 
-        async function endQuiz() {
-            await controlRef.update({
-                currentQ: -1, // Indique la fin du quiz
-                questionText: "Le quiz est terminé !",
-                showAnswers: true // Pour que le classement soit visible partout
-            });
-            console.log("Quiz terminé.");
-        }
-
-
-        // --- Listeners Firebase (Lecture de la DB) ---
-
-        // Écouter les changements dans le nœud 'control'
-        controlRef.on('value', (snapshot) => {
-            currentQuizState = snapshot.val() || { currentQ: 0, questionText: "Bienvenue", showAnswers: false };
+        // Listeners
+        onValue(controlRef, (s) => {
+            currentQuizState = s.val() || currentQuizState;
             renderCurrentQuestionUI();
-            renderResponsesUI(); // Les réponses peuvent dépendre de showAnswers
-            if (currentQuizState.currentQ === -1) {
-                // Si le quiz est terminé, chargez et affichez le classement
-                scoresRef.once('value', (scoresSnapshot) => {
-                    const scoresData = scoresSnapshot.val();
-                    const finalScores = [];
-                    for (const userId in scoresData) {
-                        finalScores.push({ userId, ...scoresData[userId] });
-                    }
-                    renderLeaderboardUI(finalScores);
-                });
-            } else {
-                 leaderboardElem.innerHTML = '<p>Le classement sera affiché à la fin du quiz.</p>';
-            }
+            renderResponsesUI();
         });
 
-        // Écouter les changements dans le nœud 'questions' (une seule fois au chargement)
-        questionsRef.once('value', (snapshot) => {
-            allQuestions = snapshot.val() || {};
-            console.log("Questions chargées :", allQuestions);
-            renderCurrentQuestionUI(); // Pour s'assurer que les boutons sont à jour si control est déjà chargé
+        onValue(questionsRef, (s) => {
+            allQuestions = s.val() || {};
+            renderCurrentQuestionUI();
         });
 
-        // Écouter les changements dans le nœud 'responses'
-        responsesRef.on('value', (snapshot) => {
-            participantResponses = snapshot.val() || {};
-            console.log("Réponses des participants chargées :", participantResponses);
-            renderResponsesUI(); // Met à jour l'affichage des réponses
+        onValue(responsesRef, (s) => {
+            participantResponses = s.val() || {};
+            renderResponsesUI();
         });
 
-        // Écouter les changements dans le nœud 'scores' (pour mise à jour en temps réel du leaderboard si affiché)
-        scoresRef.on('value', (snapshot) => {
-            if (currentQuizState.currentQ === -1) { // Seulement si le quiz est terminé
-                const scoresData = snapshot.val();
-                const finalScores = [];
-                for (const userId in scoresData) {
-                    finalScores.push({ userId, ...scoresData[userId] });
-                }
-                renderLeaderboardUI(finalScores);
-            }
-        });
+        // Boutons
+        startQuizBtn.onclick = window.startQuiz;
+        nextQuestionBtn.onclick = window.goToNextQuestion;
+        revealAnswersBtn.onclick = window.revealAnswers;
+        saveScoresBtn.onclick = window.saveManualScores;
+        endQuizBtn.onclick = window.endQuiz;
 
-
-        // --- Gestionnaires d'événements des boutons ---
-        startQuizBtn.addEventListener('click', startQuiz);
-        nextQuestionBtn.addEventListener('click', goToNextQuestion);
-        revealAnswersBtn.addEventListener('click', revealAnswers);
-        saveScoresBtn.addEventListener('click', saveManualScores);
-        endQuizBtn.addEventListener('click', endQuiz);
-
-        // Initialisation à l'ouverture de la page
-        // Les listeners Firebase prendront le relais pour mettre à jour l'UI
     </script>
 </body>
 </html>
-

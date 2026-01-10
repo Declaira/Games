@@ -4,57 +4,34 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quiz en Direct - Joueur</title>
-    <!-- Incluez le SDK Firebase -->
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f0f2f5; color: #333; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; }
         .container { background-color: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 6px 20px rgba(0,0,0,0.1); width: 100%; max-width: 600px; margin-top: 30px; }
         h1, h2 { color: #2c3e50; text-align: center; margin-bottom: 25px; }
         .section { margin-bottom: 30px; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px; background-color: #fdfdfd; }
-
-        /* Pseudo Section */
         #pseudo-section { text-align: center; }
         #pseudo-section label { font-size: 1.1em; display: block; margin-bottom: 10px; color: #555; }
         #pseudo-input { width: calc(100% - 22px); padding: 12px; border: 2px solid #ccc; border-radius: 8px; font-size: 1em; margin-bottom: 15px; }
         #join-button { background-color: #28a745; color: white; padding: 12px 25px; border: none; border-radius: 8px; cursor: pointer; font-size: 1.1em; transition: background-color 0.3s ease; }
         #join-button:hover { background-color: #218838; }
-        #join-button:disabled { background-color: #cccccc; cursor: not-allowed; }
-
-        /* Quiz Section */
         #quiz-section { display: none; }
         #quiz-question-text { font-size: 1.6em; font-weight: bold; margin-bottom: 20px; text-align: center; color: #34495e; }
         #quiz-options { list-style: none; padding: 0; margin-bottom: 20px; }
-        #quiz-options li { background-color: #ecf0f1; padding: 15px; margin-bottom: 10px; border-radius: 8px; cursor: pointer; transition: background-color 0.2s ease, transform 0.1s ease; }
-        #quiz-options li:hover { background-color: #dde1e5; transform: translateY(-2px); }
+        #quiz-options li { background-color: #ecf0f1; padding: 15px; margin-bottom: 10px; border-radius: 8px; cursor: pointer; transition: background-color 0.2s ease; }
         #quiz-options li.selected { background-color: #3498db; color: white; }
         #quiz-options li.correct { background-color: #2ecc71; color: white; }
         #quiz-options li.incorrect { background-color: #e74c3c; color: white; }
         #quiz-options li.disabled { pointer-events: none; opacity: 0.7; }
-
-
         #text-answer-input { width: calc(100% - 22px); padding: 12px; border: 2px solid #ccc; border-radius: 8px; font-size: 1em; margin-bottom: 15px; }
-        #submit-answer-button { background-color: #007bff; color: white; padding: 12px 25px; border: none; border-radius: 8px; cursor: pointer; font-size: 1.1em; width: 100%; transition: background-color 0.3s ease; }
-        #submit-answer-button:hover { background-color: #0056b3; }
-        #submit-answer-button:disabled { background-color: #cccccc; cursor: not-allowed; }
-
-        #feedback-message { margin-top: 20px; padding: 15px; border-radius: 8px; text-align: center; font-size: 1.1em; display: none; }
-        #feedback-message.correct { background-color: #d4edda; color: #155724; border-color: #c3e6cb; }
-        #feedback-message.incorrect { background-color: #f8d7da; color: #721c24; border-color: #f5c6cb; }
-        #feedback-message.info { background-color: #d1ecf1; color: #0c5460; border-color: #bee5eb; }
-
-        #player-score { text-align: center; margin-top: 25px; font-size: 1.2em; font-weight: bold; color: #555; }
-
-        /* Leaderboard Section */
-        #leaderboard-section { display: none; }
-        #leaderboard-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        #leaderboard-table th, #leaderboard-table td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-        #leaderboard-table th { background-color: #e9eef2; color: #333; font-weight: bold; }
-        #leaderboard-table tr:nth-child(even) { background-color: #f9f9f9; }
-        #leaderboard-table tr:hover { background-color: #f1f1f1; }
-        #leaderboard-table tr.my-score { background-color: #d9edf7; font-weight: bold; } /* Mettre en évidence le score du joueur actuel */
-
+        #submit-answer-button { background-color: #007bff; color: white; padding: 12px 25px; border: none; border-radius: 8px; cursor: pointer; font-size: 1.1em; width: 100%; }
+        #feedback-message { margin-top: 20px; padding: 15px; border-radius: 8px; text-align: center; font-size: 1.1em; }
+        #feedback-message.correct { background-color: #d4edda; color: #155724; }
+        #feedback-message.incorrect { background-color: #f8d7da; color: #721c24; }
+        #feedback-message.info { background-color: #d1ecf1; color: #0c5460; }
         .hidden { display: none !important; }
+        .leaderboard-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .leaderboard-table th, .leaderboard-table td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        .my-score { background-color: #d9edf7; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -62,421 +39,183 @@
         <h1>Quiz en Direct !</h1>
 
         <div id="pseudo-section" class="section">
-            <label for="pseudo-input">Entrez votre pseudo pour commencer :</label>
+            <label for="pseudo-input">Entrez votre pseudo :</label>
             <input type="text" id="pseudo-input" placeholder="Ex: Joueur Cool">
             <button id="join-button">Rejoindre le Quiz</button>
         </div>
 
         <div id="quiz-section" class="section hidden">
-            <h2 id="current-quiz-status">En attente de la prochaine question...</h2>
+            <h2 id="current-quiz-status">En attente...</h2>
             <p id="quiz-question-text"></p>
-
-            <!-- Pour les questions à choix multiples -->
             <ul id="quiz-options"></ul>
-
-            <!-- Pour les questions à réponse textuelle -->
             <input type="text" id="text-answer-input" class="hidden" placeholder="Votre réponse ici...">
-
             <button id="submit-answer-button" disabled>Envoyer ma réponse</button>
-
             <div id="feedback-message" class="hidden"></div>
-            <p id="player-score">Votre score actuel : <span id="current-player-score-display">0</span></p>
+            <p id="player-score">Score : <span id="current-player-score-display">0</span></p>
         </div>
 
         <div id="leaderboard-section" class="section hidden">
             <h2>Classement Final</h2>
-            <div id="leaderboard">
-                <p>Le classement sera affiché ici à la fin du quiz.</p>
-            </div>
+            <div id="leaderboard"></div>
         </div>
     </div>
 
-<script type="module">
+    <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-        import { getDatabase, ref, push, set } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
-    
+        import { getDatabase, ref, onValue, set, update, push, get, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
         const firebaseConfig = {
             apiKey: "AIzaSyB29fMpTwBgsqkjijkNoQJ2kGChSeQDX_w",
             authDomain: "quiz-ea203.firebaseapp.com",
-            databaseURL: "https://quiz-ea203-default-rtdb.europe-west1.firebasedatabase.app", 
+            databaseURL: "https://quiz-ea203-default-rtdb.europe-west1.firebasedatabase.app",
             projectId: "quiz-ea203",
             storageBucket: "quiz-ea203.firebasestorage.app",
             messagingSenderId: "605137421110",
-            appId: "1:605137421110:web:289e0876fe06108deaa997",
-            measurementId: "G-8JVMQRJTD5"
+            appId: "1:605137421110:web:289e0876fe06108deaa997"
         };
-    
-        // --- CORRECTION : Initialisation ---
+
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
 
-        // Références aux nœuds de la base de données
-        const controlRef = database.ref('control');
-        const questionsRef = database.ref('questions');
-        const responsesRef = database.ref('responses');
-        const scoresRef = database.ref('scores');
+        let userId = localStorage.getItem('quizUserId');
+        let userPseudo = localStorage.getItem('quizUserPseudo');
+        let allQuestions = {};
+        let currentQuizState = { currentQ: 0 };
+        let currentQuestionKey = null;
 
-        let userId = localStorage.getItem('quizUserId'); // Tente de récupérer l'ID utilisateur
-        let userPseudo = localStorage.getItem('quizUserPseudo'); // Tente de récupérer le pseudo
-        let allQuestions = {}; // Cache pour toutes les questions
-        let currentQuizState = { currentQ: 0, questionText: "Bienvenue", showAnswers: false };
-        let currentQuestionKey = null; // La clé Firebase de la question actuelle (ex: -Mq...)
-        let playerAnsweredCurrentQuestion = false; // Pour éviter les réponses multiples
-        let currentPlayerScore = 0; // Score local du joueur
-
-        // --- Éléments du DOM ---
         const pseudoSection = document.getElementById('pseudo-section');
-        const pseudoInput = document.getElementById('pseudo-input');
-        const joinButton = document.getElementById('join-button');
-
         const quizSection = document.getElementById('quiz-section');
-        const currentQuizStatusElem = document.getElementById('current-quiz-status');
-        const quizQuestionTextElem = document.getElementById('quiz-question-text');
-        const quizOptionsElem = document.getElementById('quiz-options');
-        const textAnswerInput = document.getElementById('text-answer-input');
-        const submitAnswerButton = document.getElementById('submit-answer-button');
         const feedbackMessageElem = document.getElementById('feedback-message');
-        const currentPlayerScoreDisplay = document.getElementById('current-player-score-display');
+        const submitAnswerButton = document.getElementById('submit-answer-button');
+        const textAnswerInput = document.getElementById('text-answer-input');
+        const quizOptionsElem = document.getElementById('quiz-options');
 
-        const leaderboardSection = document.getElementById('leaderboard-section');
-        const leaderboardElem = document.getElementById('leaderboard');
-
-
-        // --- Fonctions utilitaires ---
-        function show(element) { element.classList.remove('hidden'); }
-        function hide(element) { element.classList.add('hidden'); }
-        function resetFeedback() {
-            feedbackMessageElem.className = '';
-            hide(feedbackMessageElem);
-        }
-
-        // --- Gestion de l'identité du joueur ---
-        function setupPlayerIdentity() {
-            if (userPseudo && userId) {
-                // Si pseudo et ID existent, on passe directement à la section quiz
-                pseudoInput.value = userPseudo;
-                hide(pseudoSection);
-                show(quizSection);
-                // Enregistrer/mettre à jour le pseudo dans la DB pour la page admin
-                responsesRef.child(userId).update({ name: userPseudo });
-                console.log(`Rejoint le quiz en tant que ${userPseudo} (ID: ${userId})`);
-            } else {
-                // Sinon, afficher la section pseudo
-                show(pseudoSection);
-                hide(quizSection);
-            }
-        }
-
+        // --- Identité ---
         async function joinQuiz() {
-            const pseudo = pseudoInput.value.trim();
-            if (!pseudo) {
-                alert("Veuillez entrer un pseudo !");
-                return;
-            }
-
+            const pseudo = document.getElementById('pseudo-input').value.trim();
+            if (!pseudo) return alert("Pseudo requis");
+            
             userPseudo = pseudo;
             localStorage.setItem('quizUserPseudo', userPseudo);
-
             if (!userId) {
-                // Générer un nouvel ID unique si c'est la première fois
-                const newPlayerRef = responsesRef.push(); // Utilise responsesRef pour générer l'ID
-                userId = newPlayerRef.key;
+                userId = push(ref(database, 'responses')).key;
                 localStorage.setItem('quizUserId', userId);
             }
-
-            // Enregistrer le pseudo dans la DB sous l'ID du joueur
-            await responsesRef.child(userId).update({ name: userPseudo });
-
-            hide(pseudoSection);
-            show(quizSection);
-            console.log(`Rejoint le quiz en tant que ${userPseudo} (ID: ${userId})`);
+            await update(ref(database, `responses/${userId}`), { name: userPseudo });
+            location.reload(); 
         }
 
-        // --- Rendu de la question ---
+        // --- Rendu Question ---
         function renderQuestion() {
-            resetFeedback();
-            submitAnswerButton.disabled = true; // Désactiver par défaut
-
-            quizOptionsElem.innerHTML = '';
-            hide(textAnswerInput);
-            quizQuestionTextElem.textContent = currentQuizState.questionText; // Texte du control
-
+            feedbackMessageElem.classList.add('hidden');
             const { currentQ, showAnswers } = currentQuizState;
-            playerAnsweredCurrentQuestion = false; // Réinitialiser pour chaque nouvelle question
-
-            if (currentQ <= 0 || currentQ > Object.keys(allQuestions).length) {
-                // État Bienvenue ou Question non trouvée
-                currentQuizStatusElem.textContent = "En attente de la prochaine question...";
-                quizQuestionTextElem.textContent = currentQuizState.questionText;
-                hide(quizQuestionTextElem);
-                hide(quizOptionsElem);
-                hide(textAnswerInput);
-                hide(submitAnswerButton);
+            
+            if (currentQ <= 0) {
+                document.getElementById('quiz-question-text').textContent = "Le quiz va bientôt commencer...";
+                submitAnswerButton.classList.add('hidden');
                 return;
             }
-
-            show(quizQuestionTextElem);
-            currentQuizStatusElem.textContent = `Question ${currentQ}`;
 
             currentQuestionKey = Object.keys(allQuestions)[currentQ - 1];
-            const questionData = allQuestions[currentQuestionKey];
+            const qData = allQuestions[currentQuestionKey];
+            if (!qData) return;
 
-            if (!questionData) {
-                quizQuestionTextElem.textContent = "Question introuvable.";
-                return;
-            }
+            document.getElementById('quiz-question-text').textContent = qData.text;
+            submitAnswerButton.classList.remove('hidden');
 
-            quizQuestionTextElem.textContent = `Question ${currentQ}: ${questionData.text}`;
-
-            // Vérifier si le joueur a déjà répondu à cette question
-            responsesRef.child(userId).child(currentQuestionKey).once('value', (snapshot) => {
-                const playerResponse = snapshot.val();
-                if (playerResponse) {
-                    playerAnsweredCurrentQuestion = true;
-                }
-
-                // Si les réponses ne sont pas encore révélées
-                if (!showAnswers) {
-                    if (questionData.type === "multipleChoice") {
-                        show(quizOptionsElem);
-                        hide(textAnswerInput);
-                        for (const optKey in questionData.options) {
-                            const li = document.createElement('li');
-                            li.textContent = `${optKey.toUpperCase()}: ${questionData.options[optKey]}`;
-                            li.dataset.answer = optKey; // Stocker la clé de l'option
-                            if (playerResponse && playerResponse.answer === optKey) {
-                                li.classList.add('selected'); // Marquer l'option déjà choisie
-                            }
-                            if (!playerAnsweredCurrentQuestion) {
-                                li.addEventListener('click', () => selectOption(li));
-                            } else {
-                                li.classList.add('disabled'); // Désactiver si déjà répondu
-                            }
-                            quizOptionsElem.appendChild(li);
+            onValue(ref(database, `responses/${userId}/${currentQuestionKey}`), (snap) => {
+                const playerResp = snap.val();
+                
+                if (qData.type === "multipleChoice") {
+                    textAnswerInput.classList.add('hidden');
+                    quizOptionsElem.classList.remove('hidden');
+                    quizOptionsElem.innerHTML = '';
+                    for (const key in qData.options) {
+                        const li = document.createElement('li');
+                        li.textContent = `${key.toUpperCase()}: ${qData.options[key]}`;
+                        if (playerResp?.answer === key) li.classList.add('selected');
+                        if (showAnswers) {
+                            li.classList.add('disabled');
+                            if (key === qData.correctAnswer) li.classList.add('correct');
+                            else if (playerResp?.answer === key) li.classList.add('incorrect');
+                        } else if (!playerResp) {
+                            li.onclick = () => {
+                                Array.from(quizOptionsElem.children).forEach(el => el.classList.remove('selected'));
+                                li.classList.add('selected');
+                                li.dataset.choice = key;
+                                submitAnswerButton.disabled = false;
+                            };
                         }
-                    } else if (questionData.type === "textAnswer") {
-                        hide(quizOptionsElem);
-                        show(textAnswerInput);
-                        textAnswerInput.value = playerResponse ? playerResponse.answer : ''; // Pré-remplir si déjà répondu
-                        textAnswerInput.disabled = playerAnsweredCurrentQuestion;
-                    }
-
-                    if (!playerAnsweredCurrentQuestion) {
-                        submitAnswerButton.disabled = false;
-                        submitAnswerButton.textContent = "Envoyer ma réponse";
-                        show(submitAnswerButton);
-                    } else {
-                        submitAnswerButton.disabled = true;
-                        submitAnswerButton.textContent = "Réponse envoyée !";
-                        show(submitAnswerButton);
-                        showFeedback("info", "Vous avez déjà répondu à cette question.");
+                        quizOptionsElem.appendChild(li);
                     }
                 } else {
-                    // Si les réponses sont révélées par l'admin
+                    quizOptionsElem.classList.add('hidden');
+                    textAnswerInput.classList.remove('hidden');
+                    textAnswerInput.value = playerResp?.answer || "";
+                    textAnswerInput.disabled = !!playerResp || showAnswers;
+                    submitAnswerButton.disabled = !!playerResp || showAnswers;
+                }
+
+                if (playerResp) {
                     submitAnswerButton.disabled = true;
-                    submitAnswerButton.textContent = "Réponses révélées";
-                    show(submitAnswerButton);
-                    if (questionData.type === "multipleChoice") {
-                        show(quizOptionsElem);
-                        hide(textAnswerInput);
-                        for (const optKey in questionData.options) {
-                            const li = document.createElement('li');
-                            li.textContent = `${optKey.toUpperCase()}: ${questionData.options[optKey]}`;
-                            li.classList.add('disabled'); // Toutes les options sont désactivées
-                            if (optKey === questionData.correctAnswer) {
-                                li.classList.add('correct'); // Marquer la bonne réponse
-                            }
-                            if (playerResponse && playerResponse.answer === optKey && optKey !== questionData.correctAnswer) {
-                                li.classList.add('incorrect'); // Marquer la mauvaise réponse du joueur
-                            } else if (playerResponse && playerResponse.answer === optKey && optKey === questionData.correctAnswer) {
-                                li.classList.add('correct'); // La bonne réponse du joueur
-                            }
-                            quizOptionsElem.appendChild(li);
-                        }
-                        const messageType = (playerResponse && playerResponse.answer === questionData.correctAnswer) ? "correct" : "incorrect";
-                        const messageText = (playerResponse && playerResponse.answer === questionData.correctAnswer) ? "C'est correct !" : `La bonne réponse était ${questionData.correctAnswer.toUpperCase()} : ${questionData.options[questionData.correctAnswer]}`;
-                        showFeedback(messageType, messageText);
-                    } else if (questionData.type === "textAnswer") {
-                        hide(quizOptionsElem);
-                        show(textAnswerInput);
-                        textAnswerInput.value = playerResponse ? playerResponse.answer : '';
-                        textAnswerInput.disabled = true; // Désactiver l'input
-                        const expectedAnswer = questionData.correctAnswerText;
-                        const playerAnswer = playerResponse ? playerResponse.answer : 'Pas de réponse';
-                        const scorePoints = playerResponse ? (playerResponse.scorePoints || 0) : 0;
-                        const messageType = (scorePoints > 0) ? "correct" : "incorrect";
-                        const messageText = `Votre réponse : "${playerAnswer}". La réponse attendue : "${expectedAnswer}". Score attribué : ${scorePoints}.`;
-                        showFeedback(messageType, messageText);
+                    submitAnswerButton.textContent = "Réponse envoyée";
+                    if (showAnswers) {
+                        const pts = playerResp.scorePoints || 0;
+                        feedbackMessageElem.className = pts > 0 ? "correct" : "incorrect";
+                        feedbackMessageElem.textContent = pts > 0 ? "Correct ! +"+pts+"pt" : "Incorrect. La réponse était : " + (qData.correctAnswerText || qData.correctAnswer);
+                        feedbackMessageElem.classList.remove('hidden');
                     }
+                } else {
+                    submitAnswerButton.textContent = "Envoyer ma réponse";
                 }
             });
         }
 
-        // --- Selection d'option pour QCM ---
-        let selectedOption = null;
-        function selectOption(li) {
-            if (selectedOption) {
-                selectedOption.classList.remove('selected');
-            }
-            li.classList.add('selected');
-            selectedOption = li;
-            submitAnswerButton.disabled = false; // Activer le bouton après sélection
-        }
-
-        // --- Soumission de la réponse ---
-        async function submitAnswer() {
-            if (!userId || !userPseudo || !currentQuestionKey) {
-                alert("Erreur: Identité joueur ou question non définie.");
-                return;
-            }
-
-            const { currentQ } = currentQuizState;
-            const questionData = allQuestions[currentQuestionKey];
-            let answer = null;
-            let responseData = {
-                timestamp: firebase.database.ServerValue.TIMESTAMP,
-            };
-
-            if (questionData.type === "multipleChoice") {
-                if (!selectedOption) {
-                    alert("Veuillez sélectionner une option !");
-                    return;
-                }
-                answer = selectedOption.dataset.answer;
-                responseData.answer = answer;
-            } else if (questionData.type === "textAnswer") {
-                answer = textAnswerInput.value.trim();
-                if (!answer) {
-                    alert("Veuillez entrer une réponse !");
-                    return;
-                }
-                responseData.answer = answer;
-            }
-
-            submitAnswerButton.disabled = true;
-            submitAnswerButton.textContent = "Envoi...";
-
-            try {
-                // Écrit la réponse dans /responses/{userId}/{questionKey}
-                await responsesRef.child(userId).child(currentQuestionKey).set(responseData);
-                playerAnsweredCurrentQuestion = true; // Marquer comme répondu
-                showFeedback("info", "Votre réponse a été envoyée ! En attente de la correction...");
-                console.log("Réponse envoyée:", responseData);
-                renderQuestion(); // Re-rendre pour désactiver les options et le bouton
-            } catch (error) {
-                console.error("Erreur lors de l'envoi de la réponse:", error);
-                alert("Erreur lors de l'envoi de votre réponse.");
-                submitAnswerButton.disabled = false; // Réactiver le bouton en cas d'erreur
-            }
-        }
-
-        // --- Affichage du feedback ---
-        function showFeedback(type, message) {
-            show(feedbackMessageElem);
-            feedbackMessageElem.className = 'feedback-message'; // Réinitialiser les classes
-            feedbackMessageElem.classList.add(type);
-            feedbackMessageElem.textContent = message;
-        }
-
-        // --- Rendu du classement ---
-        function renderLeaderboard(scoresData) {
-            leaderboardElem.innerHTML = '';
-            if (!scoresData || Object.keys(scoresData).length === 0) {
-                leaderboardElem.innerHTML = '<p>Pas encore de scores à afficher.</p>';
-                return;
-            }
-
-            const table = document.createElement('table');
-            table.id = 'leaderboard-table';
-            const thead = document.createElement('thead');
-            const tbody = document.createElement('tbody');
-
-            thead.innerHTML = `<tr><th>Rang</th><th>Nom du Participant</th><th>Score Total</th></tr>`;
-
-            const finalScores = [];
-            for (const id in scoresData) {
-                finalScores.push({ userId: id, ...scoresData[id] });
-            }
-
-            finalScores.sort((a, b) => b.totalScore - a.totalScore);
-
-            finalScores.forEach((scoreEntry, index) => {
-                const tr = document.createElement('tr');
-                let highlightClass = '';
-                if (scoreEntry.userId === userId) {
-                    highlightClass = 'my-score';
-                }
-                tr.className = highlightClass;
-                tr.innerHTML = `<td>${index + 1}</td><td>${scoreEntry.name}</td><td>${scoreEntry.totalScore}</td>`;
-                tbody.appendChild(tr);
-            });
-
-            table.appendChild(thead);
-            table.appendChild(tbody);
-            leaderboardElem.appendChild(table);
-        }
-
-        // --- Listeners Firebase ---
-
-        // Écouter les changements dans le nœud 'control'
-        controlRef.on('value', (snapshot) => {
-            const newControlState = snapshot.val() || { currentQ: 0, questionText: "Bienvenue", showAnswers: false };
-
-            // Si l'admin a terminé le quiz
-            if (newControlState.currentQ === -1) {
-                hide(quizSection);
-                show(leaderboardSection);
-                currentQuizStatusElem.textContent = "Quiz terminé !";
-                quizQuestionTextElem.textContent = "Le classement final est disponible.";
-                scoresRef.once('value', (scoresSnapshot) => {
-                    renderLeaderboard(scoresSnapshot.val());
-                });
-                return;
+        // --- Envoi Réponse ---
+        submitAnswerButton.onclick = async () => {
+            let answer = "";
+            const qData = allQuestions[currentQuestionKey];
+            if (qData.type === "multipleChoice") {
+                const sel = quizOptionsElem.querySelector('.selected');
+                if (!sel) return alert("Choisissez une option");
+                answer = sel.dataset.choice;
             } else {
-                 hide(leaderboardSection); // Cacher le leaderboard si le quiz n'est pas terminé
+                answer = textAnswerInput.value.trim();
+                if (!answer) return alert("Réponse vide");
             }
 
-            // Si la question change (ou si c'est la première question)
-            if (newControlState.currentQ !== currentQuizState.currentQ) {
-                selectedOption = null; // Réinitialiser l'option sélectionnée
-                playerAnsweredCurrentQuestion = false; // Nouvelle question, donc pas encore répondu
-            }
+            await set(ref(database, `responses/${userId}/${currentQuestionKey}`), {
+                answer: answer,
+                timestamp: serverTimestamp()
+            });
+        };
 
-            currentQuizState = newControlState;
-            renderQuestion(); // Mettre à jour l'affichage de la question
-            // Assurez-vous que le score du joueur est à jour
-            if (userId) {
-                scoresRef.child(userId).child('totalScore').on('value', (scoreSnapshot) => {
-                    currentPlayerScore = scoreSnapshot.val() || 0;
-                    currentPlayerScoreDisplay.textContent = currentPlayerScore;
-                });
-            }
-        });
+        // --- Initialisation ---
+        if (userPseudo && userId) {
+            pseudoSection.classList.add('hidden');
+            quizSection.classList.remove('hidden');
 
-        // Charger toutes les questions une seule fois au démarrage
-        questionsRef.once('value', (snapshot) => {
-            allQuestions = snapshot.val() || {};
-            console.log("Questions chargées:", allQuestions);
-            // Si le joueur est déjà identifié, on rend la question en cours
-            if (userId && userPseudo) {
-                 renderQuestion();
-            }
-        });
+            onValue(ref(database, 'control'), (snap) => {
+                currentQuizState = snap.val() || { currentQ: 0 };
+                if (currentQuizState.currentQ === -1) {
+                    quizSection.classList.add('hidden');
+                    document.getElementById('leaderboard-section').classList.remove('hidden');
+                } else {
+                    renderQuestion();
+                }
+            });
 
-        // --- Gestionnaires d'événements ---
-        joinButton.addEventListener('click', joinQuiz);
-        pseudoInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                joinQuiz();
-            }
-        });
-        submitAnswerButton.addEventListener('click', submitAnswer);
+            onValue(ref(database, 'questions'), (snap) => {
+                allQuestions = snap.val() || {};
+                renderQuestion();
+            });
 
-        // --- Initialisation au chargement de la page ---
-        setupPlayerIdentity();
+            onValue(ref(database, `scores/${userId}/totalScore`), (snap) => {
+                document.getElementById('current-player-score-display').textContent = snap.val() || 0;
+            });
+        }
 
+        document.getElementById('join-button').onclick = joinQuiz;
     </script>
 </body>
 </html>
-
-
