@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Quiz Admin - Ajout Question Textuelle</title>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        label { display: block; margin-top: 10px; }
+        input[type="text"] { width: 300px; padding: 5px; margin-bottom: 10px; }
+        button { padding: 10px 20px; background-color: #4CAF50; color: white; border: none; cursor: pointer; }
+        button:hover { background-color: #45a049; }
+    </style>
+</head>
+<body>
+    <h1>Ajouter une Question à Réponse Textuelle</h1>
+
+    <div id="app">
+        <label for="questionText">Texte de la question:</label>
+        <input type="text" id="questionText" placeholder="Ex: Quelle est la capitale de la France ?"><br>
+
+        <label for="correctAnswerText">Bonne réponse (texte):</label>
+        <input type="text" id="correctAnswerText" placeholder="Ex: Paris"><br>
+
+        <button id="addQuestionBtn">Ajouter la Question</button>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+        import { getDatabase, ref, onValue, set, update, push, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+        const firebaseConfig = {
+        apiKey: "AIzaSyB29fMpTwBgsqkjijkNoQJ2kGChSeQDX_w",
+        authDomain: "quiz-ea203.firebaseapp.com",
+        projectId: "quiz-ea203",
+        storageBucket: "quiz-ea203.firebasestorage.app",
+        messagingSenderId: "605137421110",
+        appId: "1:605137421110:web:289e0876fe06108deaa997",
+        measurementId: "G-8JVMQRJTD5"
+        };
+
+        // Référence au bouton d'ajout
+        const addQuestionBtn = document.getElementById('addQuestionBtn');
+
+        // Écouteur d'événement pour le clic sur le bouton
+        addQuestionBtn.addEventListener('click', () => {
+            const questionText = document.getElementById('questionText').value.trim();
+            const correctAnswerText = document.getElementById('correctAnswerText').value.trim();
+
+            if (!questionText || !correctAnswerText) {
+                alert("Veuillez remplir tous les champs de la question.");
+                return;
+            }
+
+            // Créez l'objet JSON pour la nouvelle question textuelle
+            const newQuestion = {
+                text: questionText,
+                type: "textAnswer", // Définir le type de question
+                correctAnswerText: correctAnswerText
+            };
+
+            // Fonction pour ajouter la question à la base de données
+            addQuestionToDatabase(newQuestion);
+        });
+
+        async function addQuestionToDatabase(questionData) {
+            try {
+                // Créer une nouvelle référence dans le nœud 'questions' avec un ID unique généré par Firebase
+                const newQuestionRef = database.ref('questions').push();
+                await newQuestionRef.set(questionData);
+                console.log("Question textuelle ajoutée avec succès ! ID:", newQuestionRef.key);
+
+                // Réinitialiser le formulaire
+                document.getElementById('questionText').value = '';
+                document.getElementById('correctAnswerText').value = '';
+
+                alert("Question textuelle ajoutée avec succès !");
+            } catch (error) {
+                console.error("Erreur lors de l'ajout de la question textuelle :", error);
+                alert("Erreur lors de l'ajout de la question textuelle. Vérifiez la console pour plus de détails.");
+            }
+        }
+    </script>
+</body>
+</html>
