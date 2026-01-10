@@ -8,80 +8,33 @@
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f4f7f6; color: #333; }
         .container { max-width: 900px; margin: 0 auto; padding: 25px; background-color: #fff; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         h1, h2, h3 { color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-top: 30px; }
-        .control-panel, .current-question-display, .responses-section, .leaderboard-section {
-            margin-bottom: 30px;
-            padding: 20px;
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            background-color: #fdfdfd;
-        }
-        .control-panel button {
-            background-color: #3498db;
-            color: white;
-            padding: 12px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-            margin-right: 10px;
-            transition: background-color 0.3s ease;
-        }
+        .control-panel { margin-bottom: 30px; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #fdfdfd; }
+        .control-panel button { background-color: #3498db; color: white; padding: 12px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; margin-right: 10px; margin-bottom: 10px; transition: background-color 0.3s ease; }
         .control-panel button:hover { background-color: #2980b9; }
-        .control-panel button:disabled { background-color: #cccccc; cursor: not-allowed; }
-        .quiz-status { font-size: 1.1em; margin-bottom: 15px; color: #555; }
-        .question-content { margin-top: 15px; font-size: 1.2em; font-weight: bold; color: #34495e; }
-        .question-options { list-style: none; padding: 0; margin-top: 10px; }
-        .question-options li { background-color: #ecf0f1; padding: 8px 12px; margin-bottom: 5px; border-radius: 4px; }
-        .responses-list { margin-top: 20px; }
-        .response-item { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px dashed #eee; padding: 10px 0; }
-        .response-item:last-child { border-bottom: none; }
-        .response-item span { flex: 1; margin-right: 15px; }
-        .response-item .score-controls { display: flex; align-items: center; }
-        .response-item input[type="number"] { width: 60px; padding: 5px; border: 1px solid #ccc; border-radius: 4px; text-align: center; margin-right: 10px; }
-        .correct-indicator { width: 20px; height: 20px; border-radius: 50%; display: inline-block; margin-left: 10px; vertical-align: middle; }
-        .correct-indicator.true { background-color: #2ecc71; }
-        .correct-indicator.false { background-color: #e74c3c; }
-        .correct-indicator.pending { background-color: #f39c12; }
-        .leaderboard-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        .leaderboard-table th, .leaderboard-table td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-        .leaderboard-table th { background-color: #e9eef2; color: #333; font-weight: bold; }
-        .leaderboard-table tr:nth-child(even) { background-color: #f9f9f9; }
+        .btn-reset { background-color: #e74c3c !important; }
+        .btn-reset:hover { background-color: #c0392b !important; }
+        .response-item { border-bottom: 1px dashed #eee; padding: 10px; display: flex; justify-content: space-between; align-items: center; }
+        input[type="number"] { width: 50px; padding: 5px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Panneau d'Administration du Quiz</h1>
+        <h1>Administration Quiz</h1>
         <div class="control-panel">
-            <h2>Contrôle du Quiz</h2>
-            <div class="quiz-status">
-                État actuel : <span id="currentQuizState">Chargement...</span><br>
-                Question active : <span id="currentQuestionDisplay">Chargement...</span>
-            </div>
-            <button id="startQuizBtn">Démarrer le Quiz</button>
-            <button id="nextQuestionBtn" disabled>Question Suivante</button>
-            <button id="revealAnswersBtn" disabled>Révéler les Réponses</button>
-            <button id="saveScoresBtn" disabled>Enregistrer les Points (Correction)</button>
-            <button id="endQuizBtn" disabled>Terminer le Quiz</button>
+            <div id="status">État : <span id="currentQ">0</span></div>
+            <button id="nextQuestionBtn">Démarrer / Suivante</button>
+            <button id="revealAnswersBtn">Révéler Réponses</button>
+            <button id="saveScoresBtn">Valider Points</button>
+            <button id="resetQuizBtn" class="btn-reset">Réinitialiser Tout (Reset IDs)</button>
         </div>
-        <div class="current-question-display">
-            <h2>Question Actuelle</h2>
-            <div id="questionContent">Aucune question active.</div>
-            <div id="questionOptions"></div>
-            <div id="correctAnswerInfo" style="margin-top: 15px; font-weight: bold; color: #27ae60;"></div>
-        </div>
-        <div class="responses-section">
-            <h2>Réponses des Participants</h2>
-            <div id="responsesList"><p>Aucune réponse pour le moment.</p></div>
-        </div>
-        <div class="leaderboard-section">
-            <h2>Classement Final</h2>
-            <div id="leaderboard"><p>Le classement sera affiché à la fin du quiz.</p></div>
-        </div>
+
+        <h2>Réponses en temps réel</h2>
+        <div id="responsesList"></div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-        import { getDatabase, ref, onValue, set, update, get } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+        import { getDatabase, ref, onValue, set, update, remove } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyB29fMpTwBgsqkjijkNoQJ2kGChSeQDX_w",
@@ -90,226 +43,75 @@
             projectId: "quiz-ea203",
             storageBucket: "quiz-ea203.firebasestorage.app",
             messagingSenderId: "605137421110",
-            appId: "1:605137421110:web:289e0876fe06108deaa997",
-            measurementId: "G-8JVMQRJTD5"
+            appId: "1:605137421110:web:289e0876fe06108deaa997"
         };
 
-        // Initialisation
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
 
-        // Références
-        const controlRef = ref(database, 'control');
-        const questionsRef = ref(database, 'questions');
-        const responsesRef = ref(database, 'responses');
-        const scoresRef = ref(database, 'scores');
-
+        let currentQuizState = { currentQ: 0, showAnswers: false };
         let allQuestions = {};
-        let currentQuizState = { currentQ: 0, questionText: "Bienvenue", showAnswers: false };
         let participantResponses = {};
 
-        // DOM Elements
-        const currentQuizStateElem = document.getElementById('currentQuizState');
-        const currentQuestionDisplayElem = document.getElementById('currentQuestionDisplay');
-        const questionContentElem = document.getElementById('questionContent');
-        const questionOptionsElem = document.getElementById('questionOptions');
-        const correctAnswerInfoElem = document.getElementById('correctAnswerInfo');
-        const responsesListElem = document.getElementById('responsesList');
-        const leaderboardElem = document.getElementById('leaderboard');
+        // --- Fonctions ---
+        async function nextQuestion() {
+            const nextQ = currentQuizState.currentQ + 1;
+            await update(ref(database, 'control'), {
+                currentQ: nextQ,
+                showAnswers: false
+            });
+        }
 
-        const startQuizBtn = document.getElementById('startQuizBtn');
-        const nextQuestionBtn = document.getElementById('nextQuestionBtn');
-        const revealAnswersBtn = document.getElementById('revealAnswersBtn');
-        const saveScoresBtn = document.getElementById('saveScoresBtn');
-        const endQuizBtn = document.getElementById('endQuizBtn');
-
-        // Fonctions UI
-        function updateControlPanelButtons() {
-            const { currentQ, showAnswers } = currentQuizState;
-            const totalQuestions = Object.keys(allQuestions).length;
-
-            startQuizBtn.disabled = !(currentQ === 0 || currentQ === -1);
-            nextQuestionBtn.disabled = !(currentQ >= 0 && currentQ < totalQuestions && (showAnswers || currentQ === 0));
-            revealAnswersBtn.disabled = !(currentQ > 0 && currentQ <= totalQuestions && !showAnswers);
-            saveScoresBtn.disabled = !(currentQ > 0 && currentQ <= totalQuestions && showAnswers);
-            endQuizBtn.disabled = !(currentQ === totalQuestions && showAnswers);
-
-            if (currentQ === 0) {
-                nextQuestionBtn.textContent = "Démarrer Q1";
-            } else {
-                nextQuestionBtn.textContent = "Question Suivante";
+        async function resetQuiz() {
+            if(confirm("Voulez-vous supprimer tous les joueurs et recommencer de zéro ?")) {
+                await remove(ref(database, 'responses'));
+                await remove(ref(database, 'scores'));
+                await set(ref(database, 'control'), { 
+                    currentQ: 0, 
+                    showAnswers: false, 
+                    resetSignal: Date.now() 
+                });
+                alert("Quiz réinitialisé !");
             }
         }
 
-        function renderCurrentQuestionUI() {
-            const { currentQ, questionText, showAnswers } = currentQuizState;
-            currentQuizStateElem.textContent = questionText;
-            currentQuestionDisplayElem.textContent = currentQ === 0 ? "Aucune" : (currentQ === -1 ? "Terminé" : `Question ${currentQ}`);
+        // --- Listeners ---
+        onValue(ref(database, 'control'), (s) => {
+            currentQuizState = s.val() || { currentQ: 0 };
+            document.getElementById('currentQ').textContent = currentQuizState.currentQ;
+        });
 
-            questionContentElem.innerHTML = '';
-            questionOptionsElem.innerHTML = '';
-            correctAnswerInfoElem.innerHTML = '';
+        onValue(ref(database, 'questions'), (s) => { allQuestions = s.val() || {}; });
 
-            const keys = Object.keys(allQuestions);
-            if (currentQ > 0 && currentQ <= keys.length) {
-                const qKey = keys[currentQ - 1];
-                const question = allQuestions[qKey];
-                if (question) {
-                    questionContentElem.textContent = `${currentQ}. ${question.text}`;
-                    if (question.type === "multipleChoice") {
-                        const ul = document.createElement('ul');
-                        ul.className = 'question-options';
-                        for (const opt in question.options) {
-                            const li = document.createElement('li');
-                            li.textContent = `${opt.toUpperCase()}: ${question.options[opt]}`;
-                            ul.appendChild(li);
-                        }
-                        questionOptionsElem.appendChild(ul);
-                        if (showAnswers) correctAnswerInfoElem.textContent = `Bonne réponse : ${question.correctAnswer.toUpperCase()}`;
-                    } else if (question.type === "textAnswer" && showAnswers) {
-                        correctAnswerInfoElem.textContent = `Réponse attendue : ${question.correctAnswerText}`;
-                    }
-                }
-            } else if (currentQ === -1) {
-                questionContentElem.textContent = "Quiz terminé !";
-            } else {
-                questionContentElem.textContent = "Prêt à démarrer ?";
-            }
-            updateControlPanelButtons();
-        }
-
-        function renderResponsesUI() {
-            responsesListElem.innerHTML = '';
-            const { currentQ, showAnswers } = currentQuizState;
-            const keys = Object.keys(allQuestions);
+        onValue(ref(database, 'responses'), (s) => {
+            participantResponses = s.val() || {};
+            const list = document.getElementById('responsesList');
+            list.innerHTML = '';
             
-            if (currentQ <= 0 || currentQ > keys.length) {
-                responsesListElem.innerHTML = '<p>En attente du début...</p>';
-                return;
-            }
+            const qKeys = Object.keys(allQuestions);
+            const currentKey = qKeys[currentQuizState.currentQ - 1];
 
-            const qKey = keys[currentQ - 1];
-            const currentQuestionData = allQuestions[qKey];
-            let hasResponses = false;
-
-            for (const userId in participantResponses) {
-                if (participantResponses[userId][qKey]) {
-                    hasResponses = true;
-                    const resp = participantResponses[userId][qKey];
+            for (const id in participantResponses) {
+                const player = participantResponses[id];
+                if (player[currentKey]) {
                     const div = document.createElement('div');
                     div.className = 'response-item';
-                    div.innerHTML = `<span><strong>${participantResponses[userId].name || userId}</strong>: ${resp.answer}</span>`;
-
-                    const controls = document.createElement('div');
-                    controls.className = 'score-controls';
-
-                    if (showAnswers) {
-                        if (currentQuestionData.type === "multipleChoice") {
-                            const isCorrect = resp.answer.toLowerCase() === currentQuestionData.correctAnswer.toLowerCase();
-                            resp.isCorrect = isCorrect;
-                            resp.scorePoints = isCorrect ? 1 : 0;
-                            controls.innerHTML = isCorrect ? "✅" : "❌";
-                        } else {
-                            const input = document.createElement('input');
-                            input.type = 'number'; input.value = resp.scorePoints || 0;
-                            input.addEventListener('change', (e) => {
-                                resp.scorePoints = parseInt(e.target.value);
-                                resp.isCorrect = resp.scorePoints > 0;
-                            });
-                            controls.appendChild(input);
-                        }
-                    } else {
-                        controls.textContent = "Saisie en cours...";
-                    }
-                    div.appendChild(controls);
-                    responsesListElem.appendChild(div);
+                    div.innerHTML = `
+                        <span><strong>${player.name || "Anonyme"}</strong> : ${player[currentKey].answer}</span>
+                        ${currentQuizState.showAnswers ? `<input type="number" value="${player[currentKey].scorePoints || 0}" onchange="updatePoint('${id}', '${currentKey}', this.value)">` : ''}
+                    `;
+                    list.appendChild(div);
                 }
             }
-            if (!hasResponses) responsesListElem.innerHTML = '<p>Pas encore de réponses.</p>';
-        }
+        });
 
-        // Actions Admin
-        window.startQuiz = async () => {
-        if (confirm("Voulez-vous vraiment réinitialiser le quiz ? Cela effacera tous les joueurs et leurs scores.")) {
-            // 1. Réinitialiser le contrôle
-            await set(controlRef, { 
-                currentQ: 0, 
-                questionText: "Bienvenue", 
-                showAnswers: false,
-                resetSignal: Date.now() // On envoie un signal de réinitialisation
-            });
-            
-            // 2. Effacer les données des joueurs dans Firebase
-            await set(ref(database, 'responses'), null);
-            await set(ref(database, 'scores'), null);
-            
-            alert("Quiz réinitialisé !");
-        }
-    };
-
-        window.goToNextQuestion = async () => {
-            const nextQ = currentQuizState.currentQ + 1;
-            const keys = Object.keys(allQuestions);
-            if (nextQ <= keys.length) {
-                await update(controlRef, {
-                    currentQ: nextQ,
-                    questionText: `Question ${nextQ}: ${allQuestions[keys[nextQ-1]].text}`,
-                    showAnswers: false
-                });
-            }
+        window.updatePoint = (uid, qid, val) => {
+            update(ref(database, `responses/${uid}/${qid}`), { scorePoints: parseInt(val), isCorrect: parseInt(val) > 0 });
         };
 
-        window.revealAnswers = () => update(controlRef, { showAnswers: true });
-
-        window.saveManualScores = async () => {
-            const qKey = Object.keys(allQuestions)[currentQuizState.currentQ - 1];
-            const updates = {};
-            const scoreUpdates = {};
-
-            for (const userId in participantResponses) {
-                const r = participantResponses[userId][qKey];
-                if (r) {
-                    updates[`${userId}/${qKey}/isCorrect`] = r.isCorrect || false;
-                    updates[`${userId}/${qKey}/scorePoints`] = r.scorePoints || 0;
-                    
-                    let total = 0;
-                    for(const k in participantResponses[userId]) {
-                        if(k !== 'name' && participantResponses[userId][k].scorePoints) total += participantResponses[userId][k].scorePoints;
-                    }
-                    scoreUpdates[userId] = { name: participantResponses[userId].name, totalScore: total + (r.scorePoints || 0) };
-                }
-            }
-            await update(responsesRef, updates);
-            await update(scoresRef, scoreUpdates);
-            alert("Scores enregistrés !");
-        };
-
-        window.endQuiz = () => update(controlRef, { currentQ: -1, questionText: "Terminé", showAnswers: true });
-
-        // Listeners
-        onValue(controlRef, (s) => {
-            currentQuizState = s.val() || currentQuizState;
-            renderCurrentQuestionUI();
-            renderResponsesUI();
-        });
-
-        onValue(questionsRef, (s) => {
-            allQuestions = s.val() || {};
-            renderCurrentQuestionUI();
-        });
-
-        onValue(responsesRef, (s) => {
-            participantResponses = s.val() || {};
-            renderResponsesUI();
-        });
-
-        // Boutons
-        startQuizBtn.onclick = window.startQuiz;
-        nextQuestionBtn.onclick = window.goToNextQuestion;
-        revealAnswersBtn.onclick = window.revealAnswers;
-        saveScoresBtn.onclick = window.saveManualScores;
-        endQuizBtn.onclick = window.endQuiz;
-
+        document.getElementById('nextQuestionBtn').onclick = nextQuestion;
+        document.getElementById('resetQuizBtn').onclick = resetQuiz;
+        document.getElementById('revealAnswersBtn').onclick = () => update(ref(database, 'control'), { showAnswers: true });
     </script>
 </body>
 </html>
