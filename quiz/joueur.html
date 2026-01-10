@@ -93,16 +93,27 @@
 
     // Écouter l'état du quiz (Control)
     onValue(ref(database, 'control'), (snapshot) => {
-        currentQuizState = snapshot.val() || { currentQ: 0 };
+        const data = snapshot.val();
+        if (!data) return;
+
+        // --- LOGIQUE DE RÉINITIALISATION ---
+        // Si l'admin a envoyé un nouveau signal de reset
+        const lastReset = localStorage.getItem('lastQuizReset');
+        if (data.resetSignal && data.resetSignal.toString() !== lastReset) {
+            localStorage.clear(); // Efface userId et pseudo
+            localStorage.setItem('lastQuizReset', data.resetSignal);
+            location.reload(); // Recharge la page pour revenir au formulaire de pseudo
+            return;
+        }
+
+        currentQuizState = data;
         if (currentQuizState.currentQ === -1) {
-            // Fin du quiz
             quizSection.classList.add('hidden');
             document.getElementById('leaderboard-section').classList.remove('hidden');
         } else {
             renderQuestion();
         }
     });
-
     // Charger les questions
     onValue(ref(database, 'questions'), (snapshot) => {
         allQuestions = snapshot.val() || {};

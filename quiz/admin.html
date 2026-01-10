@@ -230,9 +230,22 @@
 
         // Actions Admin
         window.startQuiz = async () => {
-            await set(controlRef, { currentQ: 0, questionText: "Bienvenue", showAnswers: false });
-            await set(scoresRef, {});
-        };
+        if (confirm("Voulez-vous vraiment réinitialiser le quiz ? Cela effacera tous les joueurs et leurs scores.")) {
+            // 1. Réinitialiser le contrôle
+            await set(controlRef, { 
+                currentQ: 0, 
+                questionText: "Bienvenue", 
+                showAnswers: false,
+                resetSignal: Date.now() // On envoie un signal de réinitialisation
+            });
+            
+            // 2. Effacer les données des joueurs dans Firebase
+            await set(ref(database, 'responses'), null);
+            await set(ref(database, 'scores'), null);
+            
+            alert("Quiz réinitialisé !");
+        }
+    };
 
         window.goToNextQuestion = async () => {
             const nextQ = currentQuizState.currentQ + 1;
