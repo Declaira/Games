@@ -71,14 +71,22 @@
         onValue(ref(database, 'responses'), (snap) => {
             const list = document.getElementById('responsesList');
             list.innerHTML = '';
-            const data = snap.val() || {};
+            const players = snap.val() || {};
+            
+            // On récupère la clé de la question actuelle via l'ordre des questions
             const qKeys = Object.keys(questions);
             const currentKey = qKeys[currentState.currentQ - 1];
 
-            for(let id in data) {
-                if(data[id][currentKey]) {
-                    const p = document.createElement('p');
-                    p.innerHTML = `<strong>${data[id].name || "Anonyme"}</strong> : ${data[id][currentKey].answer}`;
+            for (let id in players) {
+                const playerData = players[id];
+                const playerName = playerData.name || "Anonyme";
+                
+                // Si le joueur a répondu à LA question en cours
+                if (playerData[currentKey]) {
+                    const p = document.createElement('div');
+                    p.style.padding = "10px";
+                    p.style.borderBottom = "1px solid #eee";
+                    p.innerHTML = `<strong>${playerName}</strong> : ${playerData[currentKey].answer}`;
                     list.appendChild(p);
                 }
             }
