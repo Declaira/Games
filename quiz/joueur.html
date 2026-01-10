@@ -2,32 +2,33 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quiz - Joueur</title>
     <style>
-        body { font-family: sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 20px; }
-        .container { background: white; padding: 20px; border-radius: 12px; width: 100%; max-width: 500px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        body { font-family: sans-serif; background: #e9ecef; display: flex; justify-content: center; padding: 20px; }
+        .container { background: white; padding: 30px; border-radius: 15px; width: 100%; max-width: 450px; text-align: center; }
         .hidden { display: none !important; }
-        input[type="text"] { width: 100%; padding: 10px; margin: 10px 0; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; }
-        #quiz-options li { background: #eee; padding: 10px; margin: 5px 0; border-radius: 5px; cursor: pointer; list-style: none; }
-        #quiz-options li.selected { background: #3498db; color: white; }
+        input[type="text"] { width: 100%; padding: 12px; margin: 15px 0; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; }
+        button { width: 100%; padding: 12px; background: #28a745; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        button:disabled { background: #ccc; }
+        #q-text { color: #2c3e50; min-height: 50px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div id="pseudo-section">
-            <h2>Entrez votre pseudo</h2>
-            <input type="text" id="pseudo-input" placeholder="Pseudo...">
-            <button id="join-btn">Rejoindre</button>
+        <div id="login-zone">
+            <h2>Votre Pseudo</h2>
+            <input type="text" id="p-input" placeholder="Ex: Jean">
+            <button id="joinBtn">Rejoindre</button>
         </div>
 
-        <div id="quiz-section" class="hidden">
-            <h2 id="q-text">Chargement...</h2>
-            <ul id="quiz-options"></ul>
-            <input type="text" id="text-answer-input" class="hidden" placeholder="Votre réponse...">
-            <button id="submit-btn">Envoyer</button>
-            <p>Score : <span id="score-val">0</span></p>
+        <div id="quiz-zone" class="hidden">
+            <h3 id="q-text">En attente de l'admin...</h3>
+            <div id="answer-area">
+                <input type="text" id="text-answer-input" class="hidden" placeholder="Écrivez votre réponse ici...">
+                <ul id="options-list" class="hidden"></ul>
+            </div>
+            <button id="sendBtn">Envoyer ma réponse</button>
+            <p id="msg"></p>
         </div>
     </div>
 
@@ -50,78 +51,92 @@
 
         let userId = localStorage.getItem('quizUserId');
         let userPseudo = localStorage.getItem('quizUserPseudo');
-        let allQuestions = {};
+        let questions = {};
 
-        // --- Réinitialisation forcée ---
+        // 1. Gérer le Reset et la connexion
         onValue(ref(database, 'control'), (snap) => {
-            const data = snap.val();
-            if(!data) return;
+            const ctrl = snap.val();
+            if(!ctrl) return;
 
+            // Signal de reset
             const lastReset = localStorage.getItem('lastReset');
-            if (data.resetSignal && data.resetSignal.toString() !== lastReset) {
+            if(ctrl.resetSignal && ctrl.resetSignal.toString() !== lastReset) {
                 localStorage.clear();
-                localStorage.setItem('lastReset', data.resetSignal);
+                localStorage.setItem('lastReset', ctrl.resetSignal);
                 location.reload();
-                return;
             }
 
-            if (userId && userPseudo) {
-                document.getElementById('pseudo-section').classList.add('hidden');
-                document.getElementById('quiz-section').classList.remove('hidden');
-                renderQuestion(data);
+            if(userId && userPseudo) {
+                document.getElementById('login-zone').classList.add('hidden');
+                document.getElementById('quiz-zone').classList.remove('hidden');
+                updateUI(ctrl);
             }
         });
 
-        onValue(ref(database, 'questions'), (s) => { allQuestions = s.val() || {}; });
+        onValue(ref(database, 'questions'), (s) => questions = s.val() || {});
 
-        async function renderQuestion(control) {
-            const keys = Object.keys(allQuestions);
-            const qKey = keys[control.currentQ - 1];
-            const qText = document.getElementById('q-text');
-            const optionsUl = document.getElementById('quiz-options');
-            const textInput = document.getElementById('text-answer-input');
-            const btn = document.getElementById('submit-btn');
+        // 2. Mise à jour de l'interface par question
+        function updateUI(ctrl) {
+            const qKeys = Object.keys(questions);
+            const qKey = qKeys[ctrl.currentQ - 1];
+            const qLabel = document.getElementById('q-text');
+            const inputField = document.getElementById('text-answer-input');
+            const sendBtn = document.getElementById('sendBtn');
 
-            if (!qKey) { qText.textContent = "Prêt ?"; return; }
-            
-            const qData = allQuestions[qKey];
-            qText.textContent = qData.text;
+            if(!qKey) {
+                qLabel.textContent = "Le quiz n'a pas encore commencé.";
+                inputField.classList.add('hidden');
+                sendBtn.classList.add('hidden');
+                return;
+            }
 
-            // Vérifier réponse existante
+            const qData = questions[qKey];
+            qLabel.textContent = qData.text;
+            sendBtn.classList.remove('hidden');
+
+            // Vérifier si déjà répondu
             onValue(ref(database, `responses/${userId}/${qKey}`), (s) => {
-                const alreadyAnswered = s.exists();
-                btn.disabled = alreadyAnswered;
-                btn.textContent = alreadyAnswered ? "Réponse envoyée" : "Envoyer";
-
-                if (qData.type === "textAnswer") {
-                    textInput.classList.remove('hidden');
-                    optionsUl.classList.add('hidden');
-                    if (alreadyAnswered) textInput.value = s.val().answer;
+                const answered = s.exists();
+                
+                // --- LOGIQUE D'AFFICHAGE DU CHAMP ---
+                if(qData.type === "textAnswer") {
+                    inputField.classList.remove('hidden'); // On retire la classe hidden
+                    inputField.style.display = "block";    // On force l'affichage bloc
+                    inputField.disabled = answered;
+                    if(answered) inputField.value = s.val().answer;
+                    else inputField.value = "";
                 } else {
-                    textInput.classList.add('hidden');
-                    optionsUl.classList.remove('hidden');
-                    // Rendu options QCM... (omis ici pour brièveté, même logique que texte)
+                    inputField.classList.add('hidden');
                 }
-            }, { onlyOnce: true });
+
+                sendBtn.disabled = answered;
+                sendBtn.textContent = answered ? "Réponse enregistrée ✅" : "Envoyer ma réponse";
+            });
         }
 
-        document.getElementById('join-btn').onclick = async () => {
-            const p = document.getElementById('pseudo-input').value.trim();
-            if(!p) return;
+        // 3. Actions
+        document.getElementById('joinBtn').onclick = async () => {
+            const p = document.getElementById('p-input').value.trim();
+            if(!p) return alert("Pseudo vide");
             userPseudo = p;
             userId = push(ref(database, 'responses')).key;
-            localStorage.setItem('quizUserPseudo', p);
             localStorage.setItem('quizUserId', userId);
+            localStorage.setItem('quizUserPseudo', p);
             await update(ref(database, `responses/${userId}`), { name: p });
             location.reload();
         };
 
-        document.getElementById('submit-btn').onclick = async () => {
+        document.getElementById('sendBtn').onclick = async () => {
             onValue(ref(database, 'control'), async (snap) => {
-                const ctrl = snap.val();
-                const qKey = Object.keys(allQuestions)[ctrl.currentQ - 1];
-                const ans = document.getElementById('text-answer-input').value;
-                await set(ref(database, `responses/${userId}/${qKey}`), { answer: ans });
+                const qKeys = Object.keys(questions);
+                const qKey = qKeys[snap.val().currentQ - 1];
+                const ans = document.getElementById('text-answer-input').value.trim();
+                if(!ans) return alert("Réponse vide");
+
+                await set(ref(database, `responses/${userId}/${qKey}`), {
+                    answer: ans,
+                    timestamp: Date.now()
+                });
             }, { onlyOnce: true });
         };
     </script>

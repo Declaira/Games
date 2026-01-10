@@ -2,33 +2,26 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panneau d'Administration du Quiz</title>
+    <title>Admin - Contrôle du Quiz</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f4f7f6; color: #333; }
-        .container { max-width: 900px; margin: 0 auto; padding: 25px; background-color: #fff; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        h1, h2, h3 { color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-top: 30px; }
-        .control-panel { margin-bottom: 30px; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #fdfdfd; }
-        .control-panel button { background-color: #3498db; color: white; padding: 12px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; margin-right: 10px; margin-bottom: 10px; transition: background-color 0.3s ease; }
-        .control-panel button:hover { background-color: #2980b9; }
-        .btn-reset { background-color: #e74c3c !important; }
-        .btn-reset:hover { background-color: #c0392b !important; }
-        .response-item { border-bottom: 1px dashed #eee; padding: 10px; display: flex; justify-content: space-between; align-items: center; }
-        input[type="number"] { width: 50px; padding: 5px; }
+        body { font-family: sans-serif; background: #f4f7f6; padding: 20px; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .btn { padding: 10px 20px; cursor: pointer; border: none; border-radius: 5px; color: white; margin-right: 10px; }
+        .btn-next { background: #3498db; }
+        .btn-reset { background: #e74c3c; }
+        .btn-reveal { background: #f39c12; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Administration Quiz</h1>
-        <div class="control-panel">
-            <div id="status">État : <span id="currentQ">0</span></div>
-            <button id="nextQuestionBtn">Démarrer / Suivante</button>
-            <button id="revealAnswersBtn">Révéler Réponses</button>
-            <button id="saveScoresBtn">Valider Points</button>
-            <button id="resetQuizBtn" class="btn-reset">Réinitialiser Tout (Reset IDs)</button>
-        </div>
+        <h1>Panneau Admin</h1>
+        <div id="status">Question actuelle : <strong id="q-num">0</strong></div>
+        <hr>
+        <button id="nextBtn" class="btn btn-next">Question Suivante</button>
+        <button id="revealBtn" class="btn btn-reveal">Révéler la Réponse</button>
+        <button id="resetBtn" class="btn btn-reset">Réinitialiser (Reset IDs)</button>
 
-        <h2>Réponses en temps réel</h2>
+        <h3>Réponses reçues :</h3>
         <div id="responsesList"></div>
     </div>
 
@@ -49,69 +42,47 @@
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
 
-        let currentQuizState = { currentQ: 0, showAnswers: false };
-        let allQuestions = {};
-        let participantResponses = {};
+        let questions = {};
+        let currentState = { currentQ: 0 };
 
-        // --- Fonctions ---
-        async function nextQuestion() {
-            const nextQ = currentQuizState.currentQ + 1;
-            await update(ref(database, 'control'), {
-                currentQ: nextQ,
-                showAnswers: false
-            });
-        }
-
-        async function resetQuiz() {
-            if(confirm("Voulez-vous supprimer tous les joueurs et recommencer de zéro ?")) {
-                await remove(ref(database, 'responses'));
-                await remove(ref(database, 'scores'));
-                await set(ref(database, 'control'), { 
-                    currentQ: 0, 
-                    showAnswers: false, 
-                    resetSignal: Date.now() 
-                });
-                alert("Quiz réinitialisé !");
-            }
-        }
-
-        // --- Listeners ---
+        onValue(ref(database, 'questions'), (s) => questions = s.val() || {});
         onValue(ref(database, 'control'), (s) => {
-            currentQuizState = s.val() || { currentQ: 0 };
-            document.getElementById('currentQ').textContent = currentQuizState.currentQ;
+            currentState = s.val() || { currentQ: 0 };
+            document.getElementById('q-num').textContent = currentState.currentQ;
         });
 
-        onValue(ref(database, 'questions'), (s) => { allQuestions = s.val() || {}; });
+        document.getElementById('nextBtn').onclick = () => {
+            update(ref(database, 'control'), { currentQ: currentState.currentQ + 1, showAnswers: false });
+        };
 
-        onValue(ref(database, 'responses'), (s) => {
-            participantResponses = s.val() || {};
+        document.getElementById('revealBtn').onclick = () => {
+            update(ref(database, 'control'), { showAnswers: true });
+        };
+
+        document.getElementById('resetBtn').onclick = () => {
+            if(confirm("Tout effacer ?")) {
+                remove(ref(database, 'responses'));
+                remove(ref(database, 'scores'));
+                set(ref(database, 'control'), { currentQ: 0, resetSignal: Date.now() });
+            }
+        };
+
+        // Affichage des réponses
+        onValue(ref(database, 'responses'), (snap) => {
             const list = document.getElementById('responsesList');
             list.innerHTML = '';
-            
-            const qKeys = Object.keys(allQuestions);
-            const currentKey = qKeys[currentQuizState.currentQ - 1];
+            const data = snap.val() || {};
+            const qKeys = Object.keys(questions);
+            const currentKey = qKeys[currentState.currentQ - 1];
 
-            for (const id in participantResponses) {
-                const player = participantResponses[id];
-                if (player[currentKey]) {
-                    const div = document.createElement('div');
-                    div.className = 'response-item';
-                    div.innerHTML = `
-                        <span><strong>${player.name || "Anonyme"}</strong> : ${player[currentKey].answer}</span>
-                        ${currentQuizState.showAnswers ? `<input type="number" value="${player[currentKey].scorePoints || 0}" onchange="updatePoint('${id}', '${currentKey}', this.value)">` : ''}
-                    `;
-                    list.appendChild(div);
+            for(let id in data) {
+                if(data[id][currentKey]) {
+                    const p = document.createElement('p');
+                    p.innerHTML = `<strong>${data[id].name || "Anonyme"}</strong> : ${data[id][currentKey].answer}`;
+                    list.appendChild(p);
                 }
             }
         });
-
-        window.updatePoint = (uid, qid, val) => {
-            update(ref(database, `responses/${uid}/${qid}`), { scorePoints: parseInt(val), isCorrect: parseInt(val) > 0 });
-        };
-
-        document.getElementById('nextQuestionBtn').onclick = nextQuestion;
-        document.getElementById('resetQuizBtn').onclick = resetQuiz;
-        document.getElementById('revealAnswersBtn').onclick = () => update(ref(database, 'control'), { showAnswers: true });
     </script>
 </body>
 </html>
