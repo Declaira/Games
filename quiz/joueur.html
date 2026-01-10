@@ -60,162 +60,161 @@
         </div>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-        import { getDatabase, ref, onValue, set, update, push, get, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { getDatabase, ref, onValue, set, update, push, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyB29fMpTwBgsqkjijkNoQJ2kGChSeQDX_w",
-            authDomain: "quiz-ea203.firebaseapp.com",
-            databaseURL: "https://quiz-ea203-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "quiz-ea203",
-            storageBucket: "quiz-ea203.firebasestorage.app",
-            messagingSenderId: "605137421110",
-            appId: "1:605137421110:web:289e0876fe06108deaa997"
-        };
+    const firebaseConfig = {
+        apiKey: "AIzaSyB29fMpTwBgsqkjijkNoQJ2kGChSeQDX_w",
+        authDomain: "quiz-ea203.firebaseapp.com",
+        databaseURL: "https://quiz-ea203-default-rtdb.europe-west1.firebasedatabase.app", // URL Europe ajoutée
+        projectId: "quiz-ea203",
+        storageBucket: "quiz-ea203.firebasestorage.app",
+        messagingSenderId: "605137421110",
+        appId: "1:605137421110:web:289e0876fe06108deaa997"
+    };
 
-        const app = initializeApp(firebaseConfig);
-        const database = getDatabase(app);
+    // Initialisation correcte
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
 
-        let userId = localStorage.getItem('quizUserId');
-        let userPseudo = localStorage.getItem('quizUserPseudo');
-        let allQuestions = {};
-        let currentQuizState = { currentQ: 0 };
-        let currentQuestionKey = null;
+    let userId = localStorage.getItem('quizUserId');
+    let userPseudo = localStorage.getItem('quizUserPseudo');
+    let allQuestions = {};
+    let currentQuizState = { currentQ: 0, showAnswers: false };
 
-        const pseudoSection = document.getElementById('pseudo-section');
-        const quizSection = document.getElementById('quiz-section');
-        const feedbackMessageElem = document.getElementById('feedback-message');
-        const submitAnswerButton = document.getElementById('submit-answer-button');
-        const textAnswerInput = document.getElementById('text-answer-input');
-        const quizOptionsElem = document.getElementById('quiz-options');
+    // Éléments du DOM
+    const quizSection = document.getElementById('quiz-section');
+    const pseudoSection = document.getElementById('pseudo-section');
+    const quizQuestionTextElem = document.getElementById('quiz-question-text');
+    const quizOptionsElem = document.getElementById('quiz-options');
+    const textAnswerInput = document.getElementById('text-answer-input');
+    const submitAnswerButton = document.getElementById('submit-answer-button');
 
-        // --- Identité ---
-        async function joinQuiz() {
-            const pseudo = document.getElementById('pseudo-input').value.trim();
-            if (!pseudo) return alert("Pseudo requis");
-            
-            userPseudo = pseudo;
-            localStorage.setItem('quizUserPseudo', userPseudo);
-            if (!userId) {
-                userId = push(ref(database, 'responses')).key;
-                localStorage.setItem('quizUserId', userId);
-            }
-            await update(ref(database, `responses/${userId}`), { name: userPseudo });
-            location.reload(); 
+    // Écouter l'état du quiz (Control)
+    onValue(ref(database, 'control'), (snapshot) => {
+        currentQuizState = snapshot.val() || { currentQ: 0 };
+        if (currentQuizState.currentQ === -1) {
+            // Fin du quiz
+            quizSection.classList.add('hidden');
+            document.getElementById('leaderboard-section').classList.remove('hidden');
+        } else {
+            renderQuestion();
+        }
+    });
+
+    // Charger les questions
+    onValue(ref(database, 'questions'), (snapshot) => {
+        allQuestions = snapshot.val() || {};
+        renderQuestion();
+    });
+
+    function renderQuestion() {
+        if (!userId || !userPseudo) return; // Ne rien faire si pas connecté
+
+        const { currentQ, showAnswers } = currentQuizState;
+        
+        // Cacher tout par défaut
+        quizQuestionTextElem.textContent = "";
+        quizOptionsElem.innerHTML = "";
+        textAnswerInput.classList.add('hidden');
+        submitAnswerButton.disabled = true;
+
+        if (currentQ <= 0) {
+            quizQuestionTextElem.textContent = "Le quiz va bientôt commencer...";
+            return;
         }
 
-        // --- Rendu Question ---
-        function renderQuestion() {
-            feedbackMessageElem.classList.add('hidden');
-            const { currentQ, showAnswers } = currentQuizState;
+        const keys = Object.keys(allQuestions);
+        const currentQuestionKey = keys[currentQ - 1];
+        const questionData = allQuestions[currentQuestionKey];
+
+        if (!questionData) return;
+
+        quizQuestionTextElem.textContent = questionData.text;
+
+        // Vérifier si déjà répondu
+        onValue(ref(database, `responses/${userId}/${currentQuestionKey}`), (snap) => {
+            const hasAnswered = snap.exists();
             
-            if (currentQ <= 0) {
-                document.getElementById('quiz-question-text').textContent = "Le quiz va bientôt commencer...";
-                submitAnswerButton.classList.add('hidden');
-                return;
-            }
-
-            currentQuestionKey = Object.keys(allQuestions)[currentQ - 1];
-            const qData = allQuestions[currentQuestionKey];
-            if (!qData) return;
-
-            document.getElementById('quiz-question-text').textContent = qData.text;
-            submitAnswerButton.classList.remove('hidden');
-
-            onValue(ref(database, `responses/${userId}/${currentQuestionKey}`), (snap) => {
-                const playerResp = snap.val();
-                
-                if (qData.type === "multipleChoice") {
-                    textAnswerInput.classList.add('hidden');
-                    quizOptionsElem.classList.remove('hidden');
-                    quizOptionsElem.innerHTML = '';
-                    for (const key in qData.options) {
-                        const li = document.createElement('li');
-                        li.textContent = `${key.toUpperCase()}: ${qData.options[key]}`;
-                        if (playerResp?.answer === key) li.classList.add('selected');
-                        if (showAnswers) {
-                            li.classList.add('disabled');
-                            if (key === qData.correctAnswer) li.classList.add('correct');
-                            else if (playerResp?.answer === key) li.classList.add('incorrect');
-                        } else if (!playerResp) {
-                            li.onclick = () => {
-                                Array.from(quizOptionsElem.children).forEach(el => el.classList.remove('selected'));
-                                li.classList.add('selected');
-                                li.dataset.choice = key;
-                                submitAnswerButton.disabled = false;
-                            };
-                        }
-                        quizOptionsElem.appendChild(li);
+            if (questionData.type === "multipleChoice") {
+                quizOptionsElem.classList.remove('hidden');
+                for (const opt in questionData.options) {
+                    const li = document.createElement('li');
+                    li.textContent = `${opt.toUpperCase()}: ${questionData.options[opt]}`;
+                    
+                    if (hasAnswered && snap.val().answer === opt) li.classList.add('selected');
+                    
+                    if (!hasAnswered && !showAnswers) {
+                        li.onclick = () => {
+                            Array.from(quizOptionsElem.children).forEach(el => el.classList.remove('selected'));
+                            li.classList.add('selected');
+                            li.dataset.answer = opt;
+                            submitAnswerButton.disabled = false;
+                        };
+                    } else {
+                        li.classList.add('disabled');
                     }
-                } else {
-                    quizOptionsElem.classList.add('hidden');
-                    textAnswerInput.classList.remove('hidden');
-                    textAnswerInput.value = playerResp?.answer || "";
-                    textAnswerInput.disabled = !!playerResp || showAnswers;
-                    submitAnswerButton.disabled = !!playerResp || showAnswers;
+                    quizOptionsElem.appendChild(li);
                 }
-
-                if (playerResp) {
-                    submitAnswerButton.disabled = true;
-                    submitAnswerButton.textContent = "Réponse envoyée";
-                    if (showAnswers) {
-                        const pts = playerResp.scorePoints || 0;
-                        feedbackMessageElem.className = pts > 0 ? "correct" : "incorrect";
-                        feedbackMessageElem.textContent = pts > 0 ? "Correct ! +"+pts+"pt" : "Incorrect. La réponse était : " + (qData.correctAnswerText || qData.correctAnswer);
-                        feedbackMessageElem.classList.remove('hidden');
-                    }
-                } else {
-                    submitAnswerButton.textContent = "Envoyer ma réponse";
-                }
-            });
-        }
-
-        // --- Envoi Réponse ---
-        submitAnswerButton.onclick = async () => {
-            let answer = "";
-            const qData = allQuestions[currentQuestionKey];
-            if (qData.type === "multipleChoice") {
-                const sel = quizOptionsElem.querySelector('.selected');
-                if (!sel) return alert("Choisissez une option");
-                answer = sel.dataset.choice;
             } else {
-                answer = textAnswerInput.value.trim();
-                if (!answer) return alert("Réponse vide");
+                textAnswerInput.classList.remove('hidden');
+                textAnswerInput.disabled = hasAnswered || showAnswers;
+                if (hasAnswered) textAnswerInput.value = snap.val().answer;
+                submitAnswerButton.disabled = hasAnswered || showAnswers;
             }
 
-            await set(ref(database, `responses/${userId}/${currentQuestionKey}`), {
-                answer: answer,
-                timestamp: serverTimestamp()
-            });
-        };
+            submitAnswerButton.textContent = hasAnswered ? "Réponse envoyée" : "Envoyer ma réponse";
+            submitAnswerButton.classList.toggle('hidden', currentQ === 0);
+        }, { onlyOnce: true });
+    }
 
-        // --- Initialisation ---
-        if (userPseudo && userId) {
-            pseudoSection.classList.add('hidden');
-            quizSection.classList.remove('hidden');
+    // Gestion du bouton rejoindre
+    document.getElementById('join-button').onclick = async () => {
+        const pseudo = document.getElementById('pseudo-input').value.trim();
+        if (!pseudo) return alert("Pseudo requis");
+        
+        userPseudo = pseudo;
+        localStorage.setItem('quizUserPseudo', userPseudo);
+        if (!userId) {
+            userId = push(ref(database, 'responses')).key;
+            localStorage.setItem('quizUserId', userId);
+        }
+        await update(ref(database, `responses/${userId}`), { name: userPseudo });
+        pseudoSection.classList.add('hidden');
+        quizSection.classList.remove('hidden');
+        renderQuestion();
+    };
 
-            onValue(ref(database, 'control'), (snap) => {
-                currentQuizState = snap.val() || { currentQ: 0 };
-                if (currentQuizState.currentQ === -1) {
-                    quizSection.classList.add('hidden');
-                    document.getElementById('leaderboard-section').classList.remove('hidden');
-                } else {
-                    renderQuestion();
-                }
-            });
+    // Gestion du bouton envoyer
+    submitAnswerButton.onclick = async () => {
+        const keys = Object.keys(allQuestions);
+        const qKey = keys[currentQuizState.currentQ - 1];
+        const qData = allQuestions[qKey];
+        let answer = "";
 
-            onValue(ref(database, 'questions'), (snap) => {
-                allQuestions = snap.val() || {};
-                renderQuestion();
-            });
-
-            onValue(ref(database, `scores/${userId}/totalScore`), (snap) => {
-                document.getElementById('current-player-score-display').textContent = snap.val() || 0;
-            });
+        if (qData.type === "multipleChoice") {
+            const selected = quizOptionsElem.querySelector('.selected');
+            if (!selected) return;
+            answer = selected.dataset.answer;
+        } else {
+            answer = textAnswerInput.value.trim();
         }
 
-        document.getElementById('join-button').onclick = joinQuiz;
-    </script>
+        if (!answer) return;
+
+        await set(ref(database, `responses/${userId}/${qKey}`), {
+            answer: answer,
+            timestamp: serverTimestamp()
+        });
+        renderQuestion();
+    };
+
+    // Vérification initiale
+    if (userId && userPseudo) {
+        pseudoSection.classList.add('hidden');
+        quizSection.classList.remove('hidden');
+    }
+</script>
 </body>
 </html>
