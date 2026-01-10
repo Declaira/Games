@@ -100,17 +100,22 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-        import { getDatabase, ref, onValue, set, update, push, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
-
+        import { getDatabase, ref, push, set } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+    
         const firebaseConfig = {
-        apiKey: "AIzaSyB29fMpTwBgsqkjijkNoQJ2kGChSeQDX_w",
-        authDomain: "quiz-ea203.firebaseapp.com",
-        projectId: "quiz-ea203",
-        storageBucket: "quiz-ea203.firebasestorage.app",
-        messagingSenderId: "605137421110",
-        appId: "1:605137421110:web:289e0876fe06108deaa997",
-        measurementId: "G-8JVMQRJTD5"
+            apiKey: "AIzaSyB29fMpTwBgsqkjijkNoQJ2kGChSeQDX_w",
+            authDomain: "quiz-ea203.firebaseapp.com",
+            databaseURL: "https://quiz-ea203-default-rtdb.europe-west1.firebasedatabase.app", 
+            projectId: "quiz-ea203",
+            storageBucket: "quiz-ea203.firebasestorage.app",
+            messagingSenderId: "605137421110",
+            appId: "1:605137421110:web:289e0876fe06108deaa997",
+            measurementId: "G-8JVMQRJTD5"
         };
+    
+        // --- CORRECTION : Initialisation ---
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
 
         // Références aux nœuds de la base de données
         const controlRef = database.ref('control');
@@ -460,3 +465,4 @@
     </script>
 </body>
 </html>
+
