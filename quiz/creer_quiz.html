@@ -25,11 +25,11 @@
         <button id="addQuestionBtn">Ajouter la Question</button>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-        import { getDatabase, ref, onValue, set, update, push, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+   <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { getDatabase, ref, push, set } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
-        const firebaseConfig = {
+    const firebaseConfig = {
         apiKey: "AIzaSyB29fMpTwBgsqkjijkNoQJ2kGChSeQDX_w",
         authDomain: "quiz-ea203.firebaseapp.com",
         projectId: "quiz-ea203",
@@ -37,49 +37,52 @@
         messagingSenderId: "605137421110",
         appId: "1:605137421110:web:289e0876fe06108deaa997",
         measurementId: "G-8JVMQRJTD5"
+    };
+
+    // --- CORRECTION : Initialisation ---
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+
+    const addQuestionBtn = document.getElementById('addQuestionBtn');
+
+    addQuestionBtn.addEventListener('click', () => {
+        const questionText = document.getElementById('questionText').value.trim();
+        const correctAnswerText = document.getElementById('correctAnswerText').value.trim();
+
+        if (!questionText || !correctAnswerText) {
+            alert("Veuillez remplir tous les champs de la question.");
+            return;
+        }
+
+        const newQuestion = {
+            text: questionText,
+            type: "textAnswer",
+            correctAnswerText: correctAnswerText
         };
 
-        // Référence au bouton d'ajout
-        const addQuestionBtn = document.getElementById('addQuestionBtn');
+        addQuestionToDatabase(newQuestion);
+    });
 
-        // Écouteur d'événement pour le clic sur le bouton
-        addQuestionBtn.addEventListener('click', () => {
-            const questionText = document.getElementById('questionText').value.trim();
-            const correctAnswerText = document.getElementById('correctAnswerText').value.trim();
+    async function addQuestionToDatabase(questionData) {
+        try {
+            // --- CORRECTION : Syntaxe Modulaire v9 ---
+            const questionsListRef = ref(database, 'questions');
+            const newQuestionRef = push(questionsListRef);
+            
+            await set(newQuestionRef, questionData);
+            
+            console.log("Question ajoutée ! ID:", newQuestionRef.key);
 
-            if (!questionText || !correctAnswerText) {
-                alert("Veuillez remplir tous les champs de la question.");
-                return;
-            }
-
-            // Créez l'objet JSON pour la nouvelle question textuelle
-            const newQuestion = {
-                text: questionText,
-                type: "textAnswer", // Définir le type de question
-                correctAnswerText: correctAnswerText
-            };
-
-            // Fonction pour ajouter la question à la base de données
-            addQuestionToDatabase(newQuestion);
-        });
-
-        async function addQuestionToDatabase(questionData) {
-            try {
-                // Créer une nouvelle référence dans le nœud 'questions' avec un ID unique généré par Firebase
-                const newQuestionRef = database.ref('questions').push();
-                await newQuestionRef.set(questionData);
-                console.log("Question textuelle ajoutée avec succès ! ID:", newQuestionRef.key);
-
-                // Réinitialiser le formulaire
-                document.getElementById('questionText').value = '';
-                document.getElementById('correctAnswerText').value = '';
-
-                alert("Question textuelle ajoutée avec succès !");
-            } catch (error) {
-                console.error("Erreur lors de l'ajout de la question textuelle :", error);
-                alert("Erreur lors de l'ajout de la question textuelle. Vérifiez la console pour plus de détails.");
-            }
+            document.getElementById('questionText').value = '';
+            document.getElementById('correctAnswerText').value = '';
+            alert("Question textuelle ajoutée avec succès !");
+            
+        } catch (error) {
+            console.error("Erreur :", error);
+            alert("Erreur lors de l'ajout. Vérifiez les règles de sécurité Firebase.");
         }
-    </script>
+    }
+</script>
 </body>
 </html>
+
