@@ -1,131 +1,462 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<title>Admin - Quiz</title>
-<link rel="icon" href="logo/logo.png" type="image/x-icon">
-<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@600&display=swap" rel="stylesheet">
-<style>
-* { box-sizing: border-box; }
-body {
-  margin: 0;
-  font-family: 'Quicksand', sans-serif;
-  background: linear-gradient(to bottom right, #fff3cd, #ffe5b4, #ffd1d1, #ffc4e1);
-  color: #2c3e50;
-  text-align: center;
-}
-header {
-  background: linear-gradient(to right, #ff9a00, #ff4e00);
-  color: white;
-  padding: 25px;
-  font-size: 2.5em;
-  letter-spacing: 2px;
-  animation: fadeInSlide 1.2s ease-out;
-}
-@keyframes fadeInSlide {
-  0% { opacity: 0; transform: translateY(-30px); }
-  100% { opacity: 1; transform: translateY(0); }
-}
-.container { max-width: 900px; margin: 30px auto; padding: 20px; }
-table { border-collapse: collapse; width: 100%; margin-top: 20px; background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
-th { background-color: #ff6f00; color: white; }
-button { padding: 8px 14px; margin: 4px; border-radius: 10px; cursor: pointer; font-weight: bold; background: #ff6f00; color: white; transition: transform 0.2s, background-color 0.3s; }
-button:hover { transform: scale(1.05); background-color: #e65c00; }
-#finalResults { display: none; margin-top: 30px; background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panneau d'Administration du Quiz</title>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f4f7f6; color: #333; }
+        .container { max-width: 900px; margin: 0 auto; padding: 25px; background-color: #fff; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-top: 30px; }
+        .control-panel, .current-question-display, .responses-section, .leaderboard-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background-color: #fdfdfd;
+        }
+        .control-panel button {
+            background-color: #3498db;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+            transition: background-color 0.3s ease;
+        }
+        .control-panel button:hover { background-color: #2980b9; }
+        .control-panel button:disabled { background-color: #cccccc; cursor: not-allowed; }
+        .quiz-status { font-size: 1.1em; margin-bottom: 15px; color: #555; }
+
+        .question-content { margin-top: 15px; font-size: 1.2em; font-weight: bold; color: #34495e; }
+        .question-options { list-style: none; padding: 0; margin-top: 10px; }
+        .question-options li { background-color: #ecf0f1; padding: 8px 12px; margin-bottom: 5px; border-radius: 4px; }
+
+        .responses-list { margin-top: 20px; }
+        .response-item { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px dashed #eee; padding: 10px 0; }
+        .response-item:last-child { border-bottom: none; }
+        .response-item span { flex: 1; margin-right: 15px; }
+        .response-item .score-controls { display: flex; align-items: center; }
+        .response-item input[type="number"] { width: 60px; padding: 5px; border: 1px solid #ccc; border-radius: 4px; text-align: center; margin-right: 10px; }
+        .response-item .correct-indicator {
+            width: 20px; height: 20px; border-radius: 50%; display: inline-block;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+        .correct-indicator.true { background-color: #2ecc71; } /* Vert */
+        .correct-indicator.false { background-color: #e74c3c; } /* Rouge */
+        .correct-indicator.pending { background-color: #f39c12; } /* Orange */
+
+
+        .leaderboard-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .leaderboard-table th, .leaderboard-table td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        .leaderboard-table th { background-color: #e9eef2; color: #333; font-weight: bold; }
+        .leaderboard-table tr:nth-child(even) { background-color: #f9f9f9; }
+        .leaderboard-table tr:hover { background-color: #f1f1f1; }
+    </style>
 </head>
 <body>
-<header>📊 Panneau Admin - Quiz</header>
-<div class="container">
-  <div id="quizControl">
-    <p>Question actuelle : <span id="currentQ">0</span></p>
-    <p>Texte : <span id="currentQuestionText">—</span></p>
-    <button onclick="nextQuestion()">➡️ Question suivante</button>
-    <button onclick="revealAnswers()">🔍 Révéler les réponses</button>
-  </div>
+    <div class="container">
+        <h1>Panneau d'Administration du Quiz</h1>
 
-  <table id="playersTable">
-    <thead>
-      <tr><th>Pseudo</th><th>Réponse</th><th>Score</th><th>Attribuer point</th></tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+        <div class="control-panel">
+            <h2>Contrôle du Quiz</h2>
+            <div class="quiz-status">
+                État actuel : <span id="currentQuizState">Chargement...</span><br>
+                Question active : <span id="currentQuestionDisplay">Chargement...</span>
+            </div>
+            <button id="startQuizBtn">Démarrer le Quiz</button>
+            <button id="nextQuestionBtn" disabled>Question Suivante</button>
+            <button id="revealAnswersBtn" disabled>Révéler les Réponses</button>
+            <button id="saveScoresBtn" disabled>Enregistrer les Points (Correction)</button>
+            <button id="endQuizBtn" disabled>Terminer le Quiz</button>
+        </div>
 
-  <h3>Résumé des scores</h3>
-  <div id="scoreSummary"></div>
+        <div class="current-question-display">
+            <h2>Question Actuelle</h2>
+            <div id="questionContent">Aucune question active.</div>
+            <div id="questionOptions"></div>
+            <div id="correctAnswerInfo" style="margin-top: 15px; font-weight: bold; color: #27ae60;"></div>
+        </div>
 
-  <button onclick="saveScores()">💾 Ajouter les points cochés</button>
-  <button onclick="resetQuiz()">🔄 Réinitialiser le quiz</button>
+        <div class="responses-section">
+            <h2>Réponses des Participants</h2>
+            <div id="responsesList">
+                <p>Aucune réponse pour le moment.</p>
+            </div>
+        </div>
 
-  <div id="finalResults">
-    <h2>🏆 Résultats finaux</h2>
-    <div id="finalScoreSummary"></div>
-  </div>
-</div>
+        <div class="leaderboard-section">
+            <h2>Classement Final</h2>
+            <div id="leaderboard">
+                <p>Le classement sera affiché à la fin du quiz.</p>
+            </div>
+        </div>
+    </div>
 
-<script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwZcOoCcxpkaRPCIDLyRWo5BPaHget6-OqQ88WhqTTjwXTnoENDRiKZb1aoFwC-mMziVA/exec";
-let currentQuestion=0, totalQuestions=0, interval;
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+        import { getDatabase, ref, onValue, set, update, push, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
-async function fetchData() { const res=await fetch(SCRIPT_URL); return res.json(); }
-async function fetchTotalQuestions() { const res=await fetch(SCRIPT_URL+"?getTotalQuestions=1"); const data=await res.json(); return data.totalQuestions; }
+        const firebaseConfig = {
+        apiKey: "AIzaSyB29fMpTwBgsqkjijkNoQJ2kGChSeQDX_w",
+        authDomain: "quiz-ea203.firebaseapp.com",
+        projectId: "quiz-ea203",
+        storageBucket: "quiz-ea203.firebasestorage.app",
+        messagingSenderId: "605137421110",
+        appId: "1:605137421110:web:289e0876fe06108deaa997",
+        measurementId: "G-8JVMQRJTD5"
+        };
 
-async function refresh() {
-  const data = await fetchData();
-  currentQuestion = data.currentQuestion;
-  const questionText = data.questionText;
-  const showAnswers = data.showAnswers;
+        // Références aux nœuds de la base de données
+        const controlRef = database.ref('control');
+        const questionsRef = database.ref('questions');
+        const responsesRef = database.ref('responses');
+        const scoresRef = database.ref('scores'); // Pour stocker les scores finaux
 
-  if (!totalQuestions) totalQuestions = await fetchTotalQuestions();
+        let allQuestions = {}; // Cache pour toutes les questions
+        let currentQuizState = { currentQ: 0, questionText: "Bienvenue", showAnswers: false };
+        let participantResponses = {}; // Cache pour les réponses des participants
 
-  if (currentQuestion > totalQuestions) {
-    document.getElementById("quizControl").style.display="none";
-    document.getElementById("playersTable").style.display="none";
-    document.getElementById("finalResults").style.display="block";
-    let summary = "";
-    const allPlayers = [...new Set(data.data.map(d=>d.Pseudo))];
-    allPlayers.forEach(pseudo => {
-      const playerRows = data.data.filter(d=>d.Pseudo===pseudo);
-      const total = playerRows.reduce((acc,r)=>acc + Number(r.Score || 0),0);
-      summary += `${pseudo} : ${total} points<br>`;
-    });
-    document.getElementById("finalScoreSummary").innerHTML = summary;
-    document.getElementById("scoreSummary").style.display="none";
-    return;
-  }
+        // --- Éléments du DOM ---
+        const currentQuizStateElem = document.getElementById('currentQuizState');
+        const currentQuestionDisplayElem = document.getElementById('currentQuestionDisplay');
+        const questionContentElem = document.getElementById('questionContent');
+        const questionOptionsElem = document.getElementById('questionOptions');
+        const correctAnswerInfoElem = document.getElementById('correctAnswerInfo');
+        const responsesListElem = document.getElementById('responsesList');
+        const leaderboardElem = document.getElementById('leaderboard');
 
-  document.getElementById("quizControl").style.display="block";
-  document.getElementById("playersTable").style.display="table";
-  document.getElementById("finalResults").style.display="none";
-  document.getElementById('currentQ').textContent = currentQuestion;
-  document.getElementById('currentQuestionText').textContent = questionText;
+        const startQuizBtn = document.getElementById('startQuizBtn');
+        const nextQuestionBtn = document.getElementById('nextQuestionBtn');
+        const revealAnswersBtn = document.getElementById('revealAnswersBtn');
+        const saveScoresBtn = document.getElementById('saveScoresBtn');
+        const endQuizBtn = document.getElementById('endQuizBtn');
 
-  const tbody = document.querySelector("#playersTable tbody");
-  tbody.innerHTML = "";
-  const players = data.data.filter(d => d.Question==currentQuestion).slice(0,8);
-  players.forEach((p,idx)=>{
-    const tr = document.createElement("tr");
-    tr.innerHTML = `<td>${p.Pseudo}</td><td>${p.Reponse}</td><td>${p.Score}</td><td><input type="checkbox" data-pseudo="${p.Pseudo}" ${p.Etat==='ok'?'checked disabled':''}></td>`;
-    tbody.appendChild(tr);
-  });
+        // --- Fonctions de mise à jour de l'UI ---
 
-  let summary = "";
-  const allPlayers = [...new Set(data.data.map(d=>d.Pseudo))];
-  allPlayers.forEach(pseudo => {
-    const playerRows = data.data.filter(d=>d.Pseudo===pseudo);
-    const total = playerRows.reduce((acc,r)=>acc + Number(r.Score || 0),0);
-    summary += `${pseudo} : ${total} points<br>`;
-  });
-  document.getElementById("scoreSummary").innerHTML = summary;
-}
+        function updateControlPanelButtons() {
+            const { currentQ, showAnswers } = currentQuizState;
+            const totalQuestions = Object.keys(allQuestions).length;
 
-async function nextQuestion(){ await fetch(SCRIPT_URL,{method:"POST",body:JSON.stringify({type:"updateControl",currentQuestion:currentQuestion+1,showAnswers:"non"})}); refresh(); }
-async function revealAnswers(){ await fetch(SCRIPT_URL,{method:"POST",body:JSON.stringify({type:"updateControl",currentQuestion,currentQuestion,showAnswers:"oui"})}); refresh(); }
-async function saveScores(){ const checkboxes=document.querySelectorAll("input[type=checkbox]"); for(const chk of checkboxes){ if(chk.checked && !chk.disabled){ const pseudo=chk.dataset.pseudo; await fetch(SCRIPT_URL,{method:"POST",body:JSON.stringify({type:"addScore",pseudo,question:currentQuestion,points:1})}); chk.disabled=true; } } refresh(); }
-async function resetQuiz(){ if(!confirm("Réinitialiser le quiz ?")) return; await fetch(SCRIPT_URL,{method:"POST",body:JSON.stringify({type:"resetQuiz"})}); totalQuestions=0; refresh(); }
+            startQuizBtn.disabled = !(currentQ === 0 || currentQ === -1); // Active si bienvenue ou fin de quiz
+            nextQuestionBtn.disabled = !(currentQ > 0 && currentQ <= totalQuestions && showAnswers); // Active si correction faite
+            revealAnswersBtn.disabled = !(currentQ > 0 && currentQ <= totalQuestions && !showAnswers); // Active si question en cours, réponses cachées
+            saveScoresBtn.disabled = !(currentQ > 0 && currentQ <= totalQuestions && showAnswers); // Active si réponses révélées
+            endQuizBtn.disabled = !(currentQ === totalQuestions && showAnswers); // Active si toutes questions passées et corrigées
+            // Le bouton nextQuestionBtn gérera aussi la transition "Bienvenue" -> Q1
+            if (currentQ === 0) {
+                 nextQuestionBtn.textContent = "Démarrer Q1";
+                 nextQuestionBtn.disabled = false; // Permet de passer de bienvenue à Q1
+            } else if (currentQ > 0 && currentQ <= totalQuestions) {
+                nextQuestionBtn.textContent = "Question Suivante";
+            } else if (currentQ === totalQuestions) {
+                nextQuestionBtn.textContent = "Afficher Classement";
+            }
+        }
 
-interval=setInterval(refresh,3000); refresh();
-</script>
+        function renderCurrentQuestionUI() {
+            const { currentQ, questionText, showAnswers } = currentQuizState;
+            currentQuizStateElem.textContent = questionText;
+            currentQuestionDisplayElem.textContent = currentQ === 0 ? "Aucune" : (currentQ === -1 ? "Terminé" : `Question ${currentQ}`);
+
+            questionContentElem.innerHTML = '';
+            questionOptionsElem.innerHTML = '';
+            correctAnswerInfoElem.innerHTML = '';
+
+            if (currentQ > 0 && currentQ <= Object.keys(allQuestions).length) {
+                const qKey = Object.keys(allQuestions)[currentQ - 1]; // Firebase keys are not necessarily q1, q2...
+                const question = allQuestions[qKey];
+                if (question) {
+                    questionContentElem.textContent = `${currentQ}. ${question.text}`;
+
+                    if (question.type === "multipleChoice") {
+                        const optionsList = document.createElement('ul');
+                        optionsList.classList.add('question-options');
+                        for (const optKey in question.options) {
+                            const li = document.createElement('li');
+                            li.textContent = `${optKey.toUpperCase()}: ${question.options[optKey]}`;
+                            optionsList.appendChild(li);
+                        }
+                        questionOptionsElem.appendChild(optionsList);
+                        if (showAnswers) {
+                            correctAnswerInfoElem.textContent = `Bonne réponse : ${question.correctAnswer.toUpperCase()} (${question.options[question.correctAnswer]})`;
+                        }
+                    } else if (question.type === "textAnswer") {
+                         if (showAnswers) {
+                            correctAnswerInfoElem.textContent = `Bonne réponse attendue : "${question.correctAnswerText}"`;
+                        }
+                    }
+                }
+            } else if (currentQ === -1) {
+                questionContentElem.textContent = "Le quiz est terminé ! Voir le classement ci-dessous.";
+            } else {
+                 questionContentElem.textContent = "Bienvenue ! Cliquez sur 'Démarrer le Quiz' pour commencer.";
+            }
+            updateControlPanelButtons();
+        }
+
+        function renderResponsesUI() {
+            responsesListElem.innerHTML = ''; // Nettoyer la liste existante
+            const { currentQ, showAnswers } = currentQuizState;
+            if (currentQ <= 0 || currentQ > Object.keys(allQuestions).length) {
+                responsesListElem.innerHTML = '<p>Aucune question active pour afficher les réponses.</p>';
+                return;
+            }
+
+            const qKey = Object.keys(allQuestions)[currentQ - 1];
+            const currentQuestionData = allQuestions[qKey];
+
+            let hasResponses = false;
+            for (const userId in participantResponses) {
+                if (participantResponses[userId] && participantResponses[userId][qKey]) {
+                    hasResponses = true;
+                    const response = participantResponses[userId][qKey];
+                    const userName = participantResponses[userId].name || `Joueur ${userId.substring(0, 4)}`; // Assurez-vous d'avoir un nom d'utilisateur si possible
+
+                    const responseItem = document.createElement('div');
+                    responseItem.classList.add('response-item');
+
+                    const responseTextSpan = document.createElement('span');
+                    let displayAnswer = response.answer;
+
+                    // Si c'est une question à choix multiple et les réponses sont révélées, affiche l'option complète
+                    if (currentQuestionData.type === "multipleChoice" && showAnswers && currentQuestionData.options) {
+                        displayAnswer = `${response.answer.toUpperCase()} (${currentQuestionData.options[response.answer]})`;
+                    }
+                    responseTextSpan.innerHTML = `<strong>${userName}</strong>: ${displayAnswer}`;
+                    responseItem.appendChild(responseTextSpan);
+
+                    const scoreControls = document.createElement('div');
+                    scoreControls.classList.add('score-controls');
+
+                    const scoreInput = document.createElement('input');
+                    scoreInput.type = "number";
+                    scoreInput.min = "0";
+                    scoreInput.max = "1"; // Par défaut, 0 ou 1 point
+                    scoreInput.value = response.scorePoints !== undefined ? response.scorePoints : 0;
+                    scoreInput.disabled = !showAnswers; // Désactiver l'édition avant la révélation
+
+                    const correctIndicator = document.createElement('span');
+                    correctIndicator.classList.add('correct-indicator');
+                    if (response.isCorrect === true) {
+                        correctIndicator.classList.add('true');
+                    } else if (response.isCorrect === false) {
+                        correctIndicator.classList.add('false');
+                    } else {
+                        correctIndicator.classList.add('pending'); // Orange si non corrigé
+                    }
+
+                    if (currentQuestionData.type === "textAnswer" && showAnswers) {
+                        // Pour les questions textuelles, l'admin peut corriger manuellement
+                        scoreControls.appendChild(scoreInput);
+                        scoreInput.addEventListener('change', (e) => {
+                            // Mettre à jour localement l'état et marquer comme corrigé
+                            participantResponses[userId][qKey].scorePoints = parseInt(e.target.value);
+                            participantResponses[userId][qKey].isCorrect = parseInt(e.target.value) > 0;
+                            renderResponsesUI(); // Re-render pour mettre à jour l'indicateur
+                        });
+                    } else if (currentQuestionData.type === "multipleChoice" && showAnswers) {
+                         // Pour les questions à choix multiples, on peut automatiquement marquer correct/incorrect
+                         const isCorrect = (response.answer === currentQuestionData.correctAnswer);
+                         scoreControls.textContent = isCorrect ? "✅ Correct" : "❌ Incorrect";
+                         response.isCorrect = isCorrect; // Mettre à jour localement
+                         response.scorePoints = isCorrect ? 1 : 0; // Mettre à jour localement
+                    } else {
+                        scoreControls.textContent = "En attente...";
+                    }
+                     scoreControls.appendChild(correctIndicator);
+                    responseItem.appendChild(scoreControls);
+                    responsesListElem.appendChild(responseItem);
+                }
+            }
+            if (!hasResponses) {
+                 responsesListElem.innerHTML = '<p>Aucune réponse pour cette question pour le moment.</p>';
+            }
+        }
+
+
+        function renderLeaderboardUI(finalScores) {
+            leaderboardElem.innerHTML = ''; // Nettoyer l'existant
+            if (finalScores.length === 0) {
+                leaderboardElem.innerHTML = '<p>Pas encore de scores à afficher.</p>';
+                return;
+            }
+
+            const table = document.createElement('table');
+            table.classList.add('leaderboard-table');
+            const thead = document.createElement('thead');
+            const tbody = document.createElement('tbody');
+
+            thead.innerHTML = `<tr><th>Rang</th><th>Nom du Participant</th><th>Score Total</th></tr>`;
+
+            // Trier les scores par ordre décroissant
+            finalScores.sort((a, b) => b.totalScore - a.totalScore);
+
+            finalScores.forEach((scoreEntry, index) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${index + 1}</td><td>${scoreEntry.name}</td><td>${scoreEntry.totalScore}</td>`;
+                tbody.appendChild(tr);
+            });
+
+            table.appendChild(thead);
+            table.appendChild(tbody);
+            leaderboardElem.appendChild(table);
+        }
+
+        // --- Fonctions de contrôle du Quiz (Écriture dans la DB) ---
+
+        async function startQuiz() {
+            await controlRef.update({
+                currentQ: 0, // Retour à l'état Bienvenue
+                questionText: "Bienvenue",
+                showAnswers: false
+            });
+            await scoresRef.set({}); // Réinitialise les scores au début d'un nouveau quiz
+            console.log("Quiz démarré/réinitialisé à l'état Bienvenue.");
+        }
+
+        async function goToNextQuestion() {
+            const totalQuestions = Object.keys(allQuestions).length;
+            let nextQ = currentQuizState.currentQ + 1;
+
+            if (nextQ <= totalQuestions) {
+                const qKey = Object.keys(allQuestions)[nextQ - 1];
+                const nextQuestionData = allQuestions[qKey];
+                await controlRef.update({
+                    currentQ: nextQ,
+                    questionText: nextQuestionData ? `Question ${nextQ}: ${nextQuestionData.text}` : `Question ${nextQ}`,
+                    showAnswers: false // Cacher les réponses pour la nouvelle question
+                });
+                console.log(`Passage à la question ${nextQ}.`);
+            } else if (nextQ > totalQuestions) {
+                // Toutes les questions sont passées, on va vers l'état de fin
+                await endQuiz();
+            } else {
+                console.warn("Impossible de passer à la question suivante.");
+            }
+        }
+
+        async function revealAnswers() {
+            await controlRef.update({ showAnswers: true });
+            console.log("Réponses révélées.");
+        }
+
+        async function saveManualScores() {
+            const { currentQ } = currentQuizState;
+            if (currentQ <= 0 || currentQ > Object.keys(allQuestions).length) {
+                alert("Impossible d'enregistrer les scores, aucune question active.");
+                return;
+            }
+
+            const qKey = Object.keys(allQuestions)[currentQ - 1];
+            const updates = {};
+            const scoreUpdates = {};
+
+            for (const userId in participantResponses) {
+                const response = participantResponses[userId][qKey];
+                if (response) {
+                    updates[`${userId}/${qKey}/isCorrect`] = response.isCorrect;
+                    updates[`${userId}/${qKey}/scorePoints`] = response.scorePoints;
+
+                    // Mettre à jour le score total du participant
+                    if (!scoreUpdates[userId]) {
+                        scoreUpdates[userId] = { name: participantResponses[userId].name || `Joueur ${userId.substring(0, 4)}`, totalScore: 0 };
+                    }
+                    // Recalculer le score total pour ce participant
+                    let userTotalScore = 0;
+                    for (const key in participantResponses[userId]) {
+                        if (key !== 'name' && participantResponses[userId][key].scorePoints !== undefined) {
+                             userTotalScore += participantResponses[userId][key].scorePoints;
+                        }
+                    }
+                    scoreUpdates[userId].totalScore = userTotalScore;
+                }
+            }
+
+            try {
+                await responsesRef.update(updates);
+                await scoresRef.update(scoreUpdates);
+                alert("Scores et corrections enregistrés pour la question actuelle.");
+                console.log("Scores enregistrés :", updates);
+            } catch (error) {
+                console.error("Erreur lors de l'enregistrement des scores :", error);
+                alert("Erreur lors de l'enregistrement des scores. Voir console.");
+            }
+        }
+
+        async function endQuiz() {
+            await controlRef.update({
+                currentQ: -1, // Indique la fin du quiz
+                questionText: "Le quiz est terminé !",
+                showAnswers: true // Pour que le classement soit visible partout
+            });
+            console.log("Quiz terminé.");
+        }
+
+
+        // --- Listeners Firebase (Lecture de la DB) ---
+
+        // Écouter les changements dans le nœud 'control'
+        controlRef.on('value', (snapshot) => {
+            currentQuizState = snapshot.val() || { currentQ: 0, questionText: "Bienvenue", showAnswers: false };
+            renderCurrentQuestionUI();
+            renderResponsesUI(); // Les réponses peuvent dépendre de showAnswers
+            if (currentQuizState.currentQ === -1) {
+                // Si le quiz est terminé, chargez et affichez le classement
+                scoresRef.once('value', (scoresSnapshot) => {
+                    const scoresData = scoresSnapshot.val();
+                    const finalScores = [];
+                    for (const userId in scoresData) {
+                        finalScores.push({ userId, ...scoresData[userId] });
+                    }
+                    renderLeaderboardUI(finalScores);
+                });
+            } else {
+                 leaderboardElem.innerHTML = '<p>Le classement sera affiché à la fin du quiz.</p>';
+            }
+        });
+
+        // Écouter les changements dans le nœud 'questions' (une seule fois au chargement)
+        questionsRef.once('value', (snapshot) => {
+            allQuestions = snapshot.val() || {};
+            console.log("Questions chargées :", allQuestions);
+            renderCurrentQuestionUI(); // Pour s'assurer que les boutons sont à jour si control est déjà chargé
+        });
+
+        // Écouter les changements dans le nœud 'responses'
+        responsesRef.on('value', (snapshot) => {
+            participantResponses = snapshot.val() || {};
+            console.log("Réponses des participants chargées :", participantResponses);
+            renderResponsesUI(); // Met à jour l'affichage des réponses
+        });
+
+        // Écouter les changements dans le nœud 'scores' (pour mise à jour en temps réel du leaderboard si affiché)
+        scoresRef.on('value', (snapshot) => {
+            if (currentQuizState.currentQ === -1) { // Seulement si le quiz est terminé
+                const scoresData = snapshot.val();
+                const finalScores = [];
+                for (const userId in scoresData) {
+                    finalScores.push({ userId, ...scoresData[userId] });
+                }
+                renderLeaderboardUI(finalScores);
+            }
+        });
+
+
+        // --- Gestionnaires d'événements des boutons ---
+        startQuizBtn.addEventListener('click', startQuiz);
+        nextQuestionBtn.addEventListener('click', goToNextQuestion);
+        revealAnswersBtn.addEventListener('click', revealAnswers);
+        saveScoresBtn.addEventListener('click', saveManualScores);
+        endQuizBtn.addEventListener('click', endQuiz);
+
+        // Initialisation à l'ouverture de la page
+        // Les listeners Firebase prendront le relais pour mettre à jour l'UI
+    </script>
 </body>
 </html>
