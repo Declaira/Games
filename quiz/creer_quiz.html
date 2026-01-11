@@ -1,90 +1,120 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
-    <title>Quiz Admin - Ajout Question Textuelle</title>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <meta charset="UTF-8">
+    <title>Quiz Admin - Création Questions</title>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@600&display=swap" rel="stylesheet">
     <style>
-        body { font-family: sans-serif; margin: 20px; }
-        label { display: block; margin-top: 10px; }
-        input[type="text"] { width: 300px; padding: 5px; margin-bottom: 10px; }
-        button { padding: 10px 20px; background-color: #4CAF50; color: white; border: none; cursor: pointer; }
-        button:hover { background-color: #45a049; }
+        body { 
+            font-family: 'Quicksand', sans-serif; 
+            margin: 0; 
+            padding: 40px; 
+            background: linear-gradient(to bottom right, #fff3cd, #ffe5b4, #ffd1d1, #ffc4e1); 
+            color: #2c3e50; 
+            min-height: 100vh;
+        }
+        .form-container { 
+            max-width: 600px; 
+            margin: auto; 
+            background: white; 
+            padding: 30px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
+        }
+        h1 { 
+            text-align: center; 
+            color: white; 
+            background: linear-gradient(to right, #ff9a00, #ff4e00); 
+            margin: -30px -30px 20px -30px; 
+            padding: 20px; 
+            border-radius: 12px 12px 0 0; 
+            font-size: 1.8em;
+        }
+        label { display: block; margin-top: 15px; font-weight: bold; color: #ff6f00; }
+        input[type="text"], select { 
+            width: 100%; padding: 12px; margin-top: 5px; 
+            border-radius: 8px; border: 1px solid #ccc; 
+            box-sizing: border-box; font-family: 'Quicksand', sans-serif;
+        }
+        .hint { font-size: 0.85em; color: #666; margin-top: 5px; background: #f9f9f9; padding: 8px; border-radius: 4px; border-left: 3px solid #ff6f00; }
+        button { 
+            width: 100%; padding: 15px; 
+            background: #ff6f00; color: white; 
+            border: none; cursor: pointer; border-radius: 8px; 
+            margin-top: 25px; font-size: 1.1em; font-weight: bold; 
+            transition: transform 0.2s, background-color 0.3s;
+        }
+        button:hover { transform: scale(1.02); background-color: #e65c00; }
     </style>
 </head>
 <body>
-    <h1>Ajouter une Question à Réponse Textuelle</h1>
+    <div class="form-container">
+        <h1>➕ Créer une Question</h1>
+        <label for="questionText">Texte de la question :</label>
+        <input type="text" id="questionText" placeholder="Ex: Quel est cet animal ?">
 
-    <div id="app">
-        <label for="questionText">Texte de la question:</label>
-        <input type="text" id="questionText" placeholder="Ex: Quelle est la capitale de la France ?"><br>
+        <label for="mediaType">Type de média :</label>
+        <select id="mediaType">
+            <option value="none">Texte uniquement</option>
+            <option value="image">Image (.png, .jpg)</option>
+            <option value="audio">Audio (.mp3)</option>
+            <option value="video">Vidéo (.mp4)</option>
+        </select>
 
-        <label for="correctAnswerText">Bonne réponse (texte):</label>
-        <input type="text" id="correctAnswerText" placeholder="Ex: Paris"><br>
+        <label for="mediaUrl">URL du média :</label>
+        <input type="text" id="mediaUrl" placeholder="Lien vers le fichier...">
+        <p class="hint">Laissez vide si c'est une question texte simple.</p>
 
-        <button id="addQuestionBtn">Ajouter la Question</button>
+        <label for="correctAnswer">Bonne réponse :</label>
+        <input type="text" id="correctAnswer" placeholder="La réponse attendue">
+
+        <button id="addQuestionBtn">Enregistrer la Question</button>
+    </div>
+    </body>
     </div>
 
-   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-    import { getDatabase, ref, push, set } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+        import { getDatabase, ref, push, set } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyB29fMpTwBgsqkjijkNoQJ2kGChSeQDX_w",
-        authDomain: "quiz-ea203.firebaseapp.com",
-        databaseURL: "https://quiz-ea203-default-rtdb.europe-west1.firebasedatabase.app", 
-        projectId: "quiz-ea203",
-        storageBucket: "quiz-ea203.firebasestorage.app",
-        messagingSenderId: "605137421110",
-        appId: "1:605137421110:web:289e0876fe06108deaa997",
-        measurementId: "G-8JVMQRJTD5"
-    };
-
-    // --- CORRECTION : Initialisation ---
-    const app = initializeApp(firebaseConfig);
-    const database = getDatabase(app);
-
-    const addQuestionBtn = document.getElementById('addQuestionBtn');
-
-    addQuestionBtn.addEventListener('click', () => {
-        const questionText = document.getElementById('questionText').value.trim();
-        const correctAnswerText = document.getElementById('correctAnswerText').value.trim();
-
-        if (!questionText || !correctAnswerText) {
-            alert("Veuillez remplir tous les champs de la question.");
-            return;
-        }
-
-        const newQuestion = {
-            text: questionText,
-            type: "textAnswer",
-            correctAnswerText: correctAnswerText
+        const firebaseConfig = {
+            apiKey: "AIzaSyB29fMpTwBgsqkjijkNoQJ2kGChSeQDX_w",
+            authDomain: "quiz-ea203.firebaseapp.com",
+            databaseURL: "https://quiz-ea203-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "quiz-ea203",
+            storageBucket: "quiz-ea203.firebasestorage.app",
+            messagingSenderId: "605137421110",
+            appId: "1:605137421110:web:289e0876fe06108deaa997"
         };
 
-        addQuestionToDatabase(newQuestion);
-    });
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
 
-    async function addQuestionToDatabase(questionData) {
-        try {
-            // --- CORRECTION : Syntaxe Modulaire v9 ---
-            const questionsListRef = ref(database, 'questions');
-            const newQuestionRef = push(questionsListRef);
+        document.getElementById('addQuestionBtn').onclick = async () => {
+            const text = document.getElementById('questionText').value.trim();
+            const media = document.getElementById('mediaUrl').value.trim();
+            const answer = document.getElementById('correctAnswer').value.trim();
             
-            await set(newQuestionRef, questionData);
-            
-            console.log("Question ajoutée ! ID:", newQuestionRef.key);
+            if (!text || !answer) {
+                alert("Le texte de la question et la réponse sont obligatoires.");
+                return;
+            }
 
-            document.getElementById('questionText').value = '';
-            document.getElementById('correctAnswerText').value = '';
-            alert("Question textuelle ajoutée avec succès !");
-            
-        } catch (error) {
-            console.error("Erreur :", error);
-            alert("Erreur lors de l'ajout. Vérifiez les règles de sécurité Firebase.");
-        }
-    }
-</script>
+            const newQuestion = {
+                text: text,        // Toujours présent, sera lu par joueur.html
+                media: media,      // URL optionnelle pour admin.html
+                answer: answer,
+                timestamp: Date.now()
+            };
+
+            try {
+                await push(ref(database, 'questions'), newQuestion);
+                alert("Question ajoutée !");
+                document.getElementById('questionText').value = "";
+                document.getElementById('mediaUrl').value = "";
+                document.getElementById('correctAnswer').value = "";
+            } catch (e) { alert("Erreur: " + e.message); }
+        };
+    </script>
 </body>
 </html>
-
-
