@@ -2,32 +2,99 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Admin - Contrôle du Quiz</title>
+    <title>Admin - Contrôle Live & Classement</title>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@600&display=swap" rel="stylesheet">
     <style>
-        body { font-family: sans-serif; background: #f4f7f6; padding: 20px; }
-        .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .btn { padding: 10px 20px; cursor: pointer; border: none; border-radius: 5px; color: white; margin-right: 10px; }
+        body { 
+            font-family: 'Quicksand', sans-serif; 
+            background: linear-gradient(to bottom right, #fff3cd, #ffe5b4, #ffd1d1, #ffc4e1); 
+            margin: 0; padding: 0; min-height: 100vh; color: #2c3e50;
+        }
+        header { 
+            background: linear-gradient(to right, #ff9a00, #ff4e00); 
+            color: white; padding: 20px; text-align: center; font-size: 2em; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+        .container { 
+            max-width: 900px; margin: 30px auto; 
+            background: white; padding: 30px; border-radius: 15px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
+        }
+        .btn { 
+            padding: 12px 24px; cursor: pointer; border: none; 
+            border-radius: 8px; color: white; font-weight: bold; 
+            margin: 5px; font-family: 'Quicksand', sans-serif;
+            transition: transform 0.2s, opacity 0.2s;
+        }
+        .btn:hover { transform: scale(1.05); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .btn-next { background: #3498db; }
-        .btn-reset { background: #e74c3c; }
         .btn-reveal { background: #f39c12; }
+        .btn-reset { background: #e74c3c; }
+        .btn-validate { background: #27ae60; padding: 5px 10px; }
+        .btn-wrong { background: #e67e22; padding: 5px 10px; }
+
+        #media-content img, #media-content video { max-width: 100%; border-radius: 10px; margin-top: 10px; }
+        
+        .response-item {
+            background: #f9f9f9; padding: 15px; margin: 10px 0;
+            border-radius: 10px; border-left: 5px solid #ff6f00;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+
+        .ranking-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .ranking-table th, .ranking-table td { padding: 15px; border: 1px solid #eee; text-align: left; }
+        .ranking-table th { background: #ff9a00; color: white; }
+        .rank-row { animation: fadeIn 0.5s ease-in forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Panneau Admin</h1>
-        <div id="status">Question actuelle : <strong id="q-num">0</strong></div>
-        <hr>
-        <button id="nextBtn" class="btn btn-next">Question Suivante</button>
-        <button id="revealBtn" class="btn btn-reveal">Révéler la Réponse</button>
-        <button id="resetBtn" class="btn btn-reset">Réinitialiser (Reset IDs)</button>
+    <header>⚙️ Panneau Administration</header>
+    
+    <div class="container" id="admin-main">
+        <div id="status">Question : <strong id="q-num">0</strong> / <span id="q-total">0</span></div>
+        
+        <div id="question-display" style="text-align: center; background: #fff8e1; padding: 20px; border-radius: 10px; margin: 20px 0;">
+            <h2 id="q-text">En attente...</h2>
+            <div id="media-content"></div>
+        </div>
 
-        <h3>Réponses reçues :</h3>
+        <div style="text-align:center;">
+            <button id="nextBtn" class="btn btn-next">Question Suivante</button>
+            <button id="revealBtn" class="btn btn-reveal">Révéler la Réponse</button>
+            <button id="resetBtn" class="btn btn-reset">Réinitialiser Tout</button>
+        </div>
+
+        <hr style="margin: 30px 0; border: 0; border-top: 1px solid #eee;">
+        
+        <h3>Réponses des joueurs :</h3>
         <div id="responsesList"></div>
+    </div>
+
+    <div class="container hidden" id="ranking-section">
+        <h2 style="text-align: center; color: #ff4e00;">🏆 Classement Final</h2>
+        <div style="text-align: center; margin-bottom: 20px;">
+            <button id="showNextRankBtn" class="btn btn-next">Afficher le joueur suivant (du dernier au 1er)</button>
+        </div>
+        <table class="ranking-table">
+            <thead>
+                <tr>
+                    <th>Position</th>
+                    <th>Joueur</th>
+                    <th>Points</th>
+                </tr>
+            </thead>
+            <tbody id="rankingBody"></tbody>
+        </table>
+        <div style="text-align: center; margin-top: 20px;">
+            <button onclick="location.reload()" class="btn btn-reset">Recommencer un Quiz</button>
+        </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-        import { getDatabase, ref, onValue, set, update, remove } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+        import { getDatabase, ref, onValue, set, update, remove, runTransaction } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyB29fMpTwBgsqkjijkNoQJ2kGChSeQDX_w",
@@ -44,13 +111,131 @@
 
         let questions = {};
         let currentState = { currentQ: 0 };
+        let fullRankingList = [];
+        let currentRankToShow = 0;
 
-        onValue(ref(database, 'questions'), (s) => questions = s.val() || {});
-        onValue(ref(database, 'control'), (s) => {
-            currentState = s.val() || { currentQ: 0 };
-            document.getElementById('q-num').textContent = currentState.currentQ;
+        // --- CHARGEMENT DONNÉES ---
+        onValue(ref(database, 'questions'), (snap) => {
+            questions = snap.val() || {};
+            document.getElementById('q-total').textContent = Object.keys(questions).length;
         });
 
+        onValue(ref(database, 'control'), (snap) => {
+            currentState = snap.val() || { currentQ: 0 };
+            document.getElementById('q-num').textContent = currentState.currentQ;
+            
+            const qKeys = Object.keys(questions);
+            if (qKeys.length > 0 && currentState.currentQ > qKeys.length) {
+                prepareRanking();
+            } else {
+                renderMedia();
+            }
+        });
+
+        // --- AFFICHAGE MÉDIA ---
+        function renderMedia() {
+            const qKeys = Object.keys(questions);
+            const container = document.getElementById('media-content');
+            const title = document.getElementById('q-text');
+            
+            if (currentState.currentQ > 0 && currentState.currentQ <= qKeys.length) {
+                const q = questions[qKeys[currentState.currentQ - 1]];
+                title.textContent = q.text || "Question " + currentState.currentQ;
+                container.innerHTML = "";
+
+                if (q.media) {
+                    const url = q.media.toLowerCase();
+                    if (url.endsWith('.png') || url.endsWith('.jpg') || url.endsWith('.jpeg')) {
+                        container.innerHTML = `<img src="${q.media}">`;
+                    } else if (url.endsWith('.mp3')) {
+                        container.innerHTML = `<audio controls src="${q.media}"></audio>`;
+                    } else if (url.endsWith('.mp4')) {
+                        container.innerHTML = `<video controls src="${q.media}"></video>`;
+                    }
+                }
+            }
+        }
+
+        // --- GESTION RÉPONSES ET POINTS ---
+        window.validate = (playerId, isCorrect) => {
+            const qKeys = Object.keys(questions);
+            const currentKey = qKeys[currentState.currentQ - 1];
+            
+            update(ref(database, `responses/${playerId}/${currentKey}`), { validated: true, correct: isCorrect });
+            
+            if (isCorrect) {
+                runTransaction(ref(database, `scores/${playerId}`), (s) => (s || 0) + 1);
+            }
+        };
+
+        onValue(ref(database, 'responses'), (snap) => {
+            const list = document.getElementById('responsesList');
+            list.innerHTML = '';
+            const players = snap.val() || {};
+            const qKeys = Object.keys(questions);
+            const currentKey = qKeys[currentState.currentQ - 1];
+
+            for (let id in players) {
+                if (players[id][currentKey]) {
+                    const resp = players[id][currentKey];
+                    const div = document.createElement('div');
+                    div.className = "response-item";
+                    div.innerHTML = `
+                        <span><strong>${players[id].name}</strong> : ${resp.answer}</span>
+                        <div>
+                            <button onclick="window.validate('${id}', true)" class="btn btn-validate" ${resp.validated ? 'disabled' : ''}>CORRECT</button>
+                            <button onclick="window.validate('${id}', false)" class="btn btn-wrong" ${resp.validated ? 'disabled' : ''}>FAUX</button>
+                        </div>`;
+                    list.appendChild(div);
+                }
+            }
+        });
+
+        // --- CLASSEMENT PROGRESSIF ---
+        function prepareRanking() {
+            document.getElementById('admin-main').classList.add('hidden');
+            document.getElementById('ranking-section').classList.remove('hidden');
+
+            onValue(ref(database, 'scores'), (sSnap) => {
+                const scores = sSnap.val() || {};
+                onValue(ref(database, 'responses'), (rSnap) => {
+                    const rData = rSnap.val() || {};
+                    fullRankingList = Object.keys(scores).map(id => ({
+                        name: rData[id]?.name || "Anonyme",
+                        pts: scores[id]
+                    }));
+
+                    // TRI CROISSANT (Dernier au Premier)
+                    fullRankingList.sort((a, b) => a.pts - b.pts);
+                    currentRankToShow = 0;
+                    document.getElementById('rankingBody').innerHTML = '';
+                }, { onlyOnce: true });
+            }, { onlyOnce: true });
+        }
+
+        document.getElementById('showNextRankBtn').onclick = () => {
+            if (currentRankToShow < fullRankingList.length) {
+                const player = fullRankingList[currentRankToShow];
+                const totalPlayers = fullRankingList.length;
+                const position = totalPlayers - currentRankToShow; // Calcul position réelle (1er, 2eme...)
+
+                const row = document.createElement('tr');
+                row.className = "rank-row";
+                row.innerHTML = `<td>#${position}</td><td>${player.name}</td><td>${player.pts} pts</td>`;
+                
+                // Insérer en haut pour que le 1er finisse en haut du tableau
+                const tbody = document.getElementById('rankingBody');
+                tbody.insertBefore(row, tbody.firstChild);
+
+                currentRankToShow++;
+                if (currentRankToShow === totalPlayers) {
+                    document.getElementById('showNextRankBtn').disabled = true;
+                    document.getElementById('showNextRankBtn').textContent = "Fin du classement !";
+                }
+            }
+        };
+
+        // --- CONTRÔLES ---
         document.getElementById('nextBtn').onclick = () => {
             update(ref(database, 'control'), { currentQ: currentState.currentQ + 1, showAnswers: false });
         };
@@ -60,37 +245,13 @@
         };
 
         document.getElementById('resetBtn').onclick = () => {
-            if(confirm("Tout effacer ?")) {
+            if(confirm("Effacer tous les scores et réponses ?")) {
                 remove(ref(database, 'responses'));
                 remove(ref(database, 'scores'));
-                set(ref(database, 'control'), { currentQ: 0, resetSignal: Date.now() });
+                set(ref(database, 'control'), { currentQ: 0, showAnswers: false });
+                location.reload();
             }
         };
-
-        // Affichage des réponses
-        onValue(ref(database, 'responses'), (snap) => {
-            const list = document.getElementById('responsesList');
-            list.innerHTML = '';
-            const players = snap.val() || {};
-            
-            // On récupère la clé de la question actuelle via l'ordre des questions
-            const qKeys = Object.keys(questions);
-            const currentKey = qKeys[currentState.currentQ - 1];
-
-            for (let id in players) {
-                const playerData = players[id];
-                const playerName = playerData.name || "Anonyme";
-                
-                // Si le joueur a répondu à LA question en cours
-                if (playerData[currentKey]) {
-                    const p = document.createElement('div');
-                    p.style.padding = "10px";
-                    p.style.borderBottom = "1px solid #eee";
-                    p.innerHTML = `<strong>${playerName}</strong> : ${playerData[currentKey].answer}`;
-                    list.appendChild(p);
-                }
-            }
-        });
     </script>
 </body>
 </html>
