@@ -131,16 +131,31 @@
     }
 
     .num-pad button {
-      height: 55px;
-      font-size: 1.3rem;
-      background: #ff9a00;
+      height: 45px;
+      font-size: 1.2rem;
+      background: #ff9a00; /* Orange par défaut */
       box-shadow: 0 4px 0 #e68a00;
-      border-radius: 12px;
+      border-radius: 10px;
+      color: white;
+      transition: all 0.2s;
     }
 
-    .num-pad button:hover { background: #ffb74d; transform: translateY(-2px); box-shadow: 0 6px 0 #e68a00; }
+    /* État quand le chiffre est complété (9 fois) */
+    .num-pad button.completed {
+      background: #b0bec5 !important; /* Gris */
+      box-shadow: 0 4px 0 #90a4ae !important;
+      cursor: not-allowed;
+      opacity: 0.6;
+      pointer-events: none; /* Désactive le clic */
+    }
+
+    .num-pad button:hover { transform: translateY(-2px); }
     .num-pad button:active { transform: translateY(2px); box-shadow: 0 1px 0 #e68a00; }
-    .num-pad button.erase { background: #d9534f; box-shadow: 0 4px 0 #c9302c; }
+    
+    .num-pad button.erase { 
+      background: #d9534f; 
+      box-shadow: 0 4px 0 #c9302c; 
+    }
 
     @media (max-width: 350px) {
       .cell input { font-size: 1.3rem; }
@@ -262,6 +277,7 @@ function renderGrid() {
     };
     updateCellNotes(r, c, cell);
   }
+  updateNumPad();
 }
 
 function select(cell) {
@@ -294,6 +310,12 @@ function handleInput(n) {
   const r = parseInt(selectedCell.dataset.r), c = parseInt(selectedCell.dataset.c);
   if (puzzle[r][c] !== 0) return;
 
+  // EMPECHE L'AJOUT SI DEJA 9 FOIS (sauf si on veut effacer avec 0)
+  if (n !== 0) {
+    const btn = document.querySelector(`.num-pad button[data-num="${n}"]`);
+    if (btn && btn.classList.contains('completed')) return;
+  }
+
   if (isNoteMode && n !== 0) {
     if (notes[r][c].has(n)) notes[r][c].delete(n);
     else notes[r][c].add(n);
@@ -304,9 +326,13 @@ function handleInput(n) {
     if (n !== 0 && n !== solution[r][c]) selectedCell.classList.add('error');
     else selectedCell.classList.remove('error');
   }
+  
   renderGrid();
+  // On s'assure de garder la sélection après le rendu
   const newCell = document.querySelector(`[data-r="${r}"][data-c="${c}"]`);
   if(newCell) select(newCell);
+  
+  updateNumPad(); // Met à jour l'état des boutons
   checkWin();
 }
 
@@ -335,6 +361,32 @@ document.addEventListener('keydown', (e) => {
     select(target);
   }
 });
+
+function updateNumPad() {
+  const counts = {};
+  for (let i = 1; i <= 9; i++) counts[i] = 0;
+
+  // On compte combien de fois chaque chiffre est placé SANS erreur
+  document.querySelectorAll('.cell').forEach(cell => {
+    const r = cell.dataset.r, c = cell.dataset.c;
+    const val = state[r][c];
+    if (val !== 0 && !cell.classList.contains('error')) {
+      counts[val]++;
+    }
+  });
+
+  // Application du style gris/désactivé
+  document.querySelectorAll('.num-pad button[data-num]').forEach(btn => {
+    const n = parseInt(btn.dataset.num);
+    if (n === 0) return; 
+    
+    if (counts[n] >= 9) {
+      btn.classList.add('completed');
+    } else {
+      btn.classList.remove('completed');
+    }
+  });
+}
 
 function updateNoteUI() {
   noteBtn.classList.toggle('active', isNoteMode);
