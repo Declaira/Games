@@ -34,22 +34,39 @@
         /* Barre de recherche */
         .search-container {
             display: flex;
-            gap: 40px;
-            width: 100%;
-            max-width: 800px;
-            margin-bottom: 30px;
-            align-items: flex-start;
-            padding: 20px;
-            background-color: #1a1a1b;
+            flex-direction: row; /* Horizontal par défaut */
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            width: 95%; /* Utilise presque toute la largeur sur mobile */
+            max-width: 700px;
+            margin: 0 auto 20px auto;
+            padding: 15px;
+            background: rgba(26, 26, 27, 0.9); /* Un peu de transparence comme PokeDle */
             border: 2px solid #3a3a3c;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            box-sizing: border-box;
         }
+
         .search-box {
-            flex: 1;
+            flex-grow: 1; /* Prend tout l'espace restant comme dans PokeDle */
             position: relative;
+            width: 100%;
         }
-        input, select {
+        input#searchInput {
+            width: 100%;
+            height: 48px; /* Hauteur identique à PokeDle pour le confort tactile */
+            padding: 10px 16px;
+            font-size: 18px;
+            background-color: #2c2c2e;
+            border: 2px solid #3a3a3c;
+            color: white;
+            border-radius: 10px;
+            box-sizing: border-box;
+            transition: all 0.2s;
+        }
+        select {
             padding: 12px 16px;
             font-size: 16px;
             background-color: #2c2c2e;
@@ -106,20 +123,22 @@
             position: relative;
         }
         .championnat-btn {
-            padding: 12px 20px;
+            height: 48px;
+            padding: 0 20px;
             font-size: 16px;
             background-color: #2c2c2e;
             border: 2px solid #3a3a3c;
             color: white;
-            border-radius: 6px;
+            border-radius: 10px;
             cursor: pointer;
-            min-width: 160px;
+            font-weight: bold;
             transition: all 0.2s;
-            font-weight: 500;
+            white-space: nowrap;
         }
+
         .championnat-btn:hover {
-            background-color: #3a3a3c;
             border-color: #538d4e;
+            background-color: #3a3a3c;
         }
         .championnat-menu {
             display: none;
@@ -189,17 +208,17 @@
         }
         .suggestions {
             position: absolute;
-            top: 100%;
+            top: calc(100% + 5px);
             left: 0;
             right: 0;
-            width: 633px;
+            width: 100%; /* S'adapte à l'input, plus de largeur fixe de 633px */
             background: #1a1a1b;
-            z-index: 10;
-            max-height: 300px;
+            z-index: 100;
+            max-height: 250px;
             overflow-y: auto;
-            border: 2px solid #3a3a3c;
-            border-top: none;
-            border-radius: 0 0 6px 6px;
+            border: 2px solid #538d4e;
+            border-radius: 8px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.4);
             display: none;
         }
         .suggestions:not(:empty) {
@@ -364,19 +383,32 @@
             background-color: #3a3a3c; /* Optionnel : fond gris foncé pour faire ressortir l'icône */
         }
 
-        @media (max-width: 768px) {
-            .header-row, .guess-row {
-                grid-template-columns: 60px 1fr 1fr 1fr; /* Version mobile simplifiée si besoin */
-                font-size: 0.7rem;
-            }
-            /* On cache certaines colonnes sur mobile pour la lisibilité si besoin, 
-               ici on force le scroll horizontal via .game-board overflow-x: auto */
-        }
+        @media (max-width: 600px) {
+          .search-container {
+              flex-direction: column; /* Empile l'input et le bouton sur petit écran */
+              gap: 10px;
+              padding: 10px;
+          }
+          
+          .championnat-btn {
+              width: 100%; /* Bouton pleine largeur sur mobile vertical */
+          }
 
-        @keyframes flip {
-            0% { transform: rotateX(0); }
-            100% { transform: rotateX(360deg); }
-        }
+          .header-cell, .cell {
+              font-size: 0.75rem; /* Réduction pour éviter le scroll excessif */
+              padding: 8px 2px;
+          }
+      }
+
+      /* Optimisation pour le mode Paysage (Horizontal) */
+      @media (max-height: 500px) {
+          #titreImage {
+              height: 15vh; /* Réduit le titre pour laisser de la place au jeu */
+          }
+          .search-container {
+              margin-bottom: 10px;
+          }
+      }
     </style>
 </head>
 <body>
@@ -39357,7 +39389,7 @@
         const countryFlags = {
             'Espagne': 'es', 'Angleterre': 'gb-eng', 'France': 'fr', 'Allemagne': 'de', 'Italie': 'it',
             'Portugal': 'pt', 'Pays-Bas': 'nl', 'Belgique': 'be', 'Suède': 'se', 'Norvège': 'no',
-            'Danemark': 'dk', 'Pologne': 'pl', 'Russie': 'ru', 'Ukraine': 'ua', 'Serbie': 'rs',
+            'Danemark': 'dk', 'Pologne': 'pl', 'Russie': 'ru', 'Ukraine': 'ua', 'Serbie': 'rs', 'Albanie': 'al',
             'Croatie': 'hr', 'Grèce': 'gr', 'Turquie': 'tr', 'Türkiye': 'tr', 'Roumanie': 'ro',
             'Tchéquie': 'cz', 'Hongrie': 'hu', 'Slovaquie': 'sk', 'Slovénie': 'si', 'Bosnie': 'ba',
             'Bulgarie': 'bg', 'Autriche': 'at', 'Suisse': 'ch', 'Écosse': 'gb-sct', 'Pays de Galles': 'gb-wls',
@@ -39367,20 +39399,21 @@
             'Japon': 'jp', 'Corée du Sud': 'kr', 'Corée, Sud': 'kr', 'Chine': 'cn', 'Australie': 'au',
             'Cameroun': 'cm', 'Nigeria': 'ng', 'Ghana': 'gh', 'Sénégal': 'sn', 'Maroc': 'ma',
             'Égypte': 'eg', 'Côte d\'Ivoire': 'ci', 'Côte d\'Ivoire': 'ci', 'Mali': 'ml', 'Burkina Faso': 'bf',
-            'Guinée': 'gn', 'Tunisie': 'tn', 'Algérie': 'dz', 'République Démocratique du Congo': 'cd', 'Congo': 'cg',
+            'Guinée': 'gn', 'Tunisie': 'tn', 'Algérie': 'dz', 'RD Congo': 'cd', 'Congo': 'cg', 'République Centrafricaine': 'cf',
             'Afrique du Sud': 'za', 'Kenya': 'ke', 'Ouganda': 'ug', 'Soudan': 'sd', 'Syrie': 'sy',
             'Guinée Équatoriale': 'gq', 'Gabon': 'ga', 'Angola': 'ao', 'Bénin': 'bj', 'Comores': 'km',
-            'Arabie Saoudite': 'sa', 'Émirats Arabes Unis': 'ae', 'Israël': 'il', 'Liban': 'lb',
+            'Arabie Saoudite': 'sa', 'Émirats Arabes Unis': 'ae', 'Israël': 'il', 'Liban': 'lb', 'Irak': 'iq',
+            'Iran': 'ir', 'Qatar': 'qa', 'Koweït': 'kw', 'Bahreïn': 'bh', 'Oman': 'om', 'Afghanistan': 'af',
             'Géorgie': 'ge', 'Ouzbékistan': 'uz', 'Gambie': 'gm', 'Suriname': 'sr', "Haïti": 'ht',
             'Curaçao': 'cw', 'Aruba': 'aw', 'Guadeloupe': 'gp', 'Martinique': 'mq', 'Togo': 'tg',
             'Libéria': 'lr', 'Sierra Leone': 'sl', 'Niger': 'ne', 'Érythrée': 'er', 'Éthiopie': 'et',
             'Zambie': 'zm', 'Zimbabwe': 'zw', 'Guinée-Bissau': 'gw', 'Mozambique': 'mz', 'Kazakhstan': 'kz',
             'Irlande du Nord': 'gb-nir', 'Irlande': 'ie', 'Finlande': 'fi', 'Islande': 'is',
             'Luxembourg': 'lu', 'Malte': 'mt', 'Chypre': 'cy', 'Macédoine du Nord': 'mk',
-            'Thaïlande': 'th', 'Vietnam': 'vn', 'Philippines': 'ph', 'Indonésie': 'id',
+            'Thaïlande': 'th', 'Vietnam': 'vn', 'Philippines': 'ph', 'Indonésie': 'id', 'République dominicaine': 'do',
             'Malaisie': 'my', 'Singapour': 'sg', 'Inde': 'in', 'Pakistan': 'pk', 'Bangladesh': 'bd',
             'Nouvelle-Zélande': 'nz', 'Fidji': 'fj', 'El Salvador': 'sv', 'Costa Rica': 'cr',
-            'Honduras': 'hn', 'Guatemala': 'gt', 'Nicaragua': 'ni', 'Panama': 'pa',
+            'Honduras': 'hn', 'Guatemala': 'gt', 'Nicaragua': 'ni', 'Panama': 'pa', 'Gibraltar': 'gi',
             'Saint-Christophe-et-Niévès': 'kn', 'Barbade': 'bb', 'Trinité-et-Tobago': 'tt'
         };
 
