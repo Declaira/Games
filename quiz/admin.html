@@ -33,6 +33,14 @@
         .btn-validate { background: #27ae60; padding: 5px 10px; }
         .btn-wrong { background: #e67e22; padding: 5px 10px; }
 
+        /* Style bouton lecture type quiz.html */
+        .play-btn {
+            background: linear-gradient(to right, #ff9a00, #ff4e00); 
+            color: white; padding: 10px 20px; border: none; 
+            border-radius: 8px; cursor: pointer; font-size: 1.2em; margin-top: 10px;
+        }
+        .play-btn:hover { background-color: #e65c00; }
+
         #media-content img, #media-content video { max-width: 100%; border-radius: 10px; margin-top: 10px; }
         
         .response-item {
@@ -44,8 +52,6 @@
         .ranking-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         .ranking-table th, .ranking-table td { padding: 15px; border: 1px solid #eee; text-align: left; }
         .ranking-table th { background: #ff9a00; color: white; }
-        .rank-row { animation: fadeIn 0.5s ease-in forwards; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .hidden { display: none !important; }
     </style>
 </head>
@@ -69,7 +75,6 @@
         </div>
 
         <hr style="margin: 30px 0; border: 0; border-top: 1px solid #eee;">
-        
         <h3>Réponses des joueurs :</h3>
         <div id="responsesList"></div>
     </div>
@@ -77,16 +82,10 @@
     <div class="container hidden" id="ranking-section">
         <h2 style="text-align: center; color: #ff4e00;">🏆 Classement Final</h2>
         <div style="text-align: center; margin-bottom: 20px;">
-            <button id="showNextRankBtn" class="btn btn-next">Afficher le joueur suivant (du dernier au 1er)</button>
+            <button id="showNextRankBtn" class="btn btn-next">Afficher le joueur suivant</button>
         </div>
         <table class="ranking-table">
-            <thead>
-                <tr>
-                    <th>Position</th>
-                    <th>Joueur</th>
-                    <th>Points</th>
-                </tr>
-            </thead>
+            <thead><tr><th>Position</th><th>Joueur</th><th>Points</th></tr></thead>
             <tbody id="rankingBody"></tbody>
         </table>
         <div style="text-align: center; margin-top: 20px;">
@@ -113,61 +112,75 @@
 
         let questions = {};
         let currentState = { currentQ: 0 };
+        let questionsLoaded = false;
         let fullRankingList = [];
         let currentRankToShow = 0;
-        let questionsLoaded = false; 
 
-    onValue(ref(database, 'questions'), (snap) => {
-        questions = snap.val() || {};
-        const count = Object.keys(questions).length;
-        document.getElementById('q-total').textContent = count;
-        
-        // Une fois les questions reçues, on marque comme prêt
-        questionsLoaded = true;
-        
-        // On force une vérification de l'état maintenant que les questions sont là
-        checkState(); 
-    });
+        onValue(ref(database, 'questions'), (snap) => {
+            questions = snap.val() || {};
+            document.getElementById('q-total').textContent = Object.keys(questions).length;
+            questionsLoaded = true;
+            checkState();
+        });
 
-    onValue(ref(database, 'control'), (snap) => {
-        currentState = snap.val() || { currentQ: 0 };
-        document.getElementById('q-num').textContent = currentState.currentQ;
-        
-        // On vérifie l'état à chaque changement de contrôle
-        checkState();
-    });
+        onValue(ref(database, 'control'), (snap) => {
+            currentState = snap.val() || { currentQ: 0 };
+            document.getElementById('q-num').textContent = currentState.currentQ;
+            checkState();
+        });
 
-    // Nouvelle fonction de vérification centralisée
-    function checkState() {
-        const qKeys = Object.keys(questions);
-        
-        // Si on n'a pas encore de questions, on ne fait rien (on attend)
-        if (!questionsLoaded || qKeys.length === 0) return;
-
-        // Maintenant on peut comparer sereinement
-        if (currentState.currentQ > qKeys.length && currentState.currentQ !== 0) {
-            prepareRanking();
-        } else {
-            // On s'assure que le classement est caché si on revient en arrière
-            document.getElementById('admin-main').classList.remove('hidden');
-            document.getElementById('ranking-section').classList.add('hidden');
-            renderMedia();
+        function checkState() {
+            const qKeys = Object.keys(questions);
+            if (!questionsLoaded || qKeys.length === 0) return;
+            if (currentState.currentQ > qKeys.length && currentState.currentQ !== 0) {
+                prepareRanking();
+            } else {
+                document.getElementById('admin-main').classList.remove('hidden');
+                document.getElementById('ranking-section').classList.add('hidden');
+                renderMedia();
+            }
         }
-    }
-        // --- AFFICHAGE MÉDIA ---
+
         function renderMedia() {
             const qKeys = Object.keys(questions);
             const container = document.getElementById('media-content');
             const title = document.getElementById('q-text');
-            const answerDiv = document.getElementById('answer-display'); // On récupère l'élément réponse
+            const answerDiv = document.getElementById('answer-display');
             
             if (currentState.currentQ > 0 && currentState.currentQ <= qKeys.length) {
                 const q = questions[qKeys[currentState.currentQ - 1]];
                 title.textContent = q.text || "Question " + currentState.currentQ;
                 container.innerHTML = "";
 
-                // Gestion du média (Image, Audio, Vidéo)
-                if (q.media) {
+                // CAS IMPORTATION MUSIQUE
+                if (q.media === "musique") {
+                    container.innerHTML = `
+                        <input type="file" id="musicUpload" accept=".mp3" style="display:none">
+                        <button onclick="document.getElementById('musicUpload').click()" class="btn" style="background:#666;">📁 Importer le MP3</button>
+                        <div id="fileTitle" style="margin-top:10px; font-size:0.9em;"></div>
+                        <div id="music-controls" class="hidden">
+                            <button id="play-btn" class="play-btn" onclick="window.toggleAudio()">🎵 Lire</button>
+                            <audio id="audio-player"></audio>
+                        </div>
+                    `;
+                    setupMusicImport();
+                } 
+                // CAS IMPORTATION VIDEO
+                else if (q.media === "video") {
+                    container.innerHTML = `
+                        <input type="file" id="videoUpload" accept=".mp4,.webm" style="display:none">
+                        <button onclick="document.getElementById('videoUpload').click()" class="btn" style="background:#444;">🎬 Importer la Vidéo</button>
+                        <div id="videoTitle" style="margin-top:10px; font-size:0.9em;"></div>
+                        <div id="video-box" class="hidden">
+                            <video id="video-player" style="width:100%; max-height:300px; margin-top:10px; border-radius:10px;"></video>
+                            <br>
+                            <button id="play-vid-btn" class="play-btn" onclick="window.toggleVideo()">▶️ Lire la Vidéo</button>
+                        </div>
+                    `;
+                    setupVideoImport();
+                }
+                // MÉDIAS PAR URL (Standard)
+                else if (q.media) {
                     const url = q.media.toLowerCase();
                     if (url.endsWith('.png') || url.endsWith('.jpg') || url.endsWith('.jpeg')) {
                         container.innerHTML = `<img src="${q.media}">`;
@@ -178,28 +191,53 @@
                     }
                 }
 
-                // --- LOGIQUE D'AFFICHAGE DE LA RÉPONSE ---
-                if (currentState.showAnswers) {
-                    answerDiv.textContent = "Réponse : " + (q.answer || "Non définie");
-                    answerDiv.style.display = "block"; // On affiche
-                } else {
-                    answerDiv.style.display = "none"; // On cache
-                }
-            } else {
-                answerDiv.style.display = "none";
+                answerDiv.textContent = "Réponse : " + (q.answer || "");
+                answerDiv.style.display = currentState.showAnswers ? "block" : "none";
             }
         }
 
-        // --- GESTION RÉPONSES ET POINTS ---
+        function setupMusicImport() {
+            const input = document.getElementById('musicUpload');
+            const player = document.getElementById('audio-player');
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    player.src = URL.createObjectURL(file);
+                    document.getElementById('fileTitle').textContent = file.name;
+                    document.getElementById('music-controls').classList.remove('hidden');
+                }
+            };
+            window.toggleAudio = () => {
+                const btn = document.getElementById('play-btn');
+                if (player.paused) { player.play(); btn.textContent = "⏸️ Pause"; }
+                else { player.pause(); btn.textContent = "🎵 Lire"; }
+            };
+        }
+
+        function setupVideoImport() {
+            const input = document.getElementById('videoUpload');
+            const player = document.getElementById('video-player');
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    player.src = URL.createObjectURL(file);
+                    document.getElementById('videoTitle').textContent = file.name;
+                    document.getElementById('video-box').classList.remove('hidden');
+                }
+            };
+            window.toggleVideo = () => {
+                const btn = document.getElementById('play-vid-btn');
+                if (player.paused) { player.play(); btn.textContent = "⏸️ Pause"; }
+                else { player.pause(); btn.textContent = "▶️ Lire la Vidéo"; }
+            };
+        }
+
+        // --- VALIDATION ET CLASSEMENT ---
         window.validate = (playerId, isCorrect) => {
             const qKeys = Object.keys(questions);
             const currentKey = qKeys[currentState.currentQ - 1];
-            
             update(ref(database, `responses/${playerId}/${currentKey}`), { validated: true, correct: isCorrect });
-            
-            if (isCorrect) {
-                runTransaction(ref(database, `scores/${playerId}`), (s) => (s || 0) + 1);
-            }
+            if (isCorrect) runTransaction(ref(database, `scores/${playerId}`), (s) => (s || 0) + 1);
         };
 
         onValue(ref(database, 'responses'), (snap) => {
@@ -208,14 +246,12 @@
             const players = snap.val() || {};
             const qKeys = Object.keys(questions);
             const currentKey = qKeys[currentState.currentQ - 1];
-
             for (let id in players) {
                 if (players[id][currentKey]) {
                     const resp = players[id][currentKey];
                     const div = document.createElement('div');
                     div.className = "response-item";
-                    div.innerHTML = `
-                        <span><strong>${players[id].name}</strong> : ${resp.answer}</span>
+                    div.innerHTML = `<span><strong>${players[id].name}</strong> : ${resp.answer}</span>
                         <div>
                             <button onclick="window.validate('${id}', true)" class="btn btn-validate" ${resp.validated ? 'disabled' : ''}>CORRECT</button>
                             <button onclick="window.validate('${id}', false)" class="btn btn-wrong" ${resp.validated ? 'disabled' : ''}>FAUX</button>
@@ -225,21 +261,14 @@
             }
         });
 
-        // --- CLASSEMENT PROGRESSIF ---
         function prepareRanking() {
             document.getElementById('admin-main').classList.add('hidden');
             document.getElementById('ranking-section').classList.remove('hidden');
-
             onValue(ref(database, 'scores'), (sSnap) => {
                 const scores = sSnap.val() || {};
                 onValue(ref(database, 'responses'), (rSnap) => {
                     const rData = rSnap.val() || {};
-                    fullRankingList = Object.keys(scores).map(id => ({
-                        name: rData[id]?.name || "Anonyme",
-                        pts: scores[id]
-                    }));
-
-                    // TRI CROISSANT (Dernier au Premier)
+                    fullRankingList = Object.keys(scores).map(id => ({ name: rData[id]?.name || "Anonyme", pts: scores[id] }));
                     fullRankingList.sort((a, b) => a.pts - b.pts);
                     currentRankToShow = 0;
                     document.getElementById('rankingBody').innerHTML = '';
@@ -250,50 +279,18 @@
         document.getElementById('showNextRankBtn').onclick = () => {
             if (currentRankToShow < fullRankingList.length) {
                 const player = fullRankingList[currentRankToShow];
-                const totalPlayers = fullRankingList.length;
-                const position = totalPlayers - currentRankToShow; // Calcul position réelle (1er, 2eme...)
-
                 const row = document.createElement('tr');
                 row.className = "rank-row";
-                row.innerHTML = `<td>#${position}</td><td>${player.name}</td><td>${player.pts} pts</td>`;
-                
-                // Insérer en haut pour que le 1er finisse en haut du tableau
-                const tbody = document.getElementById('rankingBody');
-                tbody.insertBefore(row, tbody.firstChild);
-
+                row.innerHTML = `<td>#${fullRankingList.length - currentRankToShow}</td><td>${player.name}</td><td>${player.pts} pts</td>`;
+                document.getElementById('rankingBody').insertBefore(row, document.getElementById('rankingBody').firstChild);
                 currentRankToShow++;
-                if (currentRankToShow === totalPlayers) {
-                    document.getElementById('showNextRankBtn').disabled = true;
-                    document.getElementById('showNextRankBtn').textContent = "Fin du classement !";
-                }
             }
         };
 
-        // --- CONTRÔLES ---
-        document.getElementById('prevBtn').onclick = () => {
-            if (currentState.currentQ > 0) {
-                update(ref(database, 'control'), { 
-                    currentQ: currentState.currentQ - 1, 
-                    showAnswers: false 
-                });
-            }
-        };
-        document.getElementById('nextBtn').onclick = () => {
-            update(ref(database, 'control'), { currentQ: currentState.currentQ + 1, showAnswers: false });
-        };
-
-        document.getElementById('revealBtn').onclick = () => {
-            update(ref(database, 'control'), { showAnswers: true });
-        };
-
-        document.getElementById('resetBtn').onclick = () => {
-            if(confirm("Effacer tous les scores et réponses ?")) {
-                remove(ref(database, 'responses'));
-                remove(ref(database, 'scores'));
-                set(ref(database, 'control'), { currentQ: 0, showAnswers: false });
-                location.reload();
-            }
-        };
+        document.getElementById('prevBtn').onclick = () => { if (currentState.currentQ > 0) update(ref(database, 'control'), { currentQ: currentState.currentQ - 1, showAnswers: false }); };
+        document.getElementById('nextBtn').onclick = () => { update(ref(database, 'control'), { currentQ: currentState.currentQ + 1, showAnswers: false }); };
+        document.getElementById('revealBtn').onclick = () => update(ref(database, 'control'), { showAnswers: true });
+        document.getElementById('resetBtn').onclick = () => { if(confirm("Reset ?")) { remove(ref(database, 'responses')); remove(ref(database, 'scores')); set(ref(database, 'control'), { currentQ: 0, showAnswers: false }); location.reload(); }};
     </script>
 </body>
 </html>
