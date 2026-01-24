@@ -58,6 +58,7 @@
         <div id="question-display" style="text-align: center; background: #fff8e1; padding: 20px; border-radius: 10px; margin: 20px 0;">
             <h2 id="q-text">En attente...</h2>
             <div id="media-content"></div>
+            <div id="answer-display" style="margin-top: 20px; font-size: 1.5em; color: #27ae60; font-weight: bold; display: none;"></div>
         </div>
 
         <div style="text-align:center;">
@@ -158,12 +159,14 @@
             const qKeys = Object.keys(questions);
             const container = document.getElementById('media-content');
             const title = document.getElementById('q-text');
+            const answerDiv = document.getElementById('answer-display'); // On récupère l'élément réponse
             
             if (currentState.currentQ > 0 && currentState.currentQ <= qKeys.length) {
                 const q = questions[qKeys[currentState.currentQ - 1]];
                 title.textContent = q.text || "Question " + currentState.currentQ;
                 container.innerHTML = "";
 
+                // Gestion du média (Image, Audio, Vidéo)
                 if (q.media) {
                     const url = q.media.toLowerCase();
                     if (url.endsWith('.png') || url.endsWith('.jpg') || url.endsWith('.jpeg')) {
@@ -174,6 +177,16 @@
                         container.innerHTML = `<video controls src="${q.media}"></video>`;
                     }
                 }
+
+                // --- LOGIQUE D'AFFICHAGE DE LA RÉPONSE ---
+                if (currentState.showAnswers) {
+                    answerDiv.textContent = "Réponse : " + (q.answer || "Non définie");
+                    answerDiv.style.display = "block"; // On affiche
+                } else {
+                    answerDiv.style.display = "none"; // On cache
+                }
+            } else {
+                answerDiv.style.display = "none";
             }
         }
 
@@ -257,7 +270,6 @@
         };
 
         // --- CONTRÔLES ---
-        document.getElementById('prevBtn').disabled = (currentState.currentQ === 0);
         document.getElementById('prevBtn').onclick = () => {
             if (currentState.currentQ > 0) {
                 update(ref(database, 'control'), { 
