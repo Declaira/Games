@@ -113,25 +113,45 @@
         let currentState = { currentQ: 0 };
         let fullRankingList = [];
         let currentRankToShow = 0;
+        let questionsLoaded = false; 
 
-        // --- CHARGEMENT DONNÉES ---
-        onValue(ref(database, 'questions'), (snap) => {
-            questions = snap.val() || {};
-            document.getElementById('q-total').textContent = Object.keys(questions).length;
-        });
+    onValue(ref(database, 'questions'), (snap) => {
+        questions = snap.val() || {};
+        const count = Object.keys(questions).length;
+        document.getElementById('q-total').textContent = count;
+        
+        // Une fois les questions reçues, on marque comme prêt
+        questionsLoaded = true;
+        
+        // On force une vérification de l'état maintenant que les questions sont là
+        checkState(); 
+    });
 
-        onValue(ref(database, 'control'), (snap) => {
-            currentState = snap.val() || { currentQ: 0 };
-            document.getElementById('q-num').textContent = currentState.currentQ;
-            
-            const qKeys = Object.keys(questions);
-            if (qKeys.length > 0 && currentState.currentQ > qKeys.length) {
-                prepareRanking();
-            } else {
-                renderMedia();
-            }
-        });
+    onValue(ref(database, 'control'), (snap) => {
+        currentState = snap.val() || { currentQ: 0 };
+        document.getElementById('q-num').textContent = currentState.currentQ;
+        
+        // On vérifie l'état à chaque changement de contrôle
+        checkState();
+    });
 
+    // Nouvelle fonction de vérification centralisée
+    function checkState() {
+        const qKeys = Object.keys(questions);
+        
+        // Si on n'a pas encore de questions, on ne fait rien (on attend)
+        if (!questionsLoaded || qKeys.length === 0) return;
+
+        // Maintenant on peut comparer sereinement
+        if (currentState.currentQ > qKeys.length && currentState.currentQ !== 0) {
+            prepareRanking();
+        } else {
+            // On s'assure que le classement est caché si on revient en arrière
+            document.getElementById('admin-main').classList.remove('hidden');
+            document.getElementById('ranking-section').classList.add('hidden');
+            renderMedia();
+        }
+    }
         // --- AFFICHAGE MÉDIA ---
         function renderMedia() {
             const qKeys = Object.keys(questions);
