@@ -269,36 +269,48 @@
 
     window.confirmPlacement = () => {
         if(mode === 'solo') {
-            gameState.p1Ready = true; gameState.p1Ships = myShipsCoords; gameState.p2Ready = true;
+            gameState.p1Ready = true; 
+            gameState.p1Ships = myShipsCoords; 
+            gameState.p2Ready = true;
             document.getElementById('setup-area').classList.add('hidden');
             updateUI();
         } else {
             const updates = {};
             updates[`${myId}Ready`] = true;
             updates[`${myId}Ships`] = myShipsCoords;
+            // On initialise les listes d'attaques pour éviter les erreurs "undefined"
+            updates[`${myId}Attacks`] = []; 
             update(ref(database, 'batailleNavale/state'), updates);
             document.getElementById('setup-area').classList.add('hidden');
+            document.getElementById('game-info').textContent = "Attente de l'adversaire...";
         }
     };
 
-    function fire(idx) {
-        if(!gameState.p1Ready || !gameState.p2Ready || gameState.turn !== 'p1' || gameState.p1Attacks.includes(idx)) return;
-        
-        gameState.p1Attacks.push(idx);
-        const isHit = gameState.p2Ships.some(s => s.coords.includes(idx));
-        
-        checkSunk();
-        if(gameState.winner) return;
+    window.fire = (idx) => { // Ajout de window. pour l'accessibilité
+        // Vérifications de base (tour, déjà tiré, etc.)
+        if (!gameState.p1Ready || !gameState.p2Ready || gameState.winner) return;
+        if (gameState.turn !== myId || gameState[myId + 'Attacks'].includes(idx)) return;
 
-        if (isHit) {
-            updateUI();
-            document.getElementById('game-info').textContent = "💥 TOUCHÉ ! REJOUEZ !";
-        } else {
-            gameState.turn = 'p2';
-            updateUI();
-            if(mode === 'solo') setTimeout(iaPlay, 800);
+        const updates = {};
+        const myAttacks = [...(gameState[myId + 'Attacks'] || []), idx];
+        
+        // Vérifier si on a touché un bateau adverse
+        const opponentShips = gameState[opponentId + 'Ships'];
+        const isHit = opponentShips.some(s => s.coords.includes(idx));
+
+        updates[`batailleNavale/state/${myId}Attacks`] = myAttacks;
+
+        // Si on rate, on change de tour
+        if (!isHit) {
+            updates[`batailleNavale/state/turn`] = opponentId;
         }
-    }
+        // Si on touche, on garde la main (le tour ne change pas)
+
+        update(ref(database), updates).then(() => {
+            // La vérification de victoire se fera via l'écouteur onValue
+            checkSunk(); 
+        });
+    };
 
     function iaPlay() {
         if(gameState.winner) return;
@@ -378,10 +390,18 @@
             if(p[opponentId]) document.getElementById('opp-label').textContent = p[opponentId].name.toUpperCase();
         });
         onValue(ref(database, 'batailleNavale/state'), (snap) => {
-            if(snap.val()) {
-                gameState = snap.val();
-                updateUI();
-            }
+    const data = snap.val();
+    if(data) {
+        gameState = data;
+        
+        // S'assurer que les tableaux existent pour éviter les erreurs de rendu
+        if(!gameState.p1Attacks) gameState.p1Attacks = [];
+        if(!gameState.p2Attacks) gameState.p2Attacks = [];
+        
+        updateUI();
+        checkSunk(); // Vérifier si un joueur a gagné après le tir de l'autre
+    }
+
         });
     }
 </script>
