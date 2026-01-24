@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>⚓ Bataille Navale</title>
+    <link rel="icon" href="../logo/logo.png" type="image/x-icon">
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@600&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Quicksand', sans-serif; background: #0a192f; margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; color: white; overflow-x: hidden; }
+        header {
+        width: 100%;
+        flex-shrink: 0;
+        }
+        .status-box { margin: 10px; padding: 10px; background: rgba(100, 255, 218, 0.1); border-radius: 8px; text-align: center; width: 90%; border: 1px solid #64ffda33; min-height: 40px; }
+
+        .main-game { display: flex; justify-content: center; gap: 30px; flex-wrap: nowrap; padding: 20px; align-items: flex-start; }
+        
+        .grid-container { display: flex; flex-direction: column; align-items: center; }
+        .grid { display: grid; grid-template-columns: repeat(10, 32px); grid-template-rows: repeat(10, 32px); gap: 2px; background: #112240; padding: 5px; border: 2px solid #64ffda; }
+        .cell { width: 32px; height: 32px; background: #233554; display: flex; align-items: center; justify-content: center; position: relative; transition: 0.2s; }
+        .cell.over { background: #64ffda44; }
+
+        .attack-wrapper { display: flex; gap: 15px; align-items: flex-start; }
+        
+        .enemy-fleet-panel { background: #112240; padding: 15px; border-radius: 8px; border: 1px solid #64ffda55; min-width: 200px; }
+        .enemy-fleet-panel h4 { margin-top: 0; color: #64ffda; border-bottom: 1px solid #64ffda33; padding-bottom: 5px; font-size: 0.9em; }
+        .ship-indicator { font-size: 0.85em; margin: 8px 0; display: flex; align-items: center; gap: 10px; transition: 0.3s; padding: 5px; border-radius: 4px; border: 1px solid transparent; }
+        .ship-indicator.sunk { color: #ff4757; text-decoration: line-through; opacity: 0.4; background: rgba(255, 71, 87, 0.1); border-color: #ff475755; }
+        .dot { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+
+        /* Couleurs Bateaux */
+        .ship-s5 { background: #ff4757 !important; } 
+        .ship-s4 { background: #2ed573 !important; } 
+        .ship-s3a { background: #1e90ff !important; } 
+        .ship-s3b { background: #ffa502 !important; } 
+        .ship-s2 { background: #e056fd !important; } 
+
+        .hit { background: #f44336 !important; animation: shake 0.3s; }
+        .hit::after { content: "💥"; font-size: 14px; }
+        .miss { background: #1d2d44; }
+        .miss::after { content: "•"; color: #64ffda; font-size: 20px; }
+
+        #dock { display: flex; flex-direction: column; gap: 10px; padding: 15px; background: #112240; border-radius: 10px; border: 1px solid #64ffda33; }
+        .draggable-ship { display: flex; cursor: grab; }
+        .draggable-ship.vertical { flex-direction: column; }
+        .draggable-ship div { width: 25px; height: 25px; border: 1px solid rgba(255,255,255,0.2); }
+
+        input[type="text"] { background: #112240; border: 1px solid #64ffda; color: white; padding: 8px; border-radius: 5px; outline: none; }
+
+        #win-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(10, 25, 47, 0.98); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; }
+        .win-title { font-size: 5em; color: #64ffda; text-shadow: 0 0 30px #64ffda; }
+        .lose-title { font-size: 5em; color: #ff4757; text-shadow: 0 0 30px #ff4757; }
+
+        .btn { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; background: #64ffda; color: #0a192f; margin: 5px; transition: 0.3s; }
+        .btn:hover { transform: scale(1.05); filter: brightness(1.1); }
+        .hidden { display: none !important; }
+        @keyframes shake { 0%{transform:rotate(1deg)} 50%{transform:rotate(-1deg)} 100%{transform:rotate(0)} }
+    </style>
+</head>
+<body>
+    <script src="../header.js"></script>
+    <script>
+        if(typeof injectHeader === 'function') {
+        injectHeader({ title: "⚓ Bataille Navale", homeLink: "../accueil.html", showHome: true });
+        }
+    </script>
+
+<div id="win-screen">
+    <h1 id="win-msg">VICTOIRE !</h1>
+    <p id="win-sub">La flotte adverse repose au fond de l'océan.</p>
+    <button class="btn" onclick="resetGame()" style="font-size: 1.2em;">REJOUER</button>
+</div>
+
+<div class="status-box" id="game-info">Initialisation des systèmes...</div>
+
+<div id="mode-selection" style="margin: 20px; text-align: center;">
+    <div id="name-input-area">
+        <label>Votre Pseudo : </label>
+        <input type="text" id="username" placeholder="Amiral..." maxlength="12">
+    </div>
+    <button class="btn" onclick="startGame('solo')">👤 VS ORDINATEUR</button>
+    <button class="btn" onclick="startGame('multi')">🌐 VS JOUEUR EN LIGNE</button>
+</div>
+
+<div class="main-game hidden" id="game-area">
+    <div id="setup-area" style="text-align:center; min-width: 220px;">
+        <h3>Configuration</h3>
+        <button class="btn" style="background:#ff9a00; color:white;" onclick="toggleRotation()">🔄 Pivoter</button>
+        <button class="btn" style="background:#1e90ff; color:white;" onclick="randomizeMyShips()">🎲 Aléatoire</button>
+        
+        <div id="dock" style="margin-top:10px;">
+            <div class="draggable-ship ship-s5" draggable="true" id="s5" data-size="5"><div></div><div></div><div></div><div></div><div></div></div>
+            <div class="draggable-ship ship-s4" draggable="true" id="s4" data-size="4"><div></div><div></div><div></div><div></div></div>
+            <div class="draggable-ship ship-s3a" draggable="true" id="s3a" data-size="3"><div></div><div></div><div></div></div>
+            <div class="draggable-ship ship-s3b" draggable="true" id="s3b" data-size="3"><div></div><div></div><div></div></div>
+            <div class="draggable-ship ship-s2" draggable="true" id="s2" data-size="2"><div></div><div></div></div>
+        </div>
+        <button id="readyBtn" class="btn hidden" onclick="confirmPlacement()" style="background:#2ed573; margin-top:15px; width:100%;">LANCER L'ASSAUT</button>
+    </div>
+
+    <div class="grid-container">
+        <h3 id="my-label">MA FLOTTE</h3>
+        <div id="myGrid" class="grid"></div>
+    </div>
+
+    <div class="grid-container">
+        <h3 id="opp-label">RADAR D'ATTAQUE</h3>
+        <div class="attack-wrapper">
+            <div id="oppGrid" class="grid"></div>
+            <div class="enemy-fleet-panel">
+                <h4>CIBLES ADVERSES</h4>
+                <div id="ind-s5" class="ship-indicator"><div class="dot ship-s5"></div> Porte-avions x5</div>
+                <div id="ind-s4" class="ship-indicator"><div class="dot ship-s4"></div> Croiseur x4</div>
+                <div id="ind-s3a" class="ship-indicator"><div class="dot ship-s3a"></div> Sous-marin x3</div>
+                <div id="ind-s3b" class="ship-indicator"><div class="dot ship-s3b"></div> Contre-torp. x3</div>
+                <div id="ind-s2" class="ship-indicator"><div class="dot ship-s2"></div> Torpilleur x2</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { getDatabase, ref, onValue, set, update, onDisconnect } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+    const firebaseConfig = { databaseURL: "https://quiz-ea203-default-rtdb.europe-west1.firebasedatabase.app" };
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+
+    let mode = 'solo', myId = 'p1', opponentId = 'p2', isVertical = false, draggedShip = null;
+    let myShipsCoords = [], gameState = { p1Ready:false, p2Ready:false, p1Attacks:[], p2Attacks:[], turn:'p1', winner: null };
+    let myName = "Joueur";
+
+    window.toggleRotation = () => {
+        isVertical = !isVertical;
+        document.querySelectorAll('.draggable-ship').forEach(s => s.classList.toggle('vertical', isVertical));
+    };
+
+    window.addEventListener('wheel', (e) => { if(draggedShip) { e.preventDefault(); toggleRotation(); } }, {passive: false});
+
+    window.startGame = (m) => {
+        mode = m;
+        myName = document.getElementById('username').value || (mode === 'solo' ? "Amiral" : "Joueur");
+        document.getElementById('mode-selection').classList.add('hidden');
+        document.getElementById('game-area').classList.remove('hidden');
+        document.getElementById('my-label').textContent = myName.toUpperCase();
+        initBoard();
+        if(mode === 'multi') connectMulti();
+    };
+
+    // --- FONCTION REJOUER (RESET) ---
+    window.resetGame = () => {
+        // Cacher l'écran de victoire
+        document.getElementById('win-screen').style.display = 'none';
+        
+        // Réinitialiser les données locales
+        myShipsCoords = [];
+        gameState = { p1Ready:false, p2Ready:false, p1Attacks:[], p2Attacks:[], turn:'p1', winner: null };
+        
+        // Nettoyer visuellement les grilles
+        const allCells = document.querySelectorAll('.cell');
+        allCells.forEach(c => {
+            c.className = 'cell';
+            c.innerHTML = '';
+        });
+
+        // Remettre les indicateurs de bateaux coulés à la normale
+        document.querySelectorAll('.ship-indicator').forEach(ind => ind.classList.remove('sunk'));
+
+        // Réinitialiser le dock et le setup
+        document.getElementById('setup-area').classList.remove('hidden');
+        document.getElementById('readyBtn').classList.add('hidden');
+        document.querySelectorAll('.draggable-ship').forEach(s => s.classList.remove('hidden'));
+        
+        // Relancer l'IA si nécessaire
+        if(mode === 'solo') {
+            gameState.p2Ships = generateIA();
+            document.getElementById('game-info').textContent = "Placez vos navires.";
+        } else {
+            // En multi, on remet l'état Firebase à zéro (optionnel selon vos besoins multi)
+            set(ref(database, 'batailleNavale/state'), gameState);
+        }
+    };
+
+    function initBoard() {
+        const mG = document.getElementById('myGrid'), oG = document.getElementById('oppGrid');
+        mG.innerHTML = ''; oG.innerHTML = '';
+        for(let i=0; i<100; i++) {
+            const cM = document.createElement('div'); cM.className = 'cell';
+            cM.ondragover = e => { e.preventDefault(); cM.classList.add('over'); };
+            cM.ondragleave = () => cM.classList.remove('over');
+            cM.ondrop = () => dropShip(i);
+            mG.appendChild(cM);
+            const cO = document.createElement('div'); cO.className = 'cell';
+            cO.onclick = () => fire(i);
+            oG.appendChild(cO);
+        }
+        if(mode === 'solo') {
+            gameState.p2Ships = generateIA();
+            document.getElementById('opp-label').textContent = "ORDINATEUR";
+        }
+    }
+
+    window.randomizeMyShips = () => {
+        myShipsCoords = [];
+        const cells = document.getElementById('myGrid').children;
+        for(let c of cells) c.className = 'cell';
+        document.querySelectorAll('.draggable-ship').forEach(s => s.classList.add('hidden'));
+
+        const shipsToPlace = [
+            {id:'s5', size:5}, {id:'s4', size:4}, 
+            {id:'s3a', size:3}, {id:'s3b', size:3}, {id:'s2', size:2}
+        ];
+
+        shipsToPlace.forEach(ship => {
+            let placed = false;
+            while(!placed) {
+                let start = Math.floor(Math.random()*100);
+                let vert = Math.random() > 0.5;
+                let coords = [];
+                for(let i=0; i<ship.size; i++) {
+                    let next = vert ? start + (i*10) : start + i;
+                    if(next > 99 || (!vert && Math.floor(next/10) !== Math.floor(start/10))) break;
+                    coords.push(next);
+                }
+                if(coords.length === ship.size && !myShipsCoords.some(s => s.coords.some(c => coords.includes(c)))) {
+                    myShipsCoords.push({id: ship.id, coords: coords});
+                    coords.forEach(c => cells[c].classList.add('ship-' + ship.id));
+                    placed = true;
+                }
+            }
+        });
+        document.getElementById('readyBtn').classList.remove('hidden');
+    };
+
+    document.querySelectorAll('.draggable-ship').forEach(s => s.ondragstart = () => draggedShip = s);
+
+    function dropShip(startIdx) {
+        if(!draggedShip) return;
+        const size = parseInt(draggedShip.dataset.size);
+        const id = draggedShip.id;
+        let coords = [];
+        for(let i=0; i<size; i++) {
+            let next = isVertical ? startIdx + (i*10) : startIdx + i;
+            if(next > 99 || (!isVertical && Math.floor(next/10) !== Math.floor(startIdx/10))) return;
+            coords.push(next);
+        }
+        if(myShipsCoords.some(s => s.coords.some(c => coords.includes(c)))) return;
+        myShipsCoords.push({id, coords});
+        draggedShip.classList.add('hidden');
+        coords.forEach(c => document.getElementById('myGrid').children[c].classList.add('ship-'+id));
+        if(myShipsCoords.length === 5) document.getElementById('readyBtn').classList.remove('hidden');
+    }
+
+    function generateIA() {
+        const s = [5,4,3,3,2], ids = ['s5','s4','s3a','s3b','s2'], res = [];
+        s.forEach((sz, i) => {
+            let ok = false;
+            while(!ok) {
+                let st = Math.floor(Math.random()*100), v = Math.random()>0.5, c = [];
+                for(let j=0; j<sz; j++) c.push(v ? st+(j*10) : st+j);
+                if(c.every(n => n<100 && (v || Math.floor(n/10)===Math.floor(st/10))) && !res.some(sh=>sh.coords.some(x=>c.includes(x)))) {
+                    res.push({id: ids[i], coords: c}); ok = true;
+                }
+            }
+        });
+        return res;
+    }
+
+    window.confirmPlacement = () => {
+        if(mode === 'solo') {
+            gameState.p1Ready = true; gameState.p1Ships = myShipsCoords; gameState.p2Ready = true;
+            document.getElementById('setup-area').classList.add('hidden');
+            updateUI();
+        } else {
+            const updates = {};
+            updates[`${myId}Ready`] = true;
+            updates[`${myId}Ships`] = myShipsCoords;
+            update(ref(database, 'batailleNavale/state'), updates);
+            document.getElementById('setup-area').classList.add('hidden');
+        }
+    };
+
+    function fire(idx) {
+        if(!gameState.p1Ready || !gameState.p2Ready || gameState.turn !== 'p1' || gameState.p1Attacks.includes(idx)) return;
+        
+        gameState.p1Attacks.push(idx);
+        const isHit = gameState.p2Ships.some(s => s.coords.includes(idx));
+        
+        checkSunk();
+        if(gameState.winner) return;
+
+        if (isHit) {
+            updateUI();
+            document.getElementById('game-info').textContent = "💥 TOUCHÉ ! REJOUEZ !";
+        } else {
+            gameState.turn = 'p2';
+            updateUI();
+            if(mode === 'solo') setTimeout(iaPlay, 800);
+        }
+    }
+
+    function iaPlay() {
+        if(gameState.winner) return;
+        let shot;
+        do { shot = Math.floor(Math.random()*100); } while(gameState.p2Attacks.includes(shot));
+        
+        gameState.p2Attacks.push(shot);
+        const isHit = gameState.p1Ships.some(s => s.coords.includes(shot));
+        
+        checkSunk();
+        updateUI();
+        if(gameState.winner) return;
+
+        if (isHit) {
+            setTimeout(iaPlay, 800);
+        } else {
+            gameState.turn = 'p1';
+            updateUI();
+        }
+    }
+
+    function checkSunk() {
+        const check = (player, opponent) => {
+            let sunkCount = 0;
+            gameState[opponent+'Ships'].forEach(s => {
+                const isSunk = s.coords.every(c => gameState[player+'Attacks'].includes(c));
+                if(isSunk) {
+                    sunkCount++;
+                    if(player === 'p1') document.getElementById('ind-'+s.id).classList.add('sunk');
+                }
+            });
+            if(sunkCount === 5) {
+                gameState.winner = player;
+                showWinScreen(player);
+            }
+        };
+        check('p1', 'p2');
+        if(!gameState.winner) check('p2', 'p1');
+    }
+
+    function showWinScreen(winner) {
+        const screen = document.getElementById('win-screen');
+        screen.style.display = 'flex';
+        const msg = document.getElementById('win-msg');
+        if(winner === 'p1') { msg.textContent = "VICTOIRE !"; msg.className = "win-title"; }
+        else { msg.textContent = "DÉFAITE..."; msg.className = "lose-title"; }
+    }
+
+    function updateUI() {
+        const info = document.getElementById('game-info');
+        if(gameState.winner) return;
+        info.textContent = (gameState.turn === 'p1') ? "🎯 À VOUS DE TIRER !" : "🌊 L'ENNEMI ATTAQUE...";
+
+        const mCells = document.getElementById('myGrid').children, oCells = document.getElementById('oppGrid').children;
+        gameState.p1Attacks.forEach(i => {
+            const hit = gameState.p2Ships.some(s=>s.coords.includes(i));
+            oCells[i].classList.add(hit ? 'hit' : 'miss');
+        });
+        gameState.p2Attacks.forEach(i => {
+            const hit = gameState.p1Ships.some(s=>s.coords.includes(i));
+            mCells[i].classList.add(hit ? 'hit' : 'miss');
+        });
+    }
+
+    function connectMulti() {
+        const pRef = ref(database, 'batailleNavale/players');
+        onValue(pRef, (snap) => {
+            const p = snap.val() || {};
+            if(!myId) {
+                if(!p.p1) myId = 'p1', opponentId = 'p2';
+                else if(!p.p2) myId = 'p2', opponentId = 'p1';
+                if(myId) {
+                    update(ref(database, `batailleNavale/players/${myId}`), { name: myName, active: true });
+                    onDisconnect(ref(database, `batailleNavale/players/${myId}`)).remove();
+                }
+            }
+            if(p[opponentId]) document.getElementById('opp-label').textContent = p[opponentId].name.toUpperCase();
+        });
+        onValue(ref(database, 'batailleNavale/state'), (snap) => {
+            if(snap.val()) {
+                gameState = snap.val();
+                updateUI();
+            }
+        });
+    }
+</script>
+</body>
+</html>
