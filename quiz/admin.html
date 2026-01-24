@@ -61,6 +61,7 @@
         </div>
 
         <div style="text-align:center;">
+            <button id="prevBtn" class="btn" style="background: #95a5a6;">Question Précédente</button> 
             <button id="nextBtn" class="btn btn-next">Question Suivante</button>
             <button id="revealBtn" class="btn btn-reveal">Révéler la Réponse</button>
             <button id="resetBtn" class="btn btn-reset">Réinitialiser Tout</button>
@@ -256,6 +257,15 @@
         };
 
         // --- CONTRÔLES ---
+        document.getElementById('prevBtn').disabled = (currentState.currentQ === 0);
+        document.getElementById('prevBtn').onclick = () => {
+            if (currentState.currentQ > 0) {
+                update(ref(database, 'control'), { 
+                    currentQ: currentState.currentQ - 1, 
+                    showAnswers: false 
+                });
+            }
+        };
         document.getElementById('nextBtn').onclick = () => {
             update(ref(database, 'control'), { currentQ: currentState.currentQ + 1, showAnswers: false });
         };
