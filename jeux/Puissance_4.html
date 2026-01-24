@@ -2,62 +2,163 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>🟡 Puissance 4 🔴</title>
-    <link rel="icon" href="../logo.png" type="image/x-icon">
-    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@600&display=swap" rel="stylesheet">
+    <title>🟡 Puissance 4  🔴</title>
+    <link rel="icon" href="../logo/logo.png" type="image/x-icon">
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@600;700&display=swap" rel="stylesheet">
     <style>
+        /* --- STYLES CSS --- */
         body { 
             font-family: 'Quicksand', sans-serif; 
             background: linear-gradient(135deg,#fff3cd,#ffe5b4,#ffd1d1,#ffc4e1);
-            margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; color: black;
+            margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; color: #2c3e50;
         }
-        header {
-        width: 100%;
-        flex-shrink: 0;
+        header { width: 100%; flex-shrink: 0; }
+        .container { text-align: center; max-width: 600px; width: 95%; margin-top: 20px; }
+        h1 { margin-bottom: 10px; color: #d35400; text-shadow: 2px 2px 0px rgba(255,255,255,0.5); }
+        
+        .box { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); margin-bottom: 20px; transition: height 0.3s; }
+        .hidden { display: none !important; }
+        
+        input { padding: 10px; border-radius: 8px; border: 2px solid #ddd; font-family: inherit; font-weight: bold; width: 70%; margin-bottom: 10px; text-align: center; }
+        
+        /* Boutons */
+        button { 
+            padding: 12px 25px; border: none; border-radius: 10px; cursor: pointer; 
+            font-weight: bold; font-size: 1rem; transition: transform 0.2s, box-shadow 0.2s; color: white; margin: 5px;
         }
+        button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+        button:active { transform: translateY(0); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        .btn-solo { background: #3498db; }
+        .btn-multi { background: #9b59b6; }
+        .btn-menu { background: #95a5a6; font-size: 0.9rem; padding: 10px 20px; }
+        .btn-restart { background: #e67e22; font-size: 0.9rem; padding: 10px 20px; }
+        
+        /* Boutons difficulté */
+        .btn-diff-normal { background: #2ecc71; opacity: 0.6; }
+        .btn-diff-hard { background: #e74c3c; opacity: 0.6; }
+        .selected-diff { opacity: 1 !important; transform: scale(1.1); box-shadow: 0 0 10px rgba(0,0,0,0.3); border: 2px solid #2c3e50; }
+
+        .btn-choice { width: 40%; font-size: 1.1rem; padding: 15px; }
+        
+        /* Plateau */
         #board { 
-            display: grid; grid-template-columns: repeat(7, 60px); grid-template-rows: repeat(6, 60px); 
-            gap: 10px; background: #34495e; padding: 15px; border-radius: 15px; border: 5px solid #2c3e50;
+            display: grid; grid-template-columns: repeat(7, 50px); grid-template-rows: repeat(6, 50px); 
+            gap: 8px; background: #34495e; padding: 12px; border-radius: 15px; border: 5px solid #2c3e50;
+            margin: 0 auto; width: fit-content; box-shadow: 0 10px 20px rgba(0,0,0,0.3);
         }
+        @media (min-width: 500px) {
+            #board { grid-template-columns: repeat(7, 60px); grid-template-rows: repeat(6, 60px); gap: 10px; padding: 15px; }
+            .cell { width: 60px !important; height: 60px !important; }
+        }
+
         .cell { 
-            width: 60px; height: 60px; background: #ecf0f1; border-radius: 50%; 
-            cursor: pointer; transition: 0.3s; 
+            width: 50px; height: 50px; background: #ecf0f1; border-radius: 50%; 
+            cursor: pointer; transition: background 0.3s; position: relative; overflow: hidden;
         }
-        /* Couleurs dynamiques via classes CSS */
+        
         .color-red { background: #e74c3c !important; box-shadow: inset 0 0 10px rgba(0,0,0,0.5); }
         .color-yellow { background: #f1c40f !important; box-shadow: inset 0 0 10px rgba(0,0,0,0.5); }
-        .color-blue { background: #3498db !important; box-shadow: inset 0 0 10px rgba(0,0,0,0.5); }
-        .color-green { background: #2ecc71 !important; box-shadow: inset 0 0 10px rgba(0,0,0,0.5); }
+        .anim-drop { animation: drop 0.4s cubic-bezier(0.5, 0, 0.75, 1.5); }
+        
+        @keyframes drop { from { transform: translateY(-400px); } to { transform: translateY(0); } }
 
-        .btn-choice { padding: 10px 20px; margin: 5px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; color: white; }
-        .btn-reset { margin-top: 20px; padding: 10px 25px; background: #e67e22; border: none; border-radius: 8px; color: white; cursor: pointer; font-weight: bold; }
-        .hidden { display: none; }
+        .status-text { font-size: 1.3rem; margin-bottom: 10px; font-weight: bold; }
+        .turn-indicator { padding: 8px 20px; background: #eee; border-radius: 30px; display: inline-block; font-size: 1rem; font-weight: 600; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .game-controls { margin-top: 20px; display: flex; justify-content: center; gap: 10px; }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 1000;
+        }
+        .modal-content {
+            background: white; padding: 30px; border-radius: 20px; text-align: center; max-width: 90%; width: 400px; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); color: #2c3e50;
+        }
+        @keyframes popIn { from { transform: scale(0.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
     </style>
 </head>
 <body>
     <script src="../header.js"></script>
     <script>
         if(typeof injectHeader === 'function') {
-        injectHeader({ title: "🟡 Puissance 4 🔴", homeLink: "../accueil.html", showHome: true });
+            injectHeader({ title: "🟡 Puissance 4  🔴", homeLink: "../accueil.html", showHome: true });
         }
     </script>
-    
-    <div class="status-box" id="game-info">Connexion...</div>
 
-    <div id="setup-player1" class="status-box hidden">
-        <h3>Joueur 1 : Choisissez votre couleur</h3>
-        <button class="btn-choice color-red" onclick="chooseColor('red')">Rouge</button>
-        <button class="btn-choice color-yellow" onclick="chooseColor('yellow')">Jaune</button>
+    <div class="container">
+        <div id="screen-menu" class="box">
+            <h1>Bienvenue</h1>
+            <p>Entrez un pseudo (optionnel)</p>
+            <input type="text" id="username-input" placeholder="Pseudo..." maxlength="12">
+            <br>
+            <div style="margin-top: 15px;">
+                <button class="btn-solo" onclick="prepareSolo()">👤 Solo (vs IA)</button>
+                <button class="btn-multi" onclick="startMulti()">🌍 En Ligne (Duo)</button>
+            </div>
+        </div>
+
+        <div id="screen-solo-setup" class="box hidden">
+            <h2>Configuration Solo</h2>
+            
+            <p style="margin-bottom: 5px;">1. Niveau de l'IA</p>
+            <div>
+                <button id="btn-diff-normal" class="btn-diff-normal" onclick="selectDifficulty('normal')">🙂 Normal</button>
+                <button id="btn-diff-hard" class="btn-diff-hard" onclick="selectDifficulty('hard')">😈 Impossible</button>
+            </div>
+
+            <div id="color-selection-area" class="hidden" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;">
+                <p style="margin-bottom: 5px;">2. Votre couleur</p>
+                <button class="btn-choice color-red" onclick="startSolo('red')">Rouge</button>
+                <button class="btn-choice color-yellow" onclick="startSolo('yellow')">Jaune</button>
+            </div>
+            
+            <button class="btn-menu" onclick="goToMenu()" style="margin-top:20px;">Annuler</button>
+        </div>
+
+        <div id="screen-game" class="hidden">
+            <div class="box" style="padding-bottom: 15px;">
+                <div class="status-text" id="status-display">Chargement...</div>
+                <div class="turn-indicator" id="turn-display">Initialisation</div>
+                
+                <div id="setup-color-multi" class="hidden" style="margin-top:15px; border-top: 2px solid #eee; padding-top:15px;">
+                    <p style="margin:0 0 10px 0; font-weight:bold;">Vous êtes le Joueur 1 ! Choisissez la couleur :</p>
+                    <button class="btn-choice color-red" style="padding: 10px;" onclick="window.chooseColorMulti('red')">Rouge</button>
+                    <button class="btn-choice color-yellow" style="padding: 10px;" onclick="window.chooseColorMulti('yellow')">Jaune</button>
+                </div>
+            </div>
+
+            <div id="board"></div>
+            
+            <div class="game-controls">
+                <button id="btn-restart-grid" class="btn-restart hidden" onclick="resetCurrentGrid()">🔄 Rejouer la grille</button>
+                <button class="btn-menu" onclick="goToMenu()">🏠 Menu Principal</button>
+            </div>
+        </div>
     </div>
-    
-    <div id="board"></div>
 
-    <button class="btn-reset" onclick="resetGame()">Réinitialiser la partie</button>
+    <div id="modal-multi-end" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2 id="multi-end-title">Partie Terminée</h2>
+            <p id="multi-end-msg">...</p>
+            <div id="multi-loser-controls" class="hidden" style="margin-top: 20px;">
+                <p>Revanche ?</p>
+                <button class="btn-solo" onclick="sendRematch(true)">Je commence</button>
+                <button class="btn-multi" onclick="sendRematch(false)">L'adversaire commence</button>
+            </div>
+            <div id="multi-winner-wait" class="hidden" style="margin-top: 20px; color:#7f8c8d;">
+                ⏳ Attente du choix de l'adversaire...
+            </div>
+             <button class="btn-menu" onclick="goToMenu()" style="margin-top:20px;">Quitter</button>
+        </div>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-        import { getDatabase, ref, onValue, set, update, onDisconnect } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+        import { getDatabase, ref, onValue, set, update, onDisconnect, remove, off } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
+        // CONFIG FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyB29fMpTwBgsqkjijkNoQJ2kGChSeQDX_w",
             authDomain: "quiz-ea203.firebaseapp.com",
@@ -67,58 +168,92 @@
             messagingSenderId: "605137421110",
             appId: "1:605137421110:web:289e0876fe06108deaa997"
         };
-
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
         const gameRef = ref(database, 'puissance4/state');
         const playersRef = ref(database, 'puissance4/players');
 
+        // VARIABLES GLOBALES
+        let currentMode = null;
+        let myName = "Joueur";
         let myPlayerNum = null;
-        let gameState = null;
+        let firebaseListeners = []; 
+        let isAiThinking = false;
+        let aiDifficulty = 'normal'; // 'normal' ou 'hard'
 
-        // --- GESTION DES JOUEURS ---
-        onValue(playersRef, (snap) => {
-            const players = snap.val() || {};
-            if (!myPlayerNum) {
-                if (!players.p1) {
-                    myPlayerNum = 1;
-                    set(ref(database, 'puissance4/players/p1'), {active: true});
-                    onDisconnect(ref(database, 'puissance4/players/p1')).remove();
-                } else if (!players.p2) {
-                    myPlayerNum = 2;
-                    set(ref(database, 'puissance4/players/p2'), {active: true});
-                    onDisconnect(ref(database, 'puissance4/players/p2')).remove();
-                } else {
-                    myPlayerNum = 'spectator';
-                }
+        let gameState = {
+            board: [],
+            turn: 1,
+            winner: null,
+            colors: null,
+            p1Name: "J1",
+            p2Name: "J2",
+            lastMove: null
+        };
+
+        // --- NAVIGATION ---
+        function showScreen(screenId) {
+            ['screen-menu', 'screen-solo-setup', 'screen-game'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+            document.getElementById(screenId).classList.remove('hidden');
+            document.getElementById('modal-multi-end').classList.add('hidden');
+        }
+
+        window.goToMenu = () => {
+            if (currentMode === 'multi') {
+                 firebaseListeners.forEach(l => off(l.ref, l.type, l.callback));
+                 firebaseListeners = [];
+                 if (myPlayerNum === 1 || myPlayerNum === 2) remove(ref(database, `puissance4/players/p${myPlayerNum}`));
             }
-        });
+            currentMode = null;
+            myPlayerNum = null;
+            isAiThinking = false;
+            resetLocalGameState();
+            showScreen('screen-menu');
+        };
 
-        // --- LOGIQUE DU JEU ---
-        onValue(gameRef, (snap) => {
-            gameState = snap.val() || {
-                board: Array(6).fill(null).map(() => Array(7).fill(0)),
-                turn: 1,
-                winner: null,
-                colors: null // {p1: 'red', p2: 'yellow'}
-            };
-            drawUI();
-        });
-
-        function drawUI() {
-            const info = document.getElementById('game-info');
-            const setupP1 = document.getElementById('setup-player1');
-            
-            // Affichage du panneau de choix pour le Joueur 1
-            if (myPlayerNum === 1 && !gameState.colors) {
-                setupP1.classList.remove('hidden');
-                info.textContent = "Choisissez votre couleur ci-dessous.";
-            } else {
-                setupP1.classList.add('hidden');
-                updateStatus();
+        window.resetCurrentGrid = () => {
+            if(currentMode === 'solo') {
+                resetLocalGameState();
+                // En solo, le perdant commence
+                gameState.turn = (gameState.winner === 1) ? 2 : 1;
+                gameState.winner = null;
+                drawBoard();
+                updateUI();
+                // Si l'IA doit commencer
+                if(gameState.turn === 2) setTimeout(aiMove, 600);
+            } else if (currentMode === 'multi') {
+                if(gameState.winner) document.getElementById('modal-multi-end').classList.remove('hidden');
             }
+        };
 
+        function resetLocalGameState() {
+            gameState.board = Array(6).fill(null).map(() => Array(7).fill(0));
+            gameState.winner = null;
+            gameState.lastMove = null;
+            document.getElementById('btn-restart-grid').classList.add('hidden');
+        }
+
+        // --- MOTEUR DE JEU (Shared) ---
+        function placeTokenLocal(col, playerNum) {
+            let row = -1;
+            for (let r = 5; r >= 0; r--) {
+                if (gameState.board[r][col] === 0) { row = r; break; }
+            }
+            if (row === -1) return false;
+
+            gameState.board[row][col] = playerNum;
+            gameState.lastMove = {r: row, c: col}; 
             drawBoard();
+            
+            if (checkWin(row, col, gameState.board)) {
+                gameState.winner = playerNum;
+            } else {
+                gameState.turn = (playerNum === 1) ? 2 : 1;
+            }
+            updateUI();
+            return true;
         }
 
         function drawBoard() {
@@ -128,94 +263,401 @@
                 for (let c = 0; c < 7; c++) {
                     const cell = document.createElement('div');
                     cell.className = 'cell';
-                    if (gameState.board[r][c] !== 0 && gameState.colors) {
-                        const playerNum = gameState.board[r][c];
-                        const colorName = gameState.colors[`p${playerNum}`];
+                    const pNum = gameState.board[r][c];
+                    if (pNum !== 0 && gameState.colors) {
+                        const colorName = gameState.colors[`p${pNum}`];
                         cell.classList.add(`color-${colorName}`);
+                        if (gameState.lastMove && gameState.lastMove.r === r && gameState.lastMove.c === c) {
+                            cell.classList.add('anim-drop');
+                        }
                     }
-                    cell.onclick = () => handleMove(c);
+                    cell.onclick = () => {
+                        if (currentMode === 'solo') handleSoloClick(c);
+                        if (currentMode === 'multi') handleMultiClick(c);
+                    };
                     boardDiv.appendChild(cell);
                 }
             }
         }
 
-        window.chooseColor = (color) => {
-            if (myPlayerNum !== 1) return;
-            // Palette par défaut si le joueur 1 prend une couleur
-            const defaults = { red: 'yellow', yellow: 'red', blue: 'green', green: 'blue' };
-            gameState.colors = {
-                p1: color,
-                p2: defaults[color]
-            };
-            set(gameRef, gameState);
+        // --- MODE SOLO & IA ---
+        window.prepareSolo = () => {
+            const input = document.getElementById('username-input').value.trim();
+            myName = input || "Joueur";
+            
+            // Reset boutons
+            document.getElementById('btn-diff-normal').classList.remove('selected-diff');
+            document.getElementById('btn-diff-hard').classList.remove('selected-diff');
+            document.getElementById('color-selection-area').classList.add('hidden');
+            
+            showScreen('screen-solo-setup');
         };
 
-        function handleMove(col) {
-            if (gameState.winner || !gameState.colors || gameState.turn !== myPlayerNum) return;
+        window.selectDifficulty = (diff) => {
+            aiDifficulty = diff;
+            document.getElementById('btn-diff-normal').classList.toggle('selected-diff', diff === 'normal');
+            document.getElementById('btn-diff-hard').classList.toggle('selected-diff', diff === 'hard');
+            document.getElementById('color-selection-area').classList.remove('hidden');
+        };
 
-            let row = -1;
-            for (let r = 5; r >= 0; r--) {
-                if (gameState.board[r][col] === 0) { row = r; break; }
-            }
-
-            if (row === -1) return;
-
-            gameState.board[row][col] = myPlayerNum;
+        window.startSolo = (chosenColor) => {
+            currentMode = 'solo';
+            myPlayerNum = 1;
+            resetLocalGameState();
+            gameState.p1Name = myName;
+            gameState.p2Name = (aiDifficulty === 'hard') ? "IA Invincible 🤖" : "IA Normale 🤖";
+            gameState.turn = 1;
+            const aiColor = (chosenColor === 'red') ? 'yellow' : 'red';
+            gameState.colors = { p1: chosenColor, p2: aiColor };
             
-            if (checkWin(row, col)) {
-                gameState.winner = myPlayerNum;
-            } else {
-                gameState.turn = (myPlayerNum === 1) ? 2 : 1;
-            }
-            set(gameRef, gameState);
-        }
+            showScreen('screen-game');
+            drawBoard();
+            updateUI();
+        };
 
-        function checkWin(r, c) {
-            const p = gameState.board[r][c];
-            const check = (dr, dc) => {
-                let count = 0;
-                for (let i = -3; i <= 3; i++) {
-                    let row = r + i * dr; let col = c + i * dc;
-                    if (row >= 0 && row < 6 && col >= 0 && col < 7 && gameState.board[row][col] === p) {
-                        if (++count === 4) return true;
-                    } else count = 0;
+        function handleSoloClick(col) {
+            if (gameState.winner || isAiThinking || gameState.turn !== 1) return;
+            if(placeTokenLocal(col, 1)) {
+                if(!gameState.winner) {
+                    isAiThinking = true;
+                    // Petit délai pour que l'IA ne joue pas instantanément (plus naturel)
+                    setTimeout(aiMove, 500); 
                 }
-                return false;
-            };
-            return check(0, 1) || check(1, 0) || check(1, 1) || check(1, -1);
+            }
         }
 
-        function updateStatus() {
-            const info = document.getElementById('game-info');
-            if (myPlayerNum === 'spectator') {
-                info.innerHTML = "👀 Spectateur"; return;
-            }
-            
-            if (!gameState.colors) {
-                info.innerHTML = myPlayerNum === 2 ? "⏳ Attente du choix de couleur du Joueur 1..." : "Attente...";
-                return;
-            }
+        // ============================================
+        // ============= CERVEAU DE L'IA ==============
+        // ============================================
 
-            let colorText = `<span style="color:${gameState.colors[`p${myPlayerNum}`]}">●</span>`;
-            let status = `Vous êtes le <strong>Joueur ${myPlayerNum}</strong> ${colorText}<br>`;
+        function aiMove() {
+            // Copie profonde du plateau pour simulation
+            const boardCopy = gameState.board.map(row => [...row]);
             
-            if (gameState.winner) {
-                status += `🎉 LE JOUEUR ${gameState.winner} A GAGNÉ !`;
+            // Profondeur : 2 pour Normal (voit juste les erreurs directes), 6 pour Impossible
+            const depth = (aiDifficulty === 'hard') ? 6 : 2; 
+            
+            // Lancer Minimax
+            const bestCol = getBestMove(boardCopy, depth);
+            
+            placeTokenLocal(bestCol, 2);
+            isAiThinking = false;
+        }
+
+        function getBestMove(board, depth) {
+            let validMoves = getValidMoves(board);
+            let bestScore = -Infinity;
+            // Choix par défaut : le centre ou aléatoire
+            let move = validMoves.includes(3) ? 3 : validMoves[Math.floor(Math.random() * validMoves.length)];
+            
+            // Pour l'IA (Player 2), on veut MAXIMISER le score
+            for (let col of validMoves) {
+                let tempBoard = board.map(r => [...r]);
+                dropPiece(tempBoard, col, 2); // Simuler coup IA
+                let score = minimax(tempBoard, depth - 1, -Infinity, Infinity, false);
+                if (score > bestScore) {
+                    bestScore = score;
+                    move = col;
+                }
+            }
+            return move;
+        }
+
+        function minimax(board, depth, alpha, beta, isMaximizing) {
+            let result = checkWinState(board);
+            if (result === 2) return 100000 + depth; // IA Gagne (priorité à la victoire rapide)
+            if (result === 1) return -100000 - depth; // Humain Gagne
+            if (result === 'draw') return 0;
+            if (depth === 0) return evaluateBoard(board, 2);
+
+            let validMoves = getValidMoves(board);
+
+            if (isMaximizing) {
+                let maxEval = -Infinity;
+                for (let col of validMoves) {
+                    let tempBoard = board.map(r => [...r]);
+                    dropPiece(tempBoard, col, 2);
+                    let evalScore = minimax(tempBoard, depth - 1, alpha, beta, false);
+                    maxEval = Math.max(maxEval, evalScore);
+                    alpha = Math.max(alpha, evalScore);
+                    if (beta <= alpha) break;
+                }
+                return maxEval;
             } else {
-                status += (gameState.turn === myPlayerNum) ? "⭐ À VOUS DE JOUER !" : "⏳ Attente de l'adversaire...";
+                let minEval = Infinity;
+                for (let col of validMoves) {
+                    let tempBoard = board.map(r => [...r]);
+                    dropPiece(tempBoard, col, 1);
+                    let evalScore = minimax(tempBoard, depth - 1, alpha, beta, true);
+                    minEval = Math.min(minEval, evalScore);
+                    beta = Math.min(beta, evalScore);
+                    if (beta <= alpha) break;
+                }
+                return minEval;
             }
-            info.innerHTML = status;
         }
 
-        window.resetGame = () => {
+        // Fonction d'évaluation stratégique (Heuristique)
+        function evaluateBoard(board, piece) {
+            let score = 0;
+            const oppPiece = (piece === 1) ? 2 : 1;
+
+            // Favoriser la colonne centrale (stratégie clé au P4)
+            let centerArray = [];
+            for(let r=0; r<6; r++) centerArray.push(board[r][3]);
+            let centerCount = centerArray.filter(x => x === piece).length;
+            score += centerCount * 3;
+
+            // Scan Horizontal
+            for (let r=0; r<6; r++) {
+                for (let c=0; c<7-3; c++) {
+                    let window = [board[r][c], board[r][c+1], board[r][c+2], board[r][c+3]];
+                    score += scoreWindow(window, piece, oppPiece);
+                }
+            }
+            // Scan Vertical
+            for (let r=0; r<6-3; r++) {
+                for (let c=0; c<7; c++) {
+                    let window = [board[r][c], board[r+1][c], board[r+2][c], board[r+3][c]];
+                    score += scoreWindow(window, piece, oppPiece);
+                }
+            }
+            // Diagonale Positive
+            for (let r=0; r<6-3; r++) {
+                for (let c=0; c<7-3; c++) {
+                    let window = [board[r][c], board[r+1][c+1], board[r+2][c+2], board[r+3][c+3]];
+                    score += scoreWindow(window, piece, oppPiece);
+                }
+            }
+            // Diagonale Négative
+            for (let r=0; r<6-3; r++) {
+                for (let c=0; c<7; c++) {
+                    if (c-3 >= 0) {
+                        let window = [board[r][c], board[r+1][c-1], board[r+2][c-2], board[r+3][c-3]];
+                        score += scoreWindow(window, piece, oppPiece);
+                    }
+                }
+            }
+            return score;
+        }
+
+        function scoreWindow(window, piece, oppPiece) {
+            let score = 0;
+            let pieceCount = window.filter(x => x === piece).length;
+            let emptyCount = window.filter(x => x === 0).length;
+            let oppCount = window.filter(x => x === oppPiece).length;
+
+            // Offensive : essayer d'aligner
+            if (pieceCount === 4) score += 100;
+            else if (pieceCount === 3 && emptyCount === 1) score += 5;
+            else if (pieceCount === 2 && emptyCount === 2) score += 2;
+
+            // Défensive : bloquer l'adversaire (très important)
+            if (oppCount === 3 && emptyCount === 1) score -= 4; 
+
+            return score;
+        }
+
+        // --- Helpers IA ---
+        function getValidMoves(board) {
+            let moves = [];
+            // Ordre de recherche optimisé : Centre -> Extérieur (accélère l'élagage alpha-beta)
+            const columnOrder = [3, 2, 4, 1, 5, 0, 6]; 
+            for(let c of columnOrder) {
+                if(board[0][c] === 0) moves.push(c);
+            }
+            return moves;
+        }
+        function dropPiece(board, col, player) {
+            for (let r = 5; r >= 0; r--) {
+                if (board[r][col] === 0) { board[r][col] = player; return; }
+            }
+        }
+        function checkWinState(board) {
+            // Copie allégée de la fonction de victoire pour le Minimax
+            // Retourne le gagnant (1 ou 2), 'draw', ou null
+            for(let r=0; r<6; r++) {
+                for(let c=0; c<7; c++) {
+                     let p = board[r][c];
+                     if(p !== 0) {
+                         if(c+3<7 && p==board[r][c+1] && p==board[r][c+2] && p==board[r][c+3]) return p;
+                         if(r+3<6 && p==board[r+1][c] && p==board[r+2][c] && p==board[r+3][c]) return p;
+                         if(r+3<6 && c+3<7 && p==board[r+1][c+1] && p==board[r+2][c+2] && p==board[r+3][c+3]) return p;
+                         if(r-3>=0 && c+3<7 && p==board[r-1][c+1] && p==board[r-2][c+2] && p==board[r-3][c+3]) return p;
+                     }
+                }
+            }
+            if(board[0].every(cell => cell !== 0)) return 'draw';
+            return null;
+        }
+
+        // ================= MODE MULTI =================
+        window.startMulti = () => {
+            const input = document.getElementById('username-input').value.trim();
+            myName = input || null; 
+            currentMode = 'multi';
+            resetLocalGameState();
+            showScreen('screen-game');
+            initFirebaseMulti();
+        };
+
+        function initFirebaseMulti() {
+            document.getElementById('status-display').textContent = "Connexion...";
+            
+            const playerListener = onValue(playersRef, (snap) => {
+                const players = snap.val() || {};
+                if (!myPlayerNum) {
+                    if (!players.p1) {
+                        myPlayerNum = 1;
+                        set(ref(database, 'puissance4/players/p1'), { name: myName || "Joueur 1" });
+                        onDisconnect(ref(database, 'puissance4/players/p1')).remove();
+                        if (!players.p2) set(gameRef, { board: gameState.board, turn: 1, winner: null, colors: null, lastMove: null });
+                    } else if (!players.p2) {
+                        myPlayerNum = 2;
+                        set(ref(database, 'puissance4/players/p2'), { name: myName || "Joueur 2" });
+                        onDisconnect(ref(database, 'puissance4/players/p2')).remove();
+                    } else {
+                        myPlayerNum = 'spectator';
+                    }
+                }
+                if(players.p1) gameState.p1Name = players.p1.name;
+                if(players.p2) gameState.p2Name = players.p2.name;
+                updateUI();
+            });
+            firebaseListeners.push({ref: playersRef, type: 'value', callback: playerListener});
+
+            const gameStateListener = onValue(gameRef, (snap) => {
+                const data = snap.val();
+                if (data) {
+                    gameState.board = data.board;
+                    gameState.turn = data.turn;
+                    gameState.colors = data.colors;
+                    gameState.winner = data.winner;
+                    gameState.lastMove = data.lastMove; 
+                    drawBoard();
+                    updateUI();
+                }
+            });
+             firebaseListeners.push({ref: gameRef, type: 'value', callback: gameStateListener});
+        }
+
+        window.chooseColorMulti = (color) => {
+            if (myPlayerNum !== 1) return;
+            const defaults = { red: 'yellow', yellow: 'red' };
+            update(gameRef, { colors: { p1: color, p2: defaults[color] } });
+        };
+
+        function handleMultiClick(col) {
+             if (gameState.winner || !gameState.colors || gameState.turn !== myPlayerNum || myPlayerNum === 'spectator') return;
+             
+             let row = -1;
+             for (let r = 5; r >= 0; r--) { if (gameState.board[r][col] === 0) { row = r; break; } }
+             if (row === -1) return;
+
+             gameState.board[row][col] = myPlayerNum;
+             let winner = null;
+             if (checkWin(row, col, gameState.board)) winner = myPlayerNum;
+
+             update(gameRef, {
+                 board: gameState.board,
+                 turn: (myPlayerNum === 1) ? 2 : 1,
+                 winner: winner,
+                 lastMove: {r: row, c: col} 
+             });
+        }
+
+        window.sendRematch = (iStart) => {
+            const nextTurn = iStart ? myPlayerNum : (myPlayerNum === 1 ? 2 : 1);
             set(gameRef, {
                 board: Array(6).fill(null).map(() => Array(7).fill(0)),
-                turn: 1,
-                winner: null,
-                colors: null
+                turn: nextTurn, winner: null, colors: gameState.colors, lastMove: null
             });
+            document.getElementById('modal-multi-end').classList.add('hidden');
         };
+
+        // ================= UI UPDATE =================
+        function updateUI() {
+            const status = document.getElementById('status-display');
+            const turn = document.getElementById('turn-display');
+            const setupMulti = document.getElementById('setup-color-multi');
+            const btnRestart = document.getElementById('btn-restart-grid');
+
+            if (currentMode === 'multi' && myPlayerNum === 1 && !gameState.colors) {
+                setupMulti.classList.remove('hidden');
+                status.innerHTML = "En attente...";
+                turn.classList.add('hidden');
+                return;
+            } else {
+                setupMulti.classList.add('hidden');
+                turn.classList.remove('hidden');
+            }
+
+            const p1Txt = `<span style="color:${gameState.colors?.p1 || '#7f8c8d'}">●</span> ${gameState.p1Name}`;
+            const p2Txt = `<span style="color:${gameState.colors?.p2 || '#7f8c8d'}">●</span> ${gameState.p2Name}`;
+
+            if(gameState.winner) {
+                let winnerName = (gameState.winner === 1) ? gameState.p1Name : gameState.p2Name;
+                status.innerHTML = `🎉 Victoire de ${winnerName} !`;
+                turn.textContent = "Partie terminée";
+                btnRestart.classList.remove('hidden');
+
+                if(currentMode === 'multi' && myPlayerNum !== 'spectator') {
+                    const modal = document.getElementById('modal-multi-end');
+                    modal.classList.remove('hidden');
+                    if (myPlayerNum === gameState.winner) {
+                        document.getElementById('multi-end-title').textContent = "Victoire ! 🏆";
+                        document.getElementById('multi-end-msg').textContent = "Bien joué !";
+                        document.getElementById('multi-loser-controls').classList.add('hidden');
+                        document.getElementById('multi-winner-wait').classList.remove('hidden');
+                    } else {
+                        document.getElementById('multi-end-title').textContent = "Défaite... ❌";
+                        document.getElementById('multi-end-msg').textContent = "C'est vous qui choisissez :";
+                        document.getElementById('multi-loser-controls').classList.remove('hidden');
+                        document.getElementById('multi-winner-wait').classList.add('hidden');
+                    }
+                }
+            } else {
+                document.getElementById('modal-multi-end').classList.add('hidden');
+                btnRestart.classList.add('hidden');
+
+                if(currentMode === 'multi' && !gameState.colors) {
+                     status.textContent = "Attente...";
+                } else {
+                    status.innerHTML = `${p1Txt} <small>VS</small> ${p2Txt}`;
+                    const currName = (gameState.turn === 1) ? gameState.p1Name : gameState.p2Name;
+                    const colorMap = {'red': '🔴', 'yellow': '🟡'};
+                    const dot = gameState.colors ? colorMap[gameState.colors[`p${gameState.turn}`]] : '';
+
+                    if (myPlayerNum && myPlayerNum !== 'spectator' && gameState.turn === myPlayerNum) {
+                        turn.innerHTML = `${dot} À <b>VOUS</b> de jouer !`;
+                        turn.style.background = "#dff9fb";
+                    } else {
+                        turn.innerHTML = `${dot} Tour de ${currName}`;
+                        turn.style.background = "#eee";
+                    }
+                }
+            }
+        }
+
+        function checkWin(r, c, board) {
+            const p = board[r][c];
+            const directions = [[0, 1], [1, 0], [1, 1], [1, -1]];
+            for (let [dr, dc] of directions) {
+                let count = 1;
+                for (let i = 1; i <= 3; i++) {
+                    let row = r + i*dr, col = c + i*dc;
+                    if(row<0 || row>=6 || col<0 || col>=7 || board[row][col] !== p) break;
+                    count++;
+                }
+                for (let i = 1; i <= 3; i++) {
+                    let row = r - i*dr, col = c - i*dc;
+                    if(row<0 || row>=6 || col<0 || col>=7 || board[row][col] !== p) break;
+                    count++;
+                }
+                if (count >= 4) return true;
+            }
+            return false;
+        }
     </script>
 </body>
-
 </html>
