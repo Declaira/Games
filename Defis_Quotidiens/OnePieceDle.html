@@ -1,456 +1,347 @@
 <!DOCTYPE html>
 <html lang="fr">
-    <link href="https://fonts.googleapis.com/css2?family=Pirata+One&display=swap" rel="stylesheet">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Pirata+One&display=swap" rel="stylesheet">
     <link rel="icon" type="image/png" href="images_onepiece/icone.png">
-    <link rel="stylesheet" href="style.css">
     <title>OnePieceDle</title>
-<style>
-/* === One Piece Style === */
-body {
-  font-family: 'Pirata One', cursive;
-  background: url('images_onepiece/bg.png') no-repeat center center fixed;
-  background-size: cover;
-  color: #fff;
-  text-align: center;
-  margin: 0;
+    <style>
+    :root {
+        /* Un doré "Vieux Rhum" plus doux et moins saturé */
+        --gold: #ffd700; 
+        /* Fond crème très transparent (0.7) */
+        --soft-bg: #fff8dc; 
+        --dark-bg: rgba(34,34,34,0.95); 
+        --text: rgba(255, 252, 240, 0.95); 
+        --correct: green;
+        --wrong: red;
+        --near: orange;
+    }
+        body {
+            font-family: 'Pirata One', cursive;
+            background: url('images_onepiece/bg.png') no-repeat center center fixed;
+            background-size: cover;
+            color: #fff;
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            justify-content: center;
+        }
 
-}
+        /* === Structure Wrappers === */
+        #main-wrapper {
+          background: var(--dark-bg);
+          /* Bordure plus fine et couleur adoucie */
+          border: 1px solid #ffd700;
+          border-radius: 20px;
+          padding: 25px;
+          width: 100%;
+          max-width: 1000px;
+          box-sizing: border-box;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 20px;
 
-h1 {
-  font-size: 3rem;
-  color: #ffd700;
-  text-shadow: 3px 3px #000;
-  margin-bottom: 20px;
-}
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+          color: var(--text-dark);
+      }
 
-#game-container {
-  background: rgba(0, 0, 0, 0.7);
-  border: 4px solid #ffd700;
-  border-radius: 15px;
-  padding: 20px;
-  max-width: 900px;
-  margin: auto;
-  box-shadow: 0 0 20px #000, inset 0 0 15px #444;
-}
-#game-title {
-  display: block;
-  margin: 10px auto; /* centre l'image */
-  max-width: 80%; /* s'adapte à l'écran */
-  height: auto; /* conserve le ratio */
-}
+        .title-wrapper img {
+            width: 90%;
+            max-width: 450px;
+            filter: drop-shadow(0 0 10px var(--gold));
+        }
 
-.game-message {
-  font-family: 'Pirata One', cursive;
-  font-size: 2.2rem;
-  color: #ffd700;
-  text-shadow: 2px 2px 6px #222, 0 0 12px #fff;
-  margin: 18px 0 10px 0;
-  letter-spacing: 1px;
-  transition: color 0.4s, text-shadow 0.4s;
-}
-.game-message.found {
-  color: #38d46a;
-  text-shadow: 2px 2px 10px #222, 0 0 18px #38d46a;
-  animation: pop 0.7s;
-}
-/* Input style */
-#guessInput {
-  font-family: 'Pirata One', cursive;
-  font-size: 1.5rem;
-  padding: 10px;
-  border-radius: 10px;
-  border: 3px solid #ffd700;
-  width: 60%;
-  text-align: center;
-  margin-bottom: 15px;
-  margin: 0 auto 15px auto; /* top 0, right auto, bottom 15px, left auto */
-}
+        /* --- LE PARENT (Conteneur horizontal) --- */
+        #search-section {
+            width: 100%;
+            max-width: 650px; 
+            display: flex !important;  /* Force le flex */
+            flex-direction: row !important; /* Force la ligne */
+            align-items: flex-start;
+            gap: 10px;
+            margin: 20px auto;
+            box-sizing: border-box;
+        }
 
-.title-with-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 20px; /* espace entre le texte et le bouton */
-  margin-bottom: 20px;
-}
+        /* --- LA BARRE (Côté gauche) --- */
+        .search-wrapper {
+            position: relative;
+            flex: 1; /* Elle prend tout l'espace disponible */
+            min-width: 0; /* Empêche le débordement Flex */
+        }
 
-#modeBtn {
-  font-family: 'Pirata One', cursive;
-  padding: 8px 18px;
-  font-size: 16px;
-  border-radius: 8px;
-  background: #38d46a;
-  color: #fff;
-  cursor: pointer;
-  border: 2px solid #fff;
-  transition: background 0.4s, transform 0.2s, box-shadow 0.4s;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.18), 0 0 0 4px rgba(255,255,255,0.15);
-  position: relative;
-}
+        input#guessInput {
+            width: 100%;
+            height: 50px; /* Hauteur fixe pour les deux */
+            padding: 0 15px;
+            font-family: 'Pirata One';
+            font-size: 1.4rem;
+            background: var(--soft-bg);
+            border: 2px solid var(--gold);
+            color: #333; /* Texte sombre pour être lisible sur fond crème */
+            border-radius: 8px;
+            text-align: center;
+            box-sizing: border-box;
+        }
 
-#modeBtn.difficile {
-  background: red;
-  transform: scale(1.07) rotate(-2deg);
-}
+        /* --- LE BOUTON (Côté droit) --- */
+        #modeBtn {
+            flex-shrink: 0; /* Empêche le bouton de s'écraser */
+            height: 50px;   /* Même hauteur que l'input */
+            padding: 0 20px;
+            font-family: 'Pirata One', cursive;
+            font-size: 1.2rem;
+            border: 1px solid var(--gold);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.3s;
+            color: white;
+            text-shadow: 1px 1px 2px #000;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
 
-#modeBtn.facile {
-  background: green;
-  transform: scale(1.07) rotate(2deg);
-}
-.modeBtn-bg {
-  background: rgba(0,0,0,0.25);
-  border-radius: 12px;
-  padding: 4px;
-  display: inline-block;
-  position: absolute;    /* positionne en haut à gauche */
-  top: 24px;             /* espace depuis le haut */
-  right: 24px;            /* espace depuis la gauche */
-  z-index: 20;
-}
-#modeBtn:active {
-  transform: scale(0.97);
-}
-.suggestions {
-  max-height: 320px;
-  overflow-y: auto;
-  width: 60%;
-  margin: 0 auto 10px auto;
-  border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.18);
-  background: rgba(255,255,255,0.95);
-  position: relative;
-  z-index: 10;
-  border: 2px solid #ffd700;
-  padding-right: 4px; /* Laisse la place au slider */
-  box-sizing: border-box; /* Ajouté */
-  scrollbar-width: thin;
-  scrollbar-color: #ffd700 #fff8dc;
-}
+        #modeBtn.difficile {
+          background: red;
+          transform: scale(1.07) rotate(-2deg);
+        }
 
-/* Pour Chrome, Edge, Safari */
-.suggestions::-webkit-scrollbar {
-  width: 10px;
-  border-radius: 4px; /* Rayon réduit pour suivre le bord */
-  background: #fff8dc;
-}
-.suggestions::-webkit-scrollbar-thumb {
-  background: #ffd700;
-  border-radius: 4px;
-  border: 2px solid #fff8dc;
-}
-.suggestions::-webkit-scrollbar-track {
-  background: #fff8dc;
-  border-radius: 4px;
-}
-.suggestion-item {
-  background: #fff8dc;
-  color: #000;
-  border-bottom: 1px solid #ffd700;
-  padding: 28px 12px;              /* plus de hauteur */
-  cursor: pointer;
-  display: flex;
-  justify-content: center;          /* centre le contenu horizontalement */
-  align-items: center;              /* centre verticalement */
-  border-radius: 10px;
-  margin: 8px auto;                 /* plus d'espace entre les items */
-  transition: background 0.3s, color 0.3s, box-shadow 0.3s;
-  box-shadow: 0 1px 6px rgba(0,0,0,0.08);
-  font-size: 2.5rem;                /* texte encore plus grand */
-  gap: 32px;
-}
+        #modeBtn.facile {
+          background: green;
+          transform: scale(1.07) rotate(2deg);
+        }
+        .modeBtn-bg {
+          background: rgba(0,0,0,0.25);
+          border-radius: 12px;
+          padding: 4px;
+          display: inline-block;
+          position: absolute;    /* positionne en haut à gauche */
+          top: 24px;             /* espace depuis le haut */
+          right: 24px;            /* espace depuis la gauche */
+          z-index: 20;
+        }
+        #modeBtn:active {
+          transform: scale(0.97);
+        }
 
-.suggestion-item img {
-  width: 3rem;   /* même taille que le texte */
-  height: 3rem;
-  min-width: 3rem;
-  min-height: 3rem;
-  border-radius: 50%;
-  object-fit: cover;
-  object-position: top;
-  display: block;
-}
 
-.suggestion-item:hover,
-.suggestion-item.selected {
-  background: #ffd700;
-  color: #222;
-  box-shadow: 0 2px 12px rgba(255,215,0,0.18);
-}
+        /* 2. Les suggestions en absolu pour flotter au-dessus du reste */
+        .suggestions {
+          position: absolute;
+          top: 100%; /* S'affiche juste en dessous de l'input */
+          left: 50%;
+          transform: translateX(-50%); /* Centre parfaitement par rapport à l'input */
+          
+          width: 100%; /* Prend la même largeur que l'input */
+          max-height: 320px;
+          overflow-y: auto;
+          z-index: 1000; /* Force le passage devant le tableau et les images */
+          
+          background: rgba(255, 252, 240, 0.95);
+          border: 2px solid var(--gold);
+          box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+          border-radius: 10px;
+          margin: 0; 
+          padding: 5px;
+          box-sizing: border-box;
+          display: none;
+        }
 
-#feedback {
-  color: #000; /* ou une couleur visible selon ton fond */
-  font-weight: bold;
-  margin-top: 10px;
-  min-height: 1.5em; /* pour éviter un saut quand le texte apparaît */
-}
+        .suggestion-item {
+            display: flex;         /* Force l'alignement horizontal */
+            align-items: center;   /* Centre verticalement l'image et le texte */
+            gap: 15px;             /* Espace entre l'image et le nom */
+            padding: 10px;
+            cursor: pointer;
+            color: #333;           /* Couleur du texte (noir/gris foncé sur fond blanc) */
+        }
 
-/* === Table des comparaisons === */
-table#attemptsTable {
-  border-collapse: separate !important;
-  border-spacing: 10px 8px; /* espace vertical entre les lignes */
-  margin-top: 15px;
-  width: 100%;
-  background: none;
-}
+        .suggestion-name {
+            font-family: 'Pirata One', cursive;
+            font-size: 1.4rem;
+            pointer-events: none;  /* Évite que le texte bloque le clic sur la div */
+        }
+        .suggestion-item:hover,
+        .suggestion-item.selected {
+          background: var(--gold) !important;
+          border-radius: 10px;
+          color: #222;
+          box-shadow: 0 2px 12px rgba(255,215,0,0.18);
+        }
 
-table#attemptsTable th,
-table#attemptsTable td {
-  border: none !important; /* retire tous les contours blancs */
-  font-size: 1.1rem;
-  padding: 12px 10px;
-  color: #fff;
-  background: rgba(34,34,34,0.85);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
-  transition: background 0.3s, box-shadow 0.3s;
-}
+        /* Pour les suggestions et le tableau */
+        .cell-img {
+          /* Force l'image à prendre toute la place du parent (le <td>) */
+          width: 100%;
+          height: 100%;
+          
+          /* Indispensable : remplit la case sans déformer l'image */
+          object-fit: cover; 
+          
+          /* Centre sur le visage (ajuste le 20% si besoin) */
+          object-position: 50% 0%; 
+          
+          /* Optionnel : assure-toi qu'il n'y a pas de marges résiduelles */
+          display: block;
+          border-radius: 5px; /* Pour garder les coins arrondis de tes cases */
+      }
+        .img-square{
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            /* 50% horizontal (centré), 20% vertical (focus sur le visage) */
+            object-position: 50% 0%; 
+            border-radius: 5px;
+        }
 
-table#attemptsTable th {
-  color: #ffd700;
-  background: rgba(34,34,34,0.95);
-  font-size: 1.2rem;
-  border-radius: 16px 16px 0 0;
-}
+        /* Ajustement spécifique pour les suggestions (garder une taille fixe) */
+        .img-square {
+            width: 50px;
+            height: 50px;
+        }
+        /* === Tableau Responsive === */
+        .table-wrapper { width: 100%; overflow-x: auto; }
+        table { width: 100%; border-collapse: separate; border-spacing: 5px; min-width: 850px; }
+        th {
+          color: var(--text-dark);
+          font-size: 1.2rem;
+          border-bottom: 2px solid var(--gold); /* Doré très transparent */
+          padding-bottom: 10px;
+      }
+        
+        td {
+            width: 100px;
+            height: 100px;
+            text-align: center;
+            background: rgba(40, 40, 40, 0.9);
+            border-radius: 8px;
+            position: relative;
+            transform-style: preserve-3d;
+            font-size: 1rem;
+        }
 
-table#attemptsTable tr {
-  border-radius: 18px;
-  overflow: hidden;
-}
+        .cell-img { width: 100%; height: 100%; object-fit: cover; border-radius: 5px; }
 
-#attemptsTable td:first-child {
-  padding: 0;
-  width: 80px;
-  height: auto;
-  min-height: 80px;
-  background: transparent !important;
-  border-radius: 14px !important; /* bords arrondis comme les autres cases */
-  box-shadow: none !important;
-  overflow: hidden;
-  position: relative;
-  border: none !important;
-  vertical-align: middle;
-}
+        /* === Écran de Victoire === */
+        #victory-screen {
+            display: none;
+            text-align: center;
+            background: rgba(0,0,0,0.6);
+            padding: 20px;
+            border-radius: 15px;
+            border: 3px dashed var(--gold);
+            animation: fadeIn 0.8s;
+        }
 
-#attemptsTable td:first-child img {
-  width: 100%;
-  height: 100%;
-  min-height: 60px;
-  object-fit: cover;
-  object-position: top;
-  display: block;
-  border-radius: 14px !important; /* bords arrondis sur l'image aussi */
-  background: transparent;
-}
+        .btn-victory {
+          font-family: 'Pirata One', cursive;
+          padding: 12px 30px;
+          font-size: 1.4rem;
+          cursor: pointer;
+          
+          /* Couleurs adaptées au ton doux */
+          background: var(--soft-bg);
+          color: #333;
+          border: 2px solid var(--gold);
+          border-radius: 10px;
+          
+          /* Effets visuels */
+          transition: all 0.3s ease;
+          box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+          text-transform: uppercase;
+          letter-spacing: 1px;
+      }
 
-table#attemptsTable td:last-child {
-  border-radius: 0 18px 18px 0;
-}
+      .btn-victory:hover {
+          background: var(--gold);
+          color: var(--text);
+          box-shadow: 0 6px 15px rgba(212, 175, 55, 0.4);
+          transform: translateY(-2px);
+      }
 
-table#attemptsTable td {
-  border-radius: 14px !important; /* arrondi sur toutes les cases */
-  background: rgba(34,34,34,0.85);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
-  transition: background 0.3s, box-shadow 0.3s;
-}
+      .btn-victory:active {
+          transform: translateY(0);
+      }
+        
 
-table#attemptsTable tr {
-  margin-bottom: 8px;
-  display: table-row;
-}
+        @keyframes fadeIn { from {opacity: 0;} to {opacity: 1;} }
 
-table#attemptsTable tbody tr {
-  background: none;
-}
+        /* === Légende === */
+        .legend-wrapper {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid var(--gold);
+            width: 100%;
+        }
+        .legend-item { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; }
+        .box { width: 18px; height: 18px; border-radius: 3px; }
+        .icon-box { width: 22px; height: 22px; background-size: contain; background-repeat: no-repeat; }
+        .up { background-image: url('images_onepiece/arrow-up.png'); }
+        .down { background-image: url('images_onepiece/arrow-down.png'); }
 
-table#attemptsTable td[style*="background:green"] {
-  background-color: #2ecc71 !important;
-  color: #222;
-}
-
-table#attemptsTable td[style*="background:red"] {
-  background-color: #e74c3c !important;
-}
-
-table#attemptsTable td[style*="background:yellow"] {
-  background-color: #f1c40f !important;
-  color: #222;
-}
-
-/* === Animation des attributs === */
-.reveal {
-  opacity: 0;
-  transform: rotateY(90deg);
-  animation: flipReveal 0.6s forwards;
-}
-
-@keyframes flipReveal {
-  0% {
-    opacity: 0;
-    transform: rotateY(90deg);
-  }
-  100% {
-    opacity: 1;
-    transform: rotateY(0deg);
-  }
-}
-
-/* Couleurs pour feedback */
-td[style*="background:green"] {
-  background-color: #2ecc71 !important; /* Vert One Piece */
-  color: #000;
-}
-
-td[style*="background:red"] {
-  background-color: #e74c3c !important; /* Rouge */
-}
-
-td[style*="background:yellow"] {
-  background-color: #f1c40f !important; /* Jaune */
-}
-
-.arrow-up {
-  background-image: url('images_onepiece/arrow-up.png');
-  background-repeat: no-repeat;
-  background-position: right 8px center;
-  background-size: 32px 32px;
-}
-
-.arrow-down {
-  background-image: url('images_onepiece/arrow-down.png');
-  background-repeat: no-repeat;
-  background-position: right 8px center;
-  background-size: 32px 32px;
-}
-
-/* Légende */
-#attempts h3 {
-  font-family: 'Pirata One', cursive;
-  color: #ffd700;
-  font-size: 2rem;
-  text-shadow: 2px 2px 8px #222, 0 0 12px #fff;
-  margin-bottom: 10px;
-  letter-spacing: 1px;
-}
-
-@import url('https://fonts.googleapis.com/css2?family=Pirata+One&display=swap');
-
-#victoryScreen {
-  animation: fadeIn 1s ease forwards;
-}
-
-#victoryImage {
-  animation: pop 1s ease forwards;
-}
-
-#victoryName {
-  font-family: 'Pirata One', cursive;
-  color: #ffcc00;
-  text-shadow: 3px 3px #222;
-}
-
-#replayBtn:hover {
-  transform: scale(1.1);
-  background: #ffd633;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: scale(0.8); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-@keyframes pop {
-  0% { transform: scale(0); opacity: 0; }
-  70% { transform: scale(1.2); opacity: 1; }
-  100% { transform: scale(1); }
-}
-
-.berry-icon {
-  width: 16px;
-  vertical-align: middle;
-  margin-left: 4px;
-  filter: brightness(0) invert(1); /* rend l'image noire */
-}
-
-/* Légende avec indicateurs colorés */
-.legend {
-  display: flex;
-  justify-content: center;
-  gap: 20px;
-  margin-top: 10px;
-  font-family: 'Pirata One', cursive;
-  font-size: 1.4rem;
-  color: #ffd700;
-  text-shadow: 1px 1px 4px #222;
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.legend-box {
-  width: 24px;
-  height: 24px;
-  border-radius: 4px;
-  display: inline-block;
-}
-
-.legend-correct { background-color: green !important; }   /* Vert */
-.legend-partial { background-color: orange !important; } /* Jaune */
-.legend-wrong   { background-color: red !important; }   /* Rouge */
-.legend-up {
-  background-image: url('images_onepiece/arrow-up.png');
-  background-size: cover;
-  width: 24px;
-  height: 24px;
-  display: inline-block;
-  border-radius: 6px;
-}
-
-.legend-down {
-  background-image: url('images_onepiece/arrow-down.png');
-  background-size: cover;
-  width: 24px;
-  height: 24px;
-  display: inline-block;
-  border-radius: 6px;  
-}
-</style>
+    </style>
 </head>
 <body>
-    <img id="game-title" src="images_onepiece/titre.png" alt="OnePieceDle - Devinez le personnage One Piece !">
-  <div class="title-with-button">
-    <p id="gameMessage" class="game-message">Devinez le personnage One Piece !</p>
-    <button id="modeBtn">Mode : Facile</button>
-  </div>
 
-  <script>
-    // Déplacer le conteneur du bouton dans le header (à droite)
-    (function () {
-      const right = document.querySelector('.header-right');
-      const modeBox = document.querySelector('.modeBtn-bg');
-      if (right && modeBox) right.appendChild(modeBox);
-    })();
-  </script>
+<div id="main-wrapper">
+    <div class="title-wrapper">
+        <img src="images_onepiece/titre.png" alt="Titre">
+    </div>
 
-  <input type="text" id="guessInput" placeholder="Entrez un nom..." autocomplete="off" />
-  <div id="suggestions" class="suggestions"></div>
-  <p id="feedback"></p>
+    <div id="victory-screen">
+        <h1 style="color: var(--gold); font-size: 2.5rem; margin: 0;">KING OF THE PIRATES !</h1>
+        <img id="victory-img" src="" style="width: 220px; height: 220px; object-fit: cover; object-position: 50% 0%; border: 5px solid var(--gold); border-radius: 15px; margin: 15px 0;">
+        <h2 id="victory-name" style="margin: 0; font-size: 2rem;"></h2>
+        <p id="victory-stats" style="color: var(--gold);"></p>
+        <button class="btn-victory" onclick="initGame()">Rejouer</button>
+    </div>
 
-  <div id="victoryScreen" style="display: none; text-align: center; margin-top: 20px;">
-    <img id="victoryImage" src="" alt="Personnage trouvé" style="width: 300px; border-radius: 15px; box-shadow: 0 0 15px gold;">
-    <h2 id="victoryName" style="font-size: 2.5rem; margin: 15px 0; color: #fff;"></h2>
-    <button id="replayBtn" style="padding: 12px 25px; font-size: 18px; font-family: 'Pirata One', cursive; background: #ffcc00; color: #222; border: none; border-radius: 10px; cursor: pointer; transition: transform 0.3s, background 0.3s;">
-      🔄 Rejouer
-    </button>
-  </div>
+    <div id="search-section">
+        <div class="search-wrapper">
+            <input type="text" id="guessInput" placeholder="Chercher un pirate..." autocomplete="off">
+            <div id="suggestions" class="suggestions"></div>
+        </div>
+        
+        <button id="modeBtn" class="facile" onclick="toggleDifficulty()">Mode : Facile</button>
+    </div>
 
-  <div id="attempts"></div>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Perso</th>
+                    <th>Genre</th>
+                    <th>Équipage</th>
+                    <th>Fruit</th>
+                    <th>Origine</th>
+                    <th>Arc</th> <th>Taille (cm)</th>
+                    <th>Prime</th>
+                </tr>
+            </thead>
+            <tbody id="attemptsBody"></tbody>
+        </table>
+    </div>
+
+    <div class="legend-wrapper">
+        <div class="legend-item"><div class="box" style="background: var(--correct);"></div> Correct</div>
+        <div class="legend-item"><div class="box" style="background: var(--wrong);"></div> Incorrect</div>
+        <div class="legend-item"><div class="icon-box up"></div> Plus Tard / Plus Haut</div>
+        <div class="legend-item"><div class="icon-box down"></div> Plus Tôt / Plus Bas</div>
+        </div>
+    </div>
+</div>
+
 <script>
+// === DATA ===
   const data = [
   {
     "name": "A O",
@@ -1117,7 +1008,7 @@ td[style*="background:yellow"] {
     "gender": "Masculin",
     "firstChapter": "1",
     "affiliation": "Équipage des Pirates de Roger",
-    "origin": "East Blue ",
+    "origin": "East Blue",
     "height": "274",
     "bounty": "0",
     "dftype": "",
@@ -1656,7 +1547,7 @@ td[style*="background:yellow"] {
     "gender": "Masculin",
     "firstChapter": "24",
     "affiliation": "Sirop",
-    "origin": "East Blue ",
+    "origin": "East Blue",
     "height": "Inconnue",
     "bounty": "0",
     "dftype": "",
@@ -1700,7 +1591,7 @@ td[style*="background:yellow"] {
     "gender": "Masculin",
     "firstChapter": "23",
     "affiliation": "",
-    "origin": "East Blue ",
+    "origin": "East Blue",
     "height": "Inconnue",
     "bounty": "0",
     "dftype": "",
@@ -2316,7 +2207,7 @@ td[style*="background:yellow"] {
     "gender": "Masculin",
     "firstChapter": "1",
     "affiliation": "Village Fuchsia",
-    "origin": "East Blue ",
+    "origin": "East Blue",
     "height": "Inconnue",
     "bounty": "0",
     "dftype": "",
@@ -2646,7 +2537,7 @@ td[style*="background:yellow"] {
     "gender": "Masculin",
     "firstChapter": "1",
     "affiliation": "Équipage du Roux",
-    "origin": "East Blue ",
+    "origin": "East Blue",
     "height": "183",
     "bounty": "0",
     "dftype": "",
@@ -3086,7 +2977,7 @@ td[style*="background:yellow"] {
     "gender": "Masculin",
     "firstChapter": "23",
     "affiliation": "Équipage du Chapeau de Paille",
-    "origin": "East Blue ",
+    "origin": "East Blue",
     "height": "176",
     "bounty": "500000000",
     "dftype": "",
@@ -3682,7 +3573,7 @@ td[style*="background:yellow"] {
     "gender": "Masculin",
     "firstChapter": "23",
     "affiliation": "Équipage du Capitaine Usopp",
-    "origin": "East Blue ",
+    "origin": "East Blue",
     "height": "124",
     "bounty": "0",
     "dftype": "",
@@ -3924,7 +3815,7 @@ td[style*="background:yellow"] {
     "gender": "Masculin",
     "firstChapter": "586",
     "affiliation": "Royaume de Goa",
-    "origin": "East Blue ",
+    "origin": "East Blue",
     "height": "180",
     "bounty": "0",
     "dftype": "",
@@ -4287,7 +4178,7 @@ td[style*="background:yellow"] {
     "gender": "Féminin",
     "firstChapter": "5",
     "affiliation": "Famille Shimotsuki",
-    "origin": "East Blue ",
+    "origin": "East Blue",
     "height": "150",
     "bounty": "0",
     "dftype": "",
@@ -4771,7 +4662,7 @@ td[style*="background:yellow"] {
     "gender": "Masculin",
     "firstChapter": "94",
     "affiliation": "Easter Egg",
-    "origin": "East Blue ",
+    "origin": "East Blue",
     "height": "Inconnue",
     "bounty": "0",
     "dftype": "",
@@ -4914,7 +4805,7 @@ td[style*="background:yellow"] {
     "gender": "Masculin",
     "firstChapter": "583",
     "affiliation": "Armée Révolutionnaire",
-    "origin": "East Blue ",
+    "origin": "East Blue",
     "height": "187",
     "bounty": "602000000",
     "dftype": "Logia",
@@ -5530,7 +5421,7 @@ td[style*="background:yellow"] {
     "gender": "Masculin",
     "firstChapter": "14",
     "affiliation": "Orange Town",
-    "origin": "East Blue ",
+    "origin": "East Blue",
     "height": "Inconnue",
     "bounty": "0",
     "dftype": "",
@@ -5541,7 +5432,7 @@ td[style*="background:yellow"] {
     "gender": "Masculin",
     "firstChapter": "583",
     "affiliation": "Équipage de Bluejam",
-    "origin": "East Blue ",
+    "origin": "East Blue",
     "height": "320",
     "bounty": "3400000",
     "dftype": "",
@@ -5651,7 +5542,7 @@ td[style*="background:yellow"] {
     "gender": "Masculin",
     "firstChapter": "23",
     "affiliation": "Équipage du Capitaine Usopp",
-    "origin": "East Blue ",
+    "origin": "East Blue",
     "height": "120",
     "bounty": "0",
     "dftype": "",
@@ -6190,7 +6081,7 @@ td[style*="background:yellow"] {
     "gender": "Masculin",
     "firstChapter": "23",
     "affiliation": "Équipage du Capitaine Usopp",
-    "origin": "East Blue ",
+    "origin": "East Blue",
     "height": "127",
     "bounty": "0",
     "dftype": "",
@@ -6355,7 +6246,7 @@ td[style*="background:yellow"] {
     "gender": "Masculin",
     "firstChapter": "77",
     "affiliation": "",
-    "origin": "East Blue ",
+    "origin": "East Blue",
     "height": "Inconnue",
     "bounty": "0",
     "dftype": "",
@@ -6377,7 +6268,7 @@ td[style*="background:yellow"] {
     "gender": "Féminin",
     "firstChapter": "79",
     "affiliation": "World Government Orphanage",
-    "origin": "East Blue ",
+    "origin": "East Blue",
     "height": "Inconnue",
     "bounty": "0",
     "dftype": "",
@@ -6421,7 +6312,7 @@ td[style*="background:yellow"] {
     "gender": "Féminin",
     "firstChapter": "8",
     "affiliation": "Équipage du Chapeau de Paille",
-    "origin": "East Blue ",
+    "origin": "East Blue",
     "height": "170",
     "bounty": "366000000",
     "dftype": "",
@@ -6707,7 +6598,7 @@ td[style*="background:yellow"] {
     "gender": "Masculin",
     "firstChapter": "1",
     "affiliation": "Équipage du Chapeau de Paille",
-    "origin": "East Blue ",
+    "origin": "East Blue",
     "height": "174",
     "bounty": "3000000000",
     "dftype": "Zoan",
@@ -6718,7 +6609,7 @@ td[style*="background:yellow"] {
     "gender": "Masculin",
     "firstChapter": "100",
     "affiliation": "Armée Révolutionnaire",
-    "origin": "East Blue ",
+    "origin": "East Blue",
     "height": "256",
     "bounty": "0",
     "dftype": "",
@@ -6729,7 +6620,7 @@ td[style*="background:yellow"] {
     "gender": "Masculin",
     "firstChapter": "92",
     "affiliation": "Marine",
-    "origin": "East Blue ",
+    "origin": "East Blue",
     "height": "287",
     "bounty": "0",
     "dftype": "",
@@ -7412,7 +7303,7 @@ td[style*="background:yellow"] {
     "gender": "Féminin",
     "firstChapter": "1",
     "affiliation": "Village de Fuchsia",
-    "origin": "East Blue ",
+    "origin": "East Blue",
     "height": "166",
     "bounty": "0",
     "dftype": "",
@@ -8259,7 +8150,7 @@ td[style*="background:yellow"] {
     "gender": "Féminin",
     "firstChapter": "23",
     "affiliation": "",
-    "origin": "East Blue ",
+    "origin": "East Blue",
     "height": "169",
     "bounty": "0",
     "dftype": "",
@@ -9161,7 +9052,7 @@ td[style*="background:yellow"] {
     "gender": "Masculin",
     "firstChapter": "97",
     "affiliation": "Loguetown Arms Shop",
-    "origin": "East Blue ",
+    "origin": "East Blue",
     "height": "157",
     "bounty": "0",
     "dftype": "",
@@ -9513,7 +9404,7 @@ td[style*="background:yellow"] {
     "gender": "Masculin",
     "firstChapter": "12",
     "affiliation": "Chouchou",
-    "origin": "East Blue ",
+    "origin": "East Blue",
     "height": "Inconnue",
     "bounty": "0",
     "dftype": "",
@@ -9975,7 +9866,7 @@ td[style*="background:yellow"] {
     "gender": "Masculin",
     "firstChapter": "1",
     "affiliation": "",
-    "origin": "East Blue ",
+    "origin": "East Blue",
     "height": "Inconnue",
     "bounty": "0",
     "dftype": "",
@@ -10327,7 +10218,7 @@ td[style*="background:yellow"] {
     "gender": "Masculin",
     "firstChapter": "71",
     "affiliation": "Kokoyashi",
-    "origin": "East Blue ",
+    "origin": "East Blue",
     "height": "173",
     "bounty": "0",
     "dftype": "",
@@ -11438,7 +11329,7 @@ td[style*="background:yellow"] {
     "gender": "Masculin",
     "firstChapter": "79",
     "affiliation": "World Government Orphanage",
-    "origin": "East Blue ",
+    "origin": "East Blue",
     "height": "Inconnue",
     "bounty": "0",
     "dftype": "",
@@ -11801,7 +11692,7 @@ td[style*="background:yellow"] {
     "gender": "Féminin",
     "firstChapter": "1",
     "affiliation": "",
-    "origin": "East Blue ",
+    "origin": "East Blue",
     "height": "Inconnue",
     "bounty": "0",
     "dftype": "",
@@ -12571,7 +12462,7 @@ td[style*="background:yellow"] {
     "gender": "Masculin",
     "firstChapter": "69",
     "affiliation": "Village de Gosa",
-    "origin": "East Blue ",
+    "origin": "East Blue",
     "height": "Inconnue",
     "bounty": "0",
     "dftype": "",
@@ -13066,7 +12957,7 @@ td[style*="background:yellow"] {
     "gender": "Masculin",
     "firstChapter": "12",
     "affiliation": "",
-    "origin": "East Blue ",
+    "origin": "East Blue",
     "height": "172",
     "bounty": "0",
     "dftype": "",
@@ -13264,7 +13155,7 @@ td[style*="background:yellow"] {
     "gender": "Masculin",
     "firstChapter": "584",
     "affiliation": "Équipage de Bluejam",
-    "origin": "East Blue ",
+    "origin": "East Blue",
     "height": "261",
     "bounty": "14300000",
     "dftype": "",
@@ -13462,7 +13353,7 @@ td[style*="background:yellow"] {
     "gender": "Féminin",
     "firstChapter": "77",
     "affiliation": "Marine",
-    "origin": "East Blue ",
+    "origin": "East Blue",
     "height": "186",
     "bounty": "0",
     "dftype": "",
@@ -13671,7 +13562,7 @@ td[style*="background:yellow"] {
     "gender": "Féminin",
     "firstChapter": "41",
     "affiliation": "",
-    "origin": "East Blue ",
+    "origin": "East Blue",
     "height": "Inconnue",
     "bounty": "0",
     "dftype": "",
@@ -14096,18 +13987,61 @@ td[style*="background:yellow"] {
     "image": "images_onepiece\\Abdullah.png"
   }
 ];
-</script>
-<script>
-let characters = [];
-let selectedCharacter = null;
+
+
+// === VARIABLES GLOBALES ===
 let attempts = [];
+let filteredData = [];
+let targetCharacter = null;
+let currentDifficulty = 'normal';
+let gameOver = false;
 
+// DOM Elements
 const input = document.getElementById('guessInput');
-const suggestionsDiv = document.getElementById('suggestions');
-const feedbackDiv = document.getElementById('feedback');
-const attemptsDiv = document.getElementById('attempts');
+const suggestions = document.getElementById('suggestions');
+const tableBody = document.getElementById('attemptsBody');
+const victoryScreen = document.getElementById('victory-screen');
+const searchSection = document.getElementById('search-section');
 
-// === Liste des arcs avec chapitres ===
+// === INITIALISATION ===
+function initGame() {
+    gameOver = false;
+    attempts = [];
+    tableBody.innerHTML = "";
+    
+    // Reset Affichage
+    victoryScreen.style.display = 'none';
+    searchSection.style.display = 'block';
+    input.disabled = false;
+    input.value = "";
+
+    // Filtrage par mode
+    filteredData = data.filter(c => 
+        currentDifficulty === 'normal' ? c.height !== "Inconnue" : c.height === "Inconnue"
+    );
+
+    // Si la liste est vide (sécurité), on prend toute la data
+    if(filteredData.length === 0) filteredData = data;
+
+    targetCharacter = filteredData[Math.floor(Math.random() * filteredData.length)];
+    console.log("Cible :", targetCharacter.name);
+}
+
+// === GESTION DIFFICULTÉ ===
+function toggleDifficulty() {
+    const btn = document.getElementById('modeBtn');
+    if (currentDifficulty === 'normal') {
+        currentDifficulty = 'hard';
+        btn.className = 'difficile';
+        btn.textContent = 'Mode : Difficile';
+    } else {
+        currentDifficulty = 'normal';
+        btn.className = 'facile';
+        btn.textContent = 'Mode : Facile';
+    }
+    initGame();
+}
+
 const arcsWithChapters = [
   { arc: "Romance Dawn", chapitre_debut: 1, chapitre_fin: 7 },
   { arc: "Ville d’Orange", chapitre_debut: 8, chapitre_fin: 21 },
@@ -14143,245 +14077,23 @@ const arcsWithChapters = [
   { arc: "Erbaf", chapitre_debut: 1126, chapitre_fin: 1200 }
 ];
 
-// Fonction qui met à jour le champ "arc" de chaque personnage selon son chapitre d'apparition
-function updateCharacterArcsByChapter(characters, arcs) {
-  characters.forEach(char => {
-    const foundArc = arcs.find(a => 
-      char.firstChapter >= a.chapitre_debut && char.firstChapter <= a.chapitre_fin
-    );
-    if (foundArc) {
-      char.arc = foundArc.arc;
-    } else {
-      char.arc = "Inconnu";
-    }
-  });
+function getArcInfo(chapter) {
+    const chapterNum = parseInt(chapter);
+    if (isNaN(chapterNum)) return { name: "Inconnu", index: -1 };
+    
+    const index = arcsWithChapters.findIndex(a => chapterNum >= a.chapitre_debut && chapterNum <= a.chapitre_fin);
+    return {
+        name: index !== -1 ? arcsWithChapters[index].arc : "Inconnu",
+        index: index
+    };
 }
 
-// Mise à jour des arcs des personnages avant le jeu
-updateCharacterArcsByChapter(characters, arcsWithChapters);
-
-// === Liste ordonnée des arcs ===
-const arcOrder = [
-  "Romance Dawn", "Ville d’Orange", "Village de Syrup", "Baratie", "Arlong Park", "Loguetown",
-  "Reverse Mountain", "Whisky Peak", "Little Garden", "Drum", "Alabasta", "Jaya", "Skypiea",
-  "Davy Back Fight", "Water 7", "Enies Lobby", "Post-Enies Lobby", "Thriller Bark",
-  "Archipel Sabaody", "Amazon Lily", "Impel Down", "Marineford", "Après-guerre",
-  "Île des Hommes-Poissons", "Punk Hazard", "Dressrosa", "Zou", "Whole Cake Island",
-  "Réverie", "Pays des Wa", "Egghead", "Erbaf"
-];
-
-let mode = "facile"; // "facile" ou "difficile"
-const modeBtn = document.getElementById('modeBtn');
-
-function loadCharacters(mode) {
-  try {
-    // On utilise directement la variable globale "data"
-    let charactersData = data;
-
-    // Filtre selon le mode
-  if (mode === "facile") {
-    characters = charactersData.filter(char => {
-      const hasKnownHeight = char.height && char.height !== "Inconnue" && char.height.trim() !== "";
-      const hasKnownDfType = ["Zoan", "Paramecia", "Logia"].includes(char.dftype);
-      return hasKnownHeight || hasKnownDfType;
-    });
-  } else {
-    characters = charactersData;
-  }
-
-    updateCharacterArcsByChapter(characters, arcsWithChapters);
-    selectedCharacter = characters[Math.floor(Math.random() * characters.length)];
-    attempts = [];
-    attemptsDiv.innerHTML = "";
-    feedbackDiv.textContent = "";
-    input.value = "";
-    input.style.display = 'block';
-    input.disabled = false;
-    suggestionsDiv.style.display = 'none';
-    document.getElementById('victoryScreen').style.display = 'none';
-    console.log("Personnage choisi :", selectedCharacter.name);
-
-  } catch (error) {
-    console.error("Erreur lors du chargement des personnages :", error);
-  }
-}
-
-function updateModeBtnStyle() {
-  if (mode === "facile") {
-    modeBtn.classList.remove("difficile");
-    modeBtn.classList.add("facile");
-  } else {
-    modeBtn.classList.remove("facile");
-    modeBtn.classList.add("difficile");
-  }
-  modeBtn.textContent = "Mode : " + (mode === "facile" ? "Facile" : "Difficile");
-}
-
-// Au chargement initial
-updateModeBtnStyle();
-loadCharacters(mode);
-
-// Bouton pour changer de mode
-modeBtn.addEventListener('click', () => {
-  mode = mode === "facile" ? "difficile" : "facile";
-  updateModeBtnStyle();
-  loadCharacters(mode);
-});
-
-// === Suggestions dynamiques ===
-input.addEventListener('input', () => {
-  const query = input.value.trim().toLowerCase();
-  selectedIndex = -1;
-  if (!query || characters.length === 0) {
-    suggestionsDiv.style.display = 'none';
-    return;
-  }
-
-  // On enlève ceux déjà essayés
-  const notTried = characters.filter(c => !attempts.some(a => a.name === c.name));
-
-  // Sépare en deux listes : ceux qui commencent par la saisie et ceux qui la contiennent seulement
-  const startsWith = notTried.filter(c => {
-    const lowerName = c.name.toLowerCase();
-    const match = lowerName.match(/^([^\(]+)\s*(\(([^)]+)\))?/);
-    const mainName = match[1].trim();
-    const nickname = match[3] ? match[3].trim() : "";
-
-    return (
-      mainName.split(' ').some(part => part.startsWith(query)) ||
-      nickname.split(' ').some(part => part.startsWith(query))
-    );
-  });
-
-  const contains = notTried.filter(c => {
-    const lowerName = c.name.toLowerCase();
-    return (
-      lowerName.includes(query) && // il contient la saisie
-      !startsWith.includes(c)      // mais ne commence pas par
-    );
-  });
-
-  // Combine les deux : d'abord ceux qui commencent, puis ceux qui contiennent
-  const filtered = [...startsWith, ...contains].slice(0, 500);
-
-  if (filtered.length === 0) {
-    suggestionsDiv.style.display = 'none';
-    return;
-  }
-
-  suggestionsDiv.innerHTML = '';
-  filtered.forEach(c => {
-    const div = document.createElement('div');
-    div.classList.add('suggestion-item');
-    div.innerHTML = `
-      <div style="
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-      ">
-        <img src="${c.image}" alt="${c.name}" style="
-          width: 32px;
-          height: 32px;
-          border-radius: 50%;
-          object-fit: cover;
-        ">
-        <span>${c.name}</span>
-      </div>
-    `;
-    div.addEventListener('click', () => {
-      handleGuess(c.name);
-    });
-    suggestionsDiv.appendChild(div);
-  });
-
-  suggestionsDiv.style.display = 'block';
-  suggestionsDiv.scrollTop = 0; // Remet le slider en haut
-});
-// === Validation avec entrée clavier ===
-let selectedIndex = -1;
-
-input.addEventListener('keydown', (e) => {
-  const items = suggestionsDiv.querySelectorAll('.suggestion-item');
-
-  if (items.length === 0) return;
-
-  if (e.key === 'ArrowDown') {
-    e.preventDefault();
-    selectedIndex = (selectedIndex + 1) % items.length;
-    updateSelection(items);
-  }
-
-  if (e.key === 'ArrowUp') {
-    e.preventDefault();
-    selectedIndex = (selectedIndex - 1 + items.length) % items.length;
-    updateSelection(items);
-  }
-
-  if (e.key === 'Enter') {
-    e.preventDefault();
-    if (selectedIndex >= 0 && selectedIndex < items.length) {
-      items[selectedIndex].click();
-    } else {
-      handleGuess(input.value);
-    }
-  }
-});
-
-function updateSelection(items) {
-  items.forEach((item, i) => {
-    if (i === selectedIndex) {
-      item.classList.add('selected');
-      item.scrollIntoView({ block: "nearest" }); // optionnel
-    } else {
-      item.classList.remove('selected');
-    }
-  });
-}
-
-function handleGuess(guessText) {
-  const guess = guessText.trim().toLowerCase();
-  if (!guess) return;
-
-  const guessedCharacter = characters.find(c => c.name.toLowerCase() === guess);
-  if (!guessedCharacter) {
-    feedbackDiv.textContent = "Personnage non trouvé, essaie encore.";
-    return;
-  }
-
-  attempts.push(guessedCharacter);
-
-  if (guessedCharacter.name === selectedCharacter.name) {
-    feedbackDiv.textContent = "";
-    afficherAttempts();
-    setTimeout(() => {
-      input.style.display = 'none';
-      suggestionsDiv.style.display = 'none';
-      const victoryScreen = document.getElementById('victoryScreen');
-      const victoryImage = document.getElementById('victoryImage');
-      const victoryName = document.getElementById('victoryName');
-      victoryImage.src = selectedCharacter.image;
-      victoryName.textContent = selectedCharacter.name;
-      victoryScreen.style.display = 'block';
-      input.disabled = true;
-      // Ajout : change le message
-      const gameMessage = document.getElementById('gameMessage');
-      gameMessage.textContent = "Félicitation tu as trouvé !";
-      gameMessage.classList.add("found");
-    }, 200);
-  } else {
-    feedbackDiv.textContent = ""; // Retire le message "Raté !"
-    afficherAttempts();
-  }
-
-  input.value = '';
-  suggestionsDiv.style.display = 'none';
-}
-
-
-// === Règles de couleurs pour attributs textuels ===
 // === Liste de correspondance Îles -> Océans ===
 const oceanMap = {
+  "North Blue": "North Blue",
+  "South Blue": "South Blue",
+  "West Blue": "West Blue",
+  "East Blue": "East Blue",
   "Loguetown": "East Blue",
   "Shells Town": "East Blue",
   "Orange Town": "East Blue",
@@ -14389,6 +14101,7 @@ const oceanMap = {
   "Baratie": "East Blue",
   "Arlong Park": "East Blue",
   "Loguetown": "East Blue",
+  "Grand Line": "Grand Line",
   "Reverse Mountain": "Grand Line",
   "Whisky Peak": "Grand Line",
   "Little Garden": "Grand Line",
@@ -14417,25 +14130,28 @@ const oceanMap = {
 
 // === Fonction utilitaire pour trouver l'océan d'une origine ===
 function getOceanFromOrigin(origin) {
-  if (!origin || origin === "Inconnue") return "Inconnu";
-  // Si l’origine est déjà un nom d’océan
-  const normalized = origin.trim().toLowerCase();
-  if (normalized.includes("blue") || normalized.includes("line") || normalized.includes("world")) {
-    return origin;
-  }
-  // Sinon, cherche dans la table de correspondance
-  for (const [island, ocean] of Object.entries(oceanMap)) {
-    if (origin.toLowerCase().includes(island.toLowerCase())) {
-      return ocean;
+    if (!origin || origin === "Inconnue") return "Inconnu";
+    
+    // On nettoie l'entrée
+    const text = origin.trim();
+
+    // Si c'est déjà un océan (ex: Grand Line)
+    const oceans = ["East Blue", "West Blue", "North Blue", "South Blue", "Grand Line", "Calm Belt", "Nouveau Monde"];
+    if (oceans.includes(text)) return text;
+
+    for (const [island, ocean] of Object.entries(oceanMap)) {
+        if (text.toLowerCase().includes(island.toLowerCase())) {
+            return ocean;
+        }
     }
-  }
-  return "Inconnu";
+    return "Inconnu";
 }
 
 // === Groupes d'affiliations similaires ===
 const affiliationClasses = {
   "Gouvernement Mondial": [
     "Gouvernement Mondial",
+    "Impel Down",
     "Cinq Doyens",
     "Marine",
     "CP0",
@@ -14485,203 +14201,210 @@ function getAffiliationClass(affiliation) {
   }
   return "Inconnu";
 }
+// === SUGGESTIONS ===
+input.addEventListener('input', () => {
+    if(gameOver) return;
+    const val = input.value.toLowerCase();
+    suggestions.innerHTML = "";
+    if (val.length < 1) { suggestions.style.display = 'none'; return; }
 
-// === Règles de couleurs pour attributs textuels ===
-function getColor(attr, guessValue, targetValue) {
-  if (guessValue === targetValue) return "green";
+    // On ne suggère que les persos du mode actuel pas encore essayés
+    const matches = filteredData.filter(c => 
+        c.name.toLowerCase().includes(val) && !attempts.includes(c.name)
+    ).slice(0, 5);
 
-  if (attr === "origin") {
-    const guessOcean = getOceanFromOrigin(guessValue);
-    const targetOcean = getOceanFromOrigin(targetValue);
-    if (guessOcean !== "Inconnu" && targetOcean !== "Inconnu" && guessOcean === targetOcean) {
-      return "orange"; // Même océan
+    // Dans ton input event listener, avant la boucle forEach :
+    selectedSuggestionIndex = -1; 
+    suggestions.innerHTML = ""; // Vide les précédentes
+
+    matches.forEach((m, index) => {
+        const div = document.createElement('div');
+        div.className = 'suggestion-item';
+        div.id = `suggest-${index}`; // On donne un ID pour le repérer facilement
+        
+        div.innerHTML = `
+            <img src="${m.image}" class="img-square">
+            <span class="suggestion-name">${m.name}</span>
+        `;
+        
+        div.onclick = () => submitGuess(m);
+        suggestions.appendChild(div);
+    });
+    suggestions.style.display = matches.length ? 'block' : 'none';
+});
+
+document.getElementById('guessInput').addEventListener('keydown', function(e) {
+    const items = document.querySelectorAll('.suggestion-item');
+    if (items.length === 0) return;
+
+    if (e.key === "ArrowDown") {
+        e.preventDefault();
+        selectedSuggestionIndex = (selectedSuggestionIndex + 1) % items.length;
+        updateSelection(items);
+    } 
+    else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        selectedSuggestionIndex = (selectedSuggestionIndex - 1 + items.length) % items.length;
+        updateSelection(items);
+    } 
+    else if (e.key === "Enter") {
+        e.preventDefault();
+        if (selectedSuggestionIndex > -1) {
+            // On récupère le perso correspondant à l'index via les résultats filtrés
+            // Assure-toi que 'matches' est accessible ici ou stocke-le
+            items[selectedSuggestionIndex].click();
+        }
     }
-  }
+});
 
-  if (attr === "affiliation") {
-    const guessClass = getAffiliationClass(guessValue);
-    const targetClass = getAffiliationClass(targetValue);
-    if (guessClass !== "Inconnu" && targetClass !== "Inconnu" && guessClass === targetClass) {
-      return "orange"; // Même classe d'affiliation (ex : Gouvernement Mondial)
-    }
-  }
-
-  return "red";
+function updateSelection(items) {
+    items.forEach((item, index) => {
+        if (index === selectedSuggestionIndex) {
+            item.classList.add('selected');
+            // Scroll automatique si la liste est longue
+            item.scrollIntoView({ block: 'nearest' });
+        } else {
+            item.classList.remove('selected');
+        }
+    });
 }
+// === LOGIQUE DE JEU ===
+function submitGuess(char) {
+    suggestions.style.display = 'none';
+    input.value = "";
+    attempts.push(char.name);
+    
+    const row = document.createElement('tr');
+    tableBody.insertBefore(row, tableBody.firstChild);
 
+    // Colonnes à comparer
+// --- Dans ta fonction submitGuess ---
 
-
-// === Couleur pour valeurs numériques ===
-function getNumberColor(guessValue, targetValue) {
-  if (guessValue === targetValue) return "green";
-  return "red";
-}
-
-// === Affichage des essais ===
-function afficherAttempts() {
-  if (!document.getElementById("attemptsTable")) {
-    attemptsDiv.innerHTML = `
-      <h3>Vos essais :</h3>
-      <table id="attemptsTable" style="border-collapse: collapse; width: 100%; text-align: center;">
-        <thead>
-          <tr>
-            <th style="border: 1px solid #ccc; padding: 6px;">Image</th>
-            <th style="border: 1px solid #ccc; padding: 6px;">Genre</th>
-            <th style="border: 1px solid #ccc; padding: 6px;">Équipage</th>
-            <th style="border: 1px solid #ccc; padding: 6px;">Fruit</th>
-            <th style="border: 1px solid #ccc; padding: 6px;">Origine</th>
-            <th style="border: 1px solid #ccc; padding: 6px;">Arc</th>
-            <th style="border: 1px solid #ccc; padding: 6px;">Taille</th>
-            <th style="border: 1px solid #ccc; padding: 6px;">Prime</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-        <div class="legend">
-        <div class="legend-item">
-            <span class="legend-box legend-correct"></span> Correct
-        </div>
-        <div class="legend-item">
-            <span class="legend-box legend-partial"></span> Même océan / Même alliance
-        </div>
-        <div class="legend-item">
-            <span class="legend-box legend-wrong"></span> Incorrect
-        </div>
-        <div class="legend-item">
-            <span class="legend-up"></span> Supérieur
-        </div>
-        <div class="legend-item">
-            <span class="legend-down"></span> Inférieur
-        </div>
-        </div>
-
-    `;
-  }
-
-function getArrowBackground(guessValue, targetValue, type = "number") {
-  if (type === "arc") {
-    const guessIndex = arcOrder.indexOf(guessValue);
-    const targetIndex = arcOrder.indexOf(targetValue);
-    if (guessIndex === -1 || targetIndex === -1 || guessIndex === targetIndex) return "";
-    return guessIndex < targetIndex
-      ? "images_onepiece/arrow-up.png"
-      : "images_onepiece/arrow-down.png";
-  } else {
-    // type = "number" (taille, prime)
-    if (
-      targetValue === "Inconnue" ||
-      !targetValue ||
-      guessValue === "Inconnue" ||
-      !guessValue
-    )
-      return "";
-
-    // 🧹 Nettoyage et conversion sûre
-    const guessNum = parseFloat(String(guessValue).trim().replace(",", "."));
-    const targetNum = parseFloat(String(targetValue).trim().replace(",", "."));
-
-    if (isNaN(guessNum) || isNaN(targetNum) || guessNum === targetNum) return "";
-
-    return guessNum < targetNum
-      ? "images_onepiece/arrow-up.png"
-      : "images_onepiece/arrow-down.png";
-  }
-}
-
-
-  const tbody = document.querySelector("#attemptsTable tbody");
-  const char = attempts[attempts.length - 1];
-
-  const row = document.createElement("tr");
-
-const cellContents = [
-  {
-    html: `<img src="${char.image}" alt="${char.name}" style="width:100%;height:100%;object-fit:cover;">`,
-    bg: "white"
-  },
-  { html: char.gender, bg: getColor("gender", char.gender, selectedCharacter.gender) },
-  { 
-    html: char.affiliation === "" ? '<span style="color:black;">✖</span>' : char.affiliation, 
-    bg: getColor("affiliation", char.affiliation, selectedCharacter.affiliation) 
-  },
-  { 
-    html: char.dftype === "" ? '<span style="color:black;">✖</span>' : char.dftype, 
-    bg: getColor("dftype", char.dftype, selectedCharacter.dftype) 
-  },
-  { html: char.origin, bg: getColor("origin", char.origin, selectedCharacter.origin) },
-  { 
-    html: `${char.arc}`, 
-    bg: getColor("arc", char.arc, selectedCharacter.arc),
-    arrow: getArrowBackground(char.arc, selectedCharacter.arc, "arc")
-  },
-  { 
-    html: `${char.height}`, 
-    bg: getNumberColor(char.height, selectedCharacter.height),
-    arrow: getArrowBackground(char.height, selectedCharacter.height, "number")
-  },
-  { 
-    html: `
-      ${char.bounty.toLocaleString()} 
-      <img src="images_onepiece/berries.png" alt="Berry" class="berry-icon">
-    `,
-    bg: getNumberColor(char.bounty, selectedCharacter.bounty),
-    arrow: getArrowBackground(char.bounty, selectedCharacter.bounty, "number")
-  }
+const cells = [
+    { val: char.image, type: 'img' },
+    { val: char.gender, target: targetCharacter.gender },
+    { val: char.affiliation, target: targetCharacter.affiliation, type: 'affiliation' },
+    { val: char.dftype || "✖", target: targetCharacter.dftype || "✖" },
+    { val: char.origin, target: targetCharacter.origin, type: 'origin' },
+    { 
+        val: getArcInfo(char.firstChapter).name, 
+        index: getArcInfo(char.firstChapter).index,
+        targetIndex: getArcInfo(targetCharacter.firstChapter).index,
+        type: 'arc' 
+    },
+    { val: char.height, type: 'num', target: targetCharacter.height },
+    { val: char.bounty, type: 'num', target: targetCharacter.bounty }
 ];
 
-  cellContents.forEach(() => {
-    const td = document.createElement("td");
-    td.style.border = "1px solid #ccc";
-    td.style.height = "50px";
-    td.style.verticalAlign = "middle";
-    td.style.textAlign = "center";
+cells.forEach((c, i) => {
+    const td = document.createElement('td');
     row.appendChild(td);
-  });
 
-  tbody.insertBefore(row, tbody.firstChild);
-
-cellContents.forEach((cell, i) => {
-  setTimeout(() => {
-    const td = row.children[i];
-    td.style.transition = "transform 0.3s";
-    td.style.transform = "rotateY(90deg)";
     setTimeout(() => {
-      td.innerHTML = cell.html;
+        td.style.transition = "transform 0.4s";
+        td.style.transform = "rotateY(90deg)";
+        
+        setTimeout(() => {
+            let backgroundColor = 'var(--wrong)'; 
+            let isCorrect = (c.val == c.target);
+            let isNear = false;
 
-    if (cell.arrow) {
-      td.style.backgroundImage = `url(${cell.arrow})`;
-      td.style.backgroundSize = "100% 100%";   // 🟢 occupe toute la cellule
-      td.style.backgroundPosition = "center";
-      td.style.backgroundRepeat = "no-repeat";
-    } else {
-      td.style.background = cell.bg;
-    }
+            // 1. GESTION DES IMAGES
+            if (c.type === 'img') {
+                td.innerHTML = `<img src="${c.val}" class="cell-img">`;
+                backgroundColor = 'transparent';
+            } 
+            // 2. GESTION DES ARCS
+            else if (c.type === 'arc') {
+                td.textContent = c.val;
+                isCorrect = (c.index === c.targetIndex);
+                backgroundColor = isCorrect ? 'var(--correct)' : 'var(--wrong)';
+                
+                if (!isCorrect && c.index !== -1 && c.targetIndex !== -1) {
+                    const arrow = c.index < c.targetIndex ? 'up' : 'down';
+                    applyArrow(td, arrow);
+                }
+            } 
+            // 3. GESTION DES TEXTES ET LOGIQUE ORANGE
+            else {
+                // Check spécifique pour l'ORIGINE (Vert si même mer et un générique, Orange si même mer)
+                if (c.type === 'origin') {
+                    const oceanGuest = getOceanFromOrigin(c.val);
+                    const oceanTarget = getOceanFromOrigin(targetCharacter.origin);
 
-      td.style.transform = "rotateY(0deg)";
-    }, 300);
-  }, i * 250);
+                    if (oceanGuest !== "Inconnu" && oceanGuest === oceanTarget) {
+                        // Cas VERT : Exactement pareil OU l'un des deux est le nom de la mer (ex: Grand Line)
+                        if (c.val === c.target || c.val === oceanGuest || targetCharacter.origin === oceanTarget) {
+                            isNear = true;
+                        } else {
+                            isCorrect = true;
+                        }
+                    }
+                }
+                
+                // Check spécifique pour l'AFFILIATION (Orange si même groupe)
+                if (c.type === 'affiliation' && !isCorrect) {
+                    const classGuest = getAffiliationClass(c.val);
+                    const classTarget = getAffiliationClass(targetCharacter.affiliation);
+                    if (classGuest !== "Inconnu" && classGuest === classTarget) {
+                        isNear = true;
+                    }
+                }
+
+                // Attribution finale de la couleur
+                if (isCorrect) {
+                    backgroundColor = 'var(--correct)';
+                } else if (isNear) {
+                    backgroundColor = 'var(--near)';
+                }
+
+                // Rendu du texte
+                if (i === 7 && c.val !== "Inconnue") {
+                    const formattedBounty = Number(c.val).toLocaleString(); 
+                    td.innerHTML = `<div>${formattedBounty} <img src="images_onepiece/berries.png" style="width:20px; filter: brightness(0) invert(1);"></div>`;
+                } else {
+                    td.textContent = c.val === "Inconnue" ? "?" : c.val;
+                }
+
+                // Flèches pour les nombres (Taille et Prime)
+                if (c.type === 'num' && !isCorrect && c.val !== "Inconnue" && c.target !== "Inconnue") {
+                    const arrow = parseFloat(c.val) < parseFloat(c.target) ? 'up' : 'down';
+                    applyArrow(td, arrow);
+                }
+            }
+
+            td.style.background = backgroundColor;
+            td.style.transform = "rotateY(0deg)";
+        }, 200);
+    }, i * 150);
 });
+
+// Fonction utilitaire pour éviter la répétition du code des flèches
+function applyArrow(element, direction) {
+    element.style.backgroundImage = `url('images_onepiece/arrow-${direction}.png')`;
+    element.style.backgroundSize = "contain";
+    element.style.backgroundRepeat = "no-repeat";
+    element.style.backgroundPosition = "center";
 }
 
-// === Bouton rejouer ===
-document.getElementById('replayBtn').addEventListener('click', () => {
-  selectedCharacter = characters[Math.floor(Math.random() * characters.length)];
-  attempts = [];
-  attemptsDiv.innerHTML = "";
-  feedbackDiv.textContent = "";
-  input.value = "";
-  input.style.display = 'block';
-  input.disabled = false;
-  suggestionsDiv.style.display = 'none';
-  const victoryScreen = document.getElementById('victoryScreen');
-  victoryScreen.style.display = 'none';
-  // Ajout : remet le message initial
-  const gameMessage = document.getElementById('gameMessage');
-  gameMessage.textContent = "Devinez le personnage One Piece !";
-  gameMessage.classList.remove("found");
-  console.log("Nouveau personnage choisi :", selectedCharacter.name);
-});
+    if (char.name === targetCharacter.name) {
+        gameOver = true;
+        setTimeout(showVictory, cells.length * 150 + 500);
+    }
+}
 
+function showVictory() {
+    searchSection.style.display = 'none';
+    victoryScreen.style.display = 'block';
+    document.getElementById('victory-img').src = targetCharacter.image;
+    document.getElementById('victory-name').textContent = targetCharacter.name;
+    document.getElementById('victory-stats').textContent = `Trouvé en ${attempts.length} tentatives !`;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Lancement automatique
+window.onload = initGame;
 </script>
+
 </body>
 </html>
