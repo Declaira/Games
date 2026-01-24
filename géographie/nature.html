@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>🧭 Quiz Géographie Physique</title>
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@600&display=swap" rel="stylesheet">
+<style>
+body { font-family: 'Quicksand', sans-serif; background: linear-gradient(to bottom right, #fff3cd, #ffe5b4, #ffd1d1); margin: 0; padding: 0; overflow: hidden; }
+.container { display: flex; height: 100vh; overflow: hidden; }
+.quiz-section { width: 320px; text-align: center; padding: 20px; z-index: 10; background: transparent; backdrop-filter: blur(5px); }
+#type-selector { text-align: left; margin-bottom: 15px; padding: 12px; border-radius: 10px; background: rgba(255, 255, 255, 0.8); border: 1px solid rgba(0,0,0,0.1); }
+.filter-list { display: flex; flex-direction: column; gap: 2px; margin: 8px 0; font-size: 14px; }
+.filter-list label { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 2px 4px; border-radius: 4px; }
+.filter-list label:hover { background: rgba(0,0,0,0.05); }
+#answer { width: 85%; padding: 12px; margin: 15px auto; font-size: 16px; border-radius: 8px; border: 2px solid #ffca28; display: block; outline: none; }
+#answer:focus { border-color: #ff6f00; }
+button { background-color: #ff6f00; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; width: 100%; margin-bottom: 10px; }
+button:hover { background-color: #e65c00; }
+#bulk-toggle { background-color: #7f8c8d; font-size: 11px; padding: 5px; width: auto; }
+.zoom-wrapper { flex: 1; height: 100vh; overflow: hidden; cursor: grab; background: transparent; position: relative; }
+#map { transform-origin: 0 0; transition: transform 0.1s ease-out; }
+/* --- STYLE DE BASE (GRIS DISCRET) --- */
+.hitbox { 
+  transition: all 0.3s ease; 
+  pointer-events: none; 
+  stroke: rgba(120, 120, 120, 0.4); /* Gris pour les contours */
+  fill: rgba(150, 150, 150, 0.1);    /* Gris très clair pour l'intérieur */
+}
+
+/* On garde les épaisseurs et styles de traits spécifiques */
+.type-fleuve { stroke-width: 4; fill: none !important; }
+.type-montagne { stroke-width: 8; stroke-dasharray: 8,4; fill: none !important; }
+.type-volcan { stroke-width: 2; }
+.type-ocean, .type-mer { stroke-width: 1; }
+.type-desert { stroke-width: 2; stroke-dasharray: 2,4; }
+
+/* --- ÉTAT : ÉLÉMENT ACTUEL (ORANGE) --- */
+.highlight-current { 
+  stroke: orange !important; 
+  fill: rgba(255, 140, 0, 0.3) !important; 
+  stroke-width: 3;
+  filter: drop-shadow(0 0 10px orange);
+  z-index: 100;
+}
+
+/* --- ÉTAT : CORRECT (VERT) --- */
+.state-correct { 
+  stroke: green !important; 
+  fill: rgba(39, 174, 96, 0.3) !important; 
+  stroke-width: 3; 
+}
+
+/* --- ÉTAT : ERREUR (ROUGE) --- */
+.state-wrong { 
+  stroke: red !important; 
+  fill: rgba(192, 57, 43, 0.3) !important; 
+  stroke-width: 3; 
+}
+
+/* Pour les fleuves et montagnes (qui n'ont pas de remplissage) */
+.type-fleuve.state-correct, .type-montagne.state-correct { fill: none !important; }
+.type-fleuve.state-wrong, .type-montagne.state-wrong { fill: none !important; }
+.type-fleuve.highlight-current, .type-montagne.highlight-current { fill: none !important; }
+
+</style>
+</head>
+<body>
+  <script src="../header.js"></script>
+<script>
+  injectHeader({
+    title: "Carte géographique",
+    homeLink: "../accueil.html",
+    showHome: true
+  });
+</script>
+  </script>
+<div class="container">
+  <div class="quiz-section">
+    <button id="toggle-filters" onclick="toggleFilterMenu()">Afficher les filtres</button>
+    <div id="type-selector" style="display: none;">
+      <button id="bulk-toggle" onclick="toggleAllCheckboxes()">Tout décocher</button>
+      <div class="filter-list">
+        <label><input class="type-filter" type="checkbox" value="fleuve" checked> 🌊 Fleuves</label>
+        <label><input class="type-filter" type="checkbox" value="chaîne de montagnes" checked> 🏔️ Montagnes</label>
+        <label><input class="type-filter" type="checkbox" value="volcan" checked> 🌋 Volcans</label>
+        <label><input class="type-filter" type="checkbox" value="océan" checked> 🌐 Océans</label>
+        <label><input class="type-filter" type="checkbox" value="mer" checked> 🌊 Mers</label>
+        <label><input class="type-filter" type="checkbox" value="désert" checked> 🏜️ Déserts</label>
+      </div>
+      <button onclick="applyFilters()" style="background-color: #2c3e50;">Appliquer</button>
+    </div>
+    <h2 id="instruction">Prêt ?</h2>
+    <input type="text" id="answer" placeholder="Attente..." autocomplete="off">
+    <button onclick="checkAnswer()">Valider</button>
+    <p id="result"></p>
+    <p>Score : <span id="score">0</span> / <span id="total-display">0</span></p>
+  </div>
+
+  <div class="zoom-wrapper" id="zoomContainer">
+    <svg id="map" viewBox="0 0 2000 850">
+      <image href="carte.svg" x="0" y="0" width="2000" height="850" />
+      
+      <path id="geo-nil" class="hitbox type-fleuve" d="M1107,540 L1105,528 L1100,512 L1102,505 L1110,496 L1109,474 L1114,468 L1112,456 L1103,461 L1100,454 L1100,448 L1111,436 L1109,422 L1100,414 L1101,394" />
+      <path id="geo-amazone" class="hitbox type-fleuve" d="M582,599 L573,577 L578,571 L587,574 L600,566 L616,571 L631,563 L646,570 L683,560 L705,556" />
+      <path id="geo-mississippi" class="hitbox type-fleuve" d="M502,304 L499,314 L515,334 L516,354 L522,362 L513,381 L512,397 L521,405" />
+      <path id="geo-yangtse" class="hitbox type-fleuve" d="M1417,373 L1448,382 L1436,373 L1439,369 L1453,369 L1467,347 L1475,342 L1488,345 L1485,375 L1508,374 L1526,359" />
+      <path id="geo-danube" class="hitbox type-fleuve" d="M994,298 L1010,292 L1043,300 L1043,314 L1062,323 L1084,322 L1087,315 L1094,316" />
+      <path id="geo-congo" class="hitbox type-fleuve" d="M1079,606 L1075,594 L1083,588 L1081,572 L1075,548 L1061,539 L1043,543 L1031,559 L1027,570 L1013,579" />
+      <path id="geo-volga" class="hitbox type-fleuve" d="M1190,309 L1182,284 L1191,249 L1161,238 L1137,232 L1119,246 L1108,240" />
+      <path id="geo-mekong" class="hitbox type-fleuve" d="M1404,382 L1421,393 L1429,415 L1436,430 L1441,445 L1449,462 L1466,501" />
+      <path id="geo-gange" class="hitbox type-fleuve" d="M1338,396 L1328,403 L1343,422 L1357,424 L1374,425 L1379,441" />
+      <path id="geo-saint-laurent" class="hitbox type-fleuve" d="M582,322 L598,313 L612,305" />
+
+      <path id="geo-himalya" class="hitbox type-montagne" d="M1318,360 L1335,394 L1373,418 L1414,409" />
+      <path id="geo-andes" class="hitbox type-montagne" d="M571,574 L591,617 L620,633 L619,685 L611,738 L601,787 L595,819 L603,842 L622,850" />
+      <path id="geo-rocheuses" class="hitbox type-montagne" d="M252,173 L321,202 L371,268 L418,329 L439,397" />
+      <path id="geo-alpes" class="hitbox type-montagne" d="M983,314 L993,306 L1027,303" />
+      <path id="geo-pyrénées" class="hitbox type-montagne" d="M942,326 L967,332" />
+      <path id="geo-oural" class="hitbox type-montagne" d="M1264,152 L1254,190 L1269,262" />
+      <path id="geo-atlas" class="hitbox type-montagne" d="M901,411 L945,387 L994,376" />
+      <path id="geo-scandinave" class="hitbox type-montagne" d="M987,220 L1053,144" />
+
+      <circle id="geo-fuji" class="hitbox type-volcan" cx="1626" cy="360" r="10" />
+      <circle id="geo-etna" class="hitbox type-volcan" cx="1025" cy="358" r="10" />
+      <circle id="geo-kradovar" class="hitbox type-volcan" cx="1637" cy="568" r="10" />
+      <circle id="geo-kilimandjaro" class="hitbox type-volcan" cx="1133" cy="565" r="10" />
+      <circle id="geo-popocatepetl" class="hitbox type-volcan" cx="467" cy="450" r="10" />
+
+      <ellipse id="geo-pacifique" class="hitbox type-ocean" cx="332" cy="549" rx="121" ry="308" transform="rotate(-28 332 549)" />
+      <ellipse id="geo-atlantique" class="hitbox type-ocean" cx="808" cy="516" rx="81" ry="247" transform="rotate(-38 808 516)" />
+      <ellipse id="geo-indien" class="hitbox type-ocean" cx="1319" cy="645" rx="142" ry="135" />
+      <ellipse id="geo-arctique" class="hitbox type-ocean" cx="1037" cy="52" rx="460" ry="51" />
+      <ellipse id="geo-antartique" class="hitbox type-ocean" cx="1099" cy="809" rx="402" ry="30" />
+      <ellipse id="geo-méditerranée" class="hitbox type-mer" cx="1038" cy="363" rx="84" ry="36" transform="rotate(13 1038 363)" />
+      <ellipse id="geo-caraibes" class="hitbox type-mer" cx="589" cy="478" rx="68" ry="33" transform="rotate(12 589 478)" />
+      <ellipse id="geo-rouge" class="hitbox type-mer" cx="1136" cy="445" rx="47" ry="9" transform="rotate(59 1136 445)" />
+      <ellipse id="geo-noire" class="hitbox type-mer" cx="1119" cy="326" rx="38" ry="25" />
+      <ellipse id="geo-caspienne" class="hitbox type-mer" cx="1200" cy="336" rx="36" ry="22" transform="rotate(82 1200 336)" />
+
+      <ellipse id="geo-sahara" class="hitbox type-desert" cx="1003" cy="437" rx="129" ry="49" />
+      <ellipse id="geo-gobi" class="hitbox type-desert" cx="1445" cy="349" rx="46" ry="23" />
+      <ellipse id="geo-australien" class="hitbox type-desert" cx="1589" cy="667" rx="46" ry="35" />
+      <ellipse id="geo-atacama" class="hitbox type-desert" cx="617" cy="663" rx="11" ry="28" />
+    </svg>
+  </div>
+</div>
+
+<script>
+// (Garde tes variables targets inchangées ici)
+const targets = [
+  { id: "geo-nil", name: "Nil", type: "fleuve" }, { id: "geo-amazone", name: "Amazone", type: "fleuve" },
+  { id: "geo-mississippi", name: "Mississippi", type: "fleuve" }, { id: "geo-yangtse", name: "Yangtsé", type: "fleuve" },
+  { id: "geo-danube", name: "Danube", type: "fleuve" }, { id: "geo-congo", name: "Congo", type: "fleuve" },
+  { id: "geo-volga", name: "Volga", type: "fleuve" }, { id: "geo-mekong", name: "Mékong", type: "fleuve" },
+  { id: "geo-gange", name: "Gange", type: "fleuve" }, { id: "geo-saint-laurent", name: "Saint-Laurent", type: "fleuve" },
+  { id: "geo-himalaya", name: "Himalaya", type: "chaîne de montagnes" }, { id: "geo-andes", name: "Andes", type: "chaîne de montagnes" },
+  { id: "geo-rocheuses", name: "Rocheuses", type: "chaîne de montagnes" }, { id: "geo-alpes", name: "Alpes", type: "chaîne de montagnes" },
+  { id: "geo-oural", name: "Oural", type: "chaîne de montagnes" }, { id: "geo-atlas", name: "Atlas", type: "chaîne de montagnes" },
+  { id: "geo-fuji", name: "Fuji", type: "volcan" }, { id: "geo-etna", name: "Etna", type: "volcan" },
+  { id: "geo-krakatoa", name: "Krakatoa", type: "volcan" }, { id: "geo-kilimandjaro", name: "Kilimandjaro", type: "volcan" },
+  { id: "geo-popocatepetl", name: "Popocatépetl", type: "volcan" }, { id: "geo-pacifique", name: "Pacifique", type: "océan" },
+  { id: "geo-atlantique", name: "Atlantique", type: "océan" }, { id: "geo-indien", name: "Indien", type: "océan" },
+  { id: "geo-arctique", name: "Arctique", type: "océan" }, { id: "geo-mediterranee", name: "Méditerranée", type: "mer" },
+  { id: "geo-caraibes", name: "Mer des Caraïbes", type: "mer" }, { id: "geo-rouge", name: "Mer Rouge", type: "mer" },
+  { id: "geo-caspienne", name: "Mer Caspienne", type: "mer" }, { id: "geo-sahara", name: "Sahara", type: "désert" },
+  { id: "geo-gobi", name: "Gobi", type: "désert" }, { id: "geo-australien", name: "Grand Désert Australien", type: "désert" }
+];
+
+let score = 0, current = null, remainingTargets = [], activeTargets = [...targets];
+
+// --- INSERTION DU CODE ZOOM & PAN CORRIGÉ ICI ---
+const svg = document.getElementById("map");
+const container = document.getElementById("zoomContainer");
+let scale = 1, panX = 0, panY = 0, isPanning = false, start = { x: 0, y: 0 };
+
+function updateTransform() { 
+  svg.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`; 
+}
+
+container.addEventListener("wheel", (e) => {
+  e.preventDefault();
+  const zoomSpeed = 0.15;
+  const delta = e.deltaY > 0 ? -zoomSpeed : zoomSpeed;
+  const oldScale = scale;
+  const newScale = Math.min(Math.max(scale * (1 + delta), 0.5), 15);
+
+  const rect = container.getBoundingClientRect();
+  const mouseX = e.clientX - rect.left;
+  const mouseY = e.clientY - rect.top;
+
+  panX = mouseX - (mouseX - panX) * (newScale / oldScale);
+  panY = mouseY - (mouseY - panY) * (newScale / oldScale);
+
+  scale = newScale;
+  updateTransform();
+}, { passive: false });
+
+container.addEventListener("mousedown", (e) => { 
+  isPanning = true; 
+  start = { x: e.clientX - panX, y: e.clientY - panY };
+});
+
+window.addEventListener("mousemove", (e) => { 
+  if (!isPanning) return; 
+  panX = e.clientX - start.x; 
+  panY = e.clientY - start.y; 
+  updateTransform(); 
+});
+
+window.addEventListener("mouseup", () => isPanning = false);
+
+// --- LE RESTE DE TA LOGIQUE (FILTRES / QUIZ) ---
+function toggleFilterMenu() {
+  const menu = document.getElementById('type-selector');
+  menu.style.display = menu.style.display === "none" ? "block" : "none";
+}
+
+function toggleAllCheckboxes() {
+  const checkboxes = document.querySelectorAll('.type-filter');
+  const btn = document.getElementById('bulk-toggle');
+  const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+  checkboxes.forEach(cb => cb.checked = !allChecked);
+  btn.textContent = !allChecked ? "Tout décocher" : "Tout cocher";
+}
+
+function applyFilters() {
+  const selectedTypes = Array.from(document.querySelectorAll('.type-filter:checked')).map(cb => cb.value);
+  if (selectedTypes.length === 0) return alert("Choisis au moins un type !");
+  activeTargets = targets.filter(t => selectedTypes.includes(t.type));
+  targets.forEach(t => {
+    const el = document.getElementById(t.id);
+    if (el) el.style.display = selectedTypes.includes(t.type) ? "block" : "none";
+  });
+  document.getElementById('type-selector').style.display = "none";
+  resetQuiz();
+}
+
+function getDeterminate(type) {
+  const vowels = ['a', 'e', 'i', 'o', 'u', 'y'];
+  if (vowels.includes(type.charAt(0).toLowerCase())) return "de l'" + type;
+  const feminin = ['mer', 'chaîne de montagnes', 'montagne'];
+  return feminin.includes(type.toLowerCase()) ? "de la " + type : "du " + type;
+}
+
+function resetQuiz() {
+  score = 0; remainingTargets = [...activeTargets];
+  document.getElementById('score').textContent = "0";
+  document.getElementById('total-display').textContent = remainingTargets.length;
+  document.querySelectorAll('.hitbox').forEach(el => el.classList.remove('state-correct', 'state-wrong', 'highlight-current'));
+  nextQuestion();
+}
+
+function nextQuestion() {
+  if (remainingTargets.length === 0) { document.getElementById('instruction').textContent = "Terminé !"; return; }
+  document.querySelectorAll('.hitbox').forEach(el => el.classList.remove('highlight-current'));
+  document.getElementById('answer').value = '';
+  document.getElementById('answer').disabled = false;
+  document.getElementById('result').textContent = '';
+  const index = Math.floor(Math.random() * remainingTargets.length);
+  current = remainingTargets.splice(index, 1)[0];
+  document.getElementById(current.id).classList.add('highlight-current');
+  document.getElementById('answer').placeholder = "Nom " + getDeterminate(current.type) + "...";
+  document.getElementById('answer').focus();
+}
+
+function checkAnswer() {
+  const inputEl = document.getElementById('answer');
+  if (inputEl.disabled || !current) return;
+  const userVal = inputEl.value.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const correctVal = current.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const element = document.getElementById(current.id);
+  inputEl.disabled = true;
+  element.classList.remove('highlight-current');
+  if (userVal === correctVal) {
+    score++; element.classList.add('state-correct');
+    document.getElementById('result').textContent = "✅ " + current.name;
+    document.getElementById('result').style.color = "#27ae60";
+  } else {
+    element.classList.add('state-wrong');
+    document.getElementById('result').textContent = "❌ C'était " + current.name;
+    document.getElementById('result').style.color = "#c0392b";
+  }
+  document.getElementById('score').textContent = score;
+  setTimeout(nextQuestion, 1500);
+}
+
+document.getElementById('answer').addEventListener('keypress', (e) => { if (e.key === 'Enter') checkAnswer(); });
+applyFilters();
+</script>
+</body>
+</html>
