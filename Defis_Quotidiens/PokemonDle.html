@@ -42,17 +42,25 @@ body {
 
 #guessInput {
   flex-grow: 1;
-  width: 100%;             /* ✅ prend tout l’espace dispo */
+  width: 100%;
   padding: 10px 14px;
-  outline: none;
-  font-size: 18px;         /* ✅ texte un peu plus grand */
+  
+  /* --- LE HACK ICI --- */
+  font-size: 16px; /* Taille magique pour bloquer le zoom iOS */
+  /* On peut augmenter le padding ou la hauteur si on veut qu'il paraisse plus gros */
+  
   border-radius: 10px;
   border: 2px solid #aaa;
   text-align: center;
-  height: 48px;            /* ✅ plus haut pour un look moderne */
+  height: 48px;
   box-sizing: border-box;
   background: rgba(255,255,255,0.95);
   box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* Optionnel : si tu trouves que 16px écrit trop petit visuellement */
+#guessInput::placeholder {
+  font-size: 16px;
 }
 
 #genMenu {
