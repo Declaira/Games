@@ -380,14 +380,74 @@
             background-color: #3a3a3c; /* Optionnel : fond gris foncé pour faire ressortir l'icône */
         }
 
-        @media (max-width: 768px) {
-            .header-row, .guess-row {
-                grid-template-columns: 60px 1fr 1fr 1fr; /* Version mobile simplifiée si besoin */
-                font-size: 0.7rem;
-            }
-            /* On cache certaines colonnes sur mobile pour la lisibilité si besoin, 
-               ici on force le scroll horizontal via .game-board overflow-x: auto */
-        }
+@media (max-width: 768px) {
+    body {
+        padding: 5px; /* On gagne un maximum de place sur les bords */
+    }
+
+    .search-container {
+        padding: 12px;
+        gap: 10px;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    /* Gestion de l'espace entre l'input et le bouton */
+    .search-row {
+        gap: 40px; /* Espace réduit et fixe pour mobile */
+        flex-direction: row; /* On les garde côte à côte */
+        align-items: center;
+    }
+
+    .championnat-btn {
+        min-width: 90px; /* Réduit pour laisser de la place à l'input */
+        font-size: 13px;
+        padding: 14px 5px;
+        white-space: nowrap; /* Empêche le texte du bouton de sauter à la ligne */
+    }
+
+    /* --- LE TABLEAU ADAPTATIF --- */
+    .game-board {
+        padding: 0;
+        margin-top: 15px;
+        background-color: #1a1a1b;
+        border: 2px solid #3a3a3c;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        width: 100%;
+    }
+
+    .header-row, .guess-row {
+        /* On divise l'écran en 8 parts égales (12.5% chacune) */
+        grid-template-columns: repeat(8, 1fr); 
+        gap: 2px; /* Espace minimum entre les cellules */
+        width: 100%;
+    }
+
+    .header-cell {
+        font-size: 0.6rem; /* Très petit pour que les titres tiennent */
+        padding: 5px 1px;
+        line-height: 1.1;
+    }
+
+    .cell {
+        font-size: 0.65rem; /* Texte ajusté pour les noms longs */
+        min-height: 60px;
+        padding: 4px 1px;
+    }
+
+    .cell img {
+        width: 100%; /* L'image prend toute la largeur de la petite cellule */
+        max-width: 35px; /* Mais ne dépasse pas 35px */
+        height: auto;
+    }
+
+    /* On réduit la taille des flèches pour qu'elles ne mangent pas le texte */
+    .arrow img {
+        width: 12px;
+        height: 12px;
+    }
+}
 
         @keyframes flip {
             0% { transform: rotateX(0); }
