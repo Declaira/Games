@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PokéDle</title>
 <link rel="icon" type="image/png" href="images_pokemon/pokeball.png">
 <style>
@@ -203,6 +203,91 @@ td.flip { transform: rotateY(90deg); }
   transition:background 0.2s;
 }
 #replayBtn:hover { background:#0d47a1; }
+
+@media (max-width: 768px) {
+    body {
+        padding: 5px;
+    }
+
+    #game {
+        padding: 10px;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    /* Barre de recherche et bouton */
+    #inputWrapper {
+        gap: 5px;
+        width: 100%;
+    }
+
+    #pokemonInput {
+        font-size: 16px !important;
+        padding: 10px;
+        flex: 2;
+    }
+
+    .championnat-btn {
+        flex: 1;
+        font-size: 12px;
+        padding: 10px 5px;
+        min-width: 80px;
+    }
+
+    /* --- LE TABLEAU (GRID) --- */
+    #attemptsTable {
+        width: 100%;
+        margin-top: 10px;
+    }
+
+    /* On force les lignes à être des grilles de 8 colonnes égales */
+    .header-row, .guess-row {
+        display: grid !important;
+        grid-template-columns: repeat(8, 1fr) !important; 
+        gap: 2px;
+        width: 100%;
+    }
+
+    .header-cell {
+        font-size: 0.55rem; /* Très petit pour que les titres tiennent */
+        padding: 4px 1px;
+        word-break: break-all;
+    }
+
+    .cell {
+        font-size: 0.6rem;
+        min-height: 50px;
+        padding: 4px 1px;
+        word-break: break-all;
+    }
+
+    .cell img {
+        width: 100%;
+        max-width: 30px;
+        height: auto;
+    }
+
+    /* Ajustement des flèches */
+    .arrow img {
+        width: 10px;
+        height: 10px;
+    }
+
+    /* Titre Image */
+    #titreImage {
+        height: 15vh;
+        margin-bottom: 10px;
+    }
+
+    /* Légende */
+    #legend {
+        gap: 5px;
+        padding: 10px;
+    }
+    .legend-item {
+        font-size: 0.7rem;
+    }
+}
 </style>
 </head>
 <body>
@@ -13307,29 +13392,42 @@ function comparePokemonGuess(guess, target){
   return result;
 }
 
-// === Affichage des essais ===
-function renderAttempt(guess){
-  if(attempts.length===1){
-    document.getElementById('attemptsTable').style.display="table";
-    document.getElementById('legend').style.display="flex";
+
+function renderAttempt(guess) {
+  // Affichage du tableau et de la légende au premier essai
+  if (attempts.length === 1) {
+    // On utilise "block" ou "table" selon le support CSS, 
+    // mais "block" est plus sûr pour le mode responsive Grid
+    document.getElementById('attemptsTable').style.display = "block";
+    document.getElementById('legend').style.display = "flex";
   }
-  const row=document.createElement("tr");
-  const cmp=comparePokemonGuess(guess,selectedPokemon);
+
+  const row = document.createElement("tr");
+  const cmp = comparePokemonGuess(guess, selectedPokemon);
+
+  // === Préparation des cellules ===
+  // Note: On ajoute des classes spécifiques pour les images et le texte
   const cells=[
-    {value:`<img class="pokemon-img" src="${guess.image_path}" alt="${guess.nom}">${guess.nom}`,color:"white"},
-    {value:guess.type1,color:cmp.type1},
-    {value:guess.type2||"-",color:cmp.type2},
-    {value:guess.couleur,color:cmp.couleur},
-    {value:guess.evolution,color:cmp.evolution},
-    {value:guess.generation,color:cmp.generation},
-    {value:guess.taille,color:cmp.taille},
-    {value:guess.poids,color:cmp.poids}
-  ];
-  cells.forEach(()=>row.appendChild(document.createElement("td")));
-  tbody.insertBefore(row,tbody.firstChild);
-  cells.forEach((cell,i)=>{
-    setTimeout(()=>{
-      const td=row.children[i];
+      {value:`<img class="pokemon-img" src="${guess.image_path}" alt="${guess.nom}">${guess.nom}`,color:"white"},
+      {value:guess.type1,color:cmp.type1},
+      {value:guess.type2||"-",color:cmp.type2},
+      {value:guess.couleur,color:cmp.couleur},
+      {value:guess.evolution,color:cmp.evolution},
+      {value:guess.generation,color:cmp.generation},
+      {value:guess.taille,color:cmp.taille},
+      {value:guess.poids,color:cmp.poids}
+    ];
+
+  // Création immédiate des <td> vides pour garder la structure
+  cells.forEach(() => row.appendChild(document.createElement("td")));
+  
+  // Insertion de la ligne en haut du tableau
+  tbody.insertBefore(row, tbody.firstChild);
+
+  // Animation séquentielle
+  cells.forEach((cell, i) => {
+    setTimeout(() => {
+      const td = row.children[i];
       td.classList.add("flip");
       setTimeout(()=>{
         td.innerHTML=cell.value;
@@ -13340,8 +13438,8 @@ function renderAttempt(guess){
           td.style.backgroundSize="100% 100%";
         } else td.className=cell.color;
         td.classList.remove("flip");
-      },200);
-    },i*150);
+      }, 200);
+    }, i * 150);
   });
 }
 
