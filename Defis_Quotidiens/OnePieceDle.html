@@ -14279,14 +14279,33 @@ function getAffiliationClass(affiliation) {
 // === SUGGESTIONS ===
 input.addEventListener('input', () => {
     if(gameOver) return;
+    // === REMPLACER LA LOGIQUE DANS input.addEventListener('input', ...) ===
+
     const val = input.value.toLowerCase();
     suggestions.innerHTML = "";
-    if (val.length < 1) { suggestions.style.display = 'none'; return; }
 
-    // On ne suggère que les persos du mode actuel pas encore essayés
-    const matches = filteredData.filter(c => 
-        c.name.toLowerCase().includes(val) && !attempts.includes(c.name)
-    ).slice(0, 5);
+    if (val.length < 1) {
+        suggestions.style.display = 'none';
+        return;
+    }
+
+    // 1. Filtrer les personnages qui contiennent la chaîne de caractères
+    // 2. Trier pour mettre ceux qui commencent par la chaîne en premier
+    const matches = filteredData
+        .filter(c => c.name.toLowerCase().includes(val) && !attempts.includes(c.name))
+        .sort((a, b) => {
+            const aName = a.name.toLowerCase();
+            const bName = b.name.toLowerCase();
+            
+            const aStarts = aName.startsWith(val);
+            const bStarts = bName.startsWith(val);
+
+            if (aStarts && !bStarts) return -1; // 'a' commence par val, donc on le place avant
+            if (!aStarts && bStarts) return 1;  // 'b' commence par val, donc on le place avant
+            
+            return aName.localeCompare(bName); // Si les deux sont dans le même cas, tri alphabétique
+        })
+        .slice(0, 100); // Limiter à 10 suggestions pour la performance
 
     // Dans ton input event listener, avant la boucle forEach :
     selectedSuggestionIndex = -1; 

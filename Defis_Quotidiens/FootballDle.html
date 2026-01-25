@@ -39631,80 +39631,90 @@
 
         let selectedSuggestionIndex = -1;
 
-        searchInput.addEventListener('input', (e) => {
-            if (gameOver) return;
+searchInput.addEventListener('input', (e) => {
+    if (gameOver) return;
+    
+    const input = normalize(e.target.value);
+    const selectedChamps = getSelectedChampionnats();
+    
+    // --- Récupération du seuil de valeur marchande ---
+    const slider = document.getElementById('marketValueSlider');
+    const minValStrict = slider ? parseInt(slider.value) * 1000000 : 0;
+    
+    selectedSuggestionIndex = -1;
+    
+    if (input.length < 1) {
+        suggestionsBox.innerHTML = '';
+        return;
+    }
+    
+    suggestionsBox.innerHTML = '';
+
+    // 1. On récupère les noms des joueurs déjà présents dans le tableau
+    const guessedNames = Array.from(document.querySelectorAll('.guess-row .cell:first-child'))
+                              .map(cell => normalize(cell.textContent.trim()));
+
+    // 2. Filtrage (Nom OU Club) + Championnat + Valeur + Non deviné
+    const matches = players
+        .filter(p => {
+            const normalizedPName = normalize(p.nom);
+            const normalizedPClub = normalize(p.club);
             
-            const input = normalize(e.target.value);
-            const selectedChamps = getSelectedChampionnats();
+            // Le joueur correspond si l'input est dans le NOM ou dans le CLUB
+            const matchesNameOrClub = normalizedPName.includes(input) || normalizedPClub.includes(input);
             
-            // --- NOUVEAU : Récupération du seuil de valeur marchande ---
-            const slider = document.getElementById('marketValueSlider');
-            const minValStrict = slider ? parseInt(slider.value) * 1000000 : 0;
+            const matchesChamp = selectedChamps.length === 0 || selectedChamps.includes(p.championnat);
+            const matchesValue = Number(p.valeur_marchande) >= minValStrict;
+            const notGuessed = !guessedNames.includes(normalizedPName);
             
-            selectedSuggestionIndex = -1;
+            return matchesNameOrClub && matchesChamp && matchesValue && notGuessed;
+        })
+        // 3. TRI par pertinence
+        .sort((a, b) => {
+            const nameA = normalize(a.nom);
+            const clubA = normalize(a.club);
+            const nameB = normalize(b.nom);
+            const clubB = normalize(b.club);
             
-            if (input.length < 1) {
-                suggestionsBox.innerHTML = '';
-                return;
-            }
+            const startsNameA = nameA.startsWith(input);
+            const startsNameB = nameB.startsWith(input);
+            const startsClubA = clubA.startsWith(input);
+            const startsClubB = clubB.startsWith(input);
+
+            // Priorité 1 : Le nom du joueur commence par l'input
+            if (startsNameA && !startsNameB) return -1;
+            if (!startsNameA && startsNameB) return 1;
+
+            // Priorité 2 : Le nom du club commence par l'input
+            if (startsClubA && !startsClubB) return -1;
+            if (!startsClubA && startsClubB) return 1;
             
+            // Sinon, tri alphabétique par nom
+            return nameA.localeCompare(nameB);
+        })
+        .slice(0, 100); // Augmenté à 100 car la recherche par club peut renvoyer beaucoup de monde
+
+    // 4. Affichage des suggestions
+    matches.forEach((player, index) => {
+        const div = document.createElement('div');
+        div.className = 'suggestion-item';
+        div.innerHTML = `<img src="${player.photo_URL}" class="mini-img"> ${player.nom} (${player.club})`;
+        
+        div.addEventListener('click', () => {
+            makeGuess(player);
             suggestionsBox.innerHTML = '';
-
-            // 1. On récupère les noms des joueurs déjà présents dans le tableau (le board)
-            const guessedNames = Array.from(document.querySelectorAll('.guess-row .cell:first-child'))
-                                      .map(cell => normalize(cell.textContent.trim()));
-
-            // 2. Filtrage combiné : Nom + Championnat + Valeur Marchande
-            let matches = players.filter(p => {
-                const matchesName = normalize(p.nom).includes(input);
-                
-                // Vérification du championnat
-                const matchesChamp = selectedChamps.length === 0 || selectedChamps.includes(p.championnat);
-                
-                // Vérification de la valeur marchande (conversion en nombre pour la comparaison)
-                const matchesValue = Number(p.valeur_marchande) >= minValStrict;
-                
-                return matchesName && matchesChamp && matchesValue;
-            });
-
-            // 3. On retire les joueurs qui sont déjà dans guessedNames
-            matches = matches.filter(p => !guessedNames.includes(normalize(p.nom)));
-            
-            // Affichage des suggestions
-            matches.forEach((player, index) => {
-                const div = document.createElement('div');
-                div.className = 'suggestion-item';
-                div.innerHTML = `<img src="${player.photo_URL}" class="mini-img"> ${player.nom} (${player.club})`;
-                div.addEventListener('click', () => makeGuess(player));
-                div.addEventListener('mouseenter', () => {
-                    selectedSuggestionIndex = index;
-                    updateSuggestionHighlight();
-                });
-                suggestionsBox.appendChild(div);
-            });
+            searchInput.value = '';
         });
-
-        // Naviguer dans les suggestions avec les flèches et Entrée
-        searchInput.addEventListener('keydown', (e) => {
-            if (gameOver) return;
-            const items = document.querySelectorAll('.suggestion-item');
-            
-            if (e.key === 'ArrowDown') {
-                e.preventDefault();
-                selectedSuggestionIndex = Math.min(selectedSuggestionIndex + 1, items.length - 1);
-                updateSuggestionHighlight();
-            } else if (e.key === 'ArrowUp') {
-                e.preventDefault();
-                selectedSuggestionIndex = Math.max(selectedSuggestionIndex - 1, -1);
-                updateSuggestionHighlight();
-            } else if (e.key === 'Enter') {
-                e.preventDefault();
-                if (selectedSuggestionIndex >= 0 && selectedSuggestionIndex < items.length) {
-                    items[selectedSuggestionIndex].click();
-                }
-            }
+        
+        div.addEventListener('mouseenter', () => {
+            selectedSuggestionIndex = index;
+            updateSuggestionHighlight();
         });
+        suggestionsBox.appendChild(div);
+    });
+});
 
+// Garder le reste de votre logique (keydown) tel quel
         function updateSuggestionHighlight() {
             const items = document.querySelectorAll('.suggestion-item');
             items.forEach((item, index) => {
