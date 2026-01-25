@@ -288,6 +288,82 @@
         .up { background-image: url('images_onepiece/arrow-up.png'); }
         .down { background-image: url('images_onepiece/arrow-down.png'); }
 
+    /* === ADAPTATION MOBILE === */
+@media (max-width: 768px) {
+    body {
+        padding: 5px;
+    }
+
+    #main-wrapper {
+        padding: 10px;
+        gap: 15px;
+    }
+
+    /* 1. Barre de recherche et Bouton sur deux lignes ou plus petits */
+    #search-section {
+        flex-direction: column; /* Bouton sous la barre sur petit écran */
+        align-items: center;
+    }
+
+    .search-wrapper {
+        width: 100%;
+    }
+
+    #modeBtn {
+        width: 20%;
+        height: 45px;
+        font-size: 1.1rem;
+    }
+
+    /* 2. LE TABLEAU : C'est le plus important */
+    .table-wrapper {
+        overflow-x: auto; /* Permet le scroll horizontal */
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 10px;
+        width: 100%;
+    }
+
+    table {
+        min-width: 100vw; /* Force une largeur minimum pour que les colonnes ne s'écrasent pas */
+        border-spacing: 1px;
+    }
+
+    th {
+        font-size: 0.8rem;
+        padding: 5px;
+    }
+
+    td {
+        width: 30px;  /* Réduction de la taille des cases */
+        height: 50px;
+        font-size: 0.75rem; /* Texte plus petit pour qu'il tienne */
+        padding: 1px;
+    }
+
+    .cell-img {
+        border-radius: 3px;
+    }
+
+    /* 3. Ajustement de l'écran de victoire */
+    #victory-img {
+        width: 150px;
+        height: 150px;
+    }
+
+    #victory-screen h1 {
+        font-size: 1.8rem;
+    }
+
+    /* 4. Légende plus compacte */
+    .legend-wrapper {
+        gap: 10px;
+    }
+    
+    .legend-item {
+        font-size: 0.8rem;
+    }
+}
+
     </style>
 </head>
 <body>
@@ -14361,7 +14437,7 @@ cells.forEach((c, i) => {
                 // Rendu du texte
                 if (i === 7 && c.val !== "Inconnue") {
                     const formattedBounty = Number(c.val).toLocaleString(); 
-                    td.innerHTML = `<div>${formattedBounty} <img src="images_onepiece/berries.png" style="width:20px; filter: brightness(0) invert(1);"></div>`;
+                    td.innerHTML = `<div>${formattedBounty} <img src="images_onepiece/berries.png" style="width:12px; filter: brightness(0) invert(1); vertical-align: middle;"></div>`;
                 } else {
                     td.textContent = c.val === "Inconnue" ? "?" : c.val;
                 }
