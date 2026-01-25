@@ -290,55 +290,52 @@
 
     /* === ADAPTATION MOBILE === */
 @media (max-width: 768px) {
-    body {
-        padding: 5px;
-    }
-
-    #main-wrapper {
-        padding: 10px;
-        gap: 15px;
-    }
-
-    /* 1. Barre de recherche et Bouton sur deux lignes ou plus petits */
-    #search-section {
-        flex-direction: column; /* Bouton sous la barre sur petit écran */
-        align-items: center;
-    }
-
-    .search-wrapper {
-        width: 100%;
-    }
-
-    #modeBtn {
-        width: 20%;
-        height: 45px;
-        font-size: 1.1rem;
-    }
-
-    /* 2. LE TABLEAU : C'est le plus important */
-    .table-wrapper {
-        overflow-x: auto; /* Permet le scroll horizontal */
-        -webkit-overflow-scrolling: touch;
-        padding-bottom: 10px;
-        width: 100%;
-    }
-
+    /* On enlève les min-width qui forcent le dépassement */
     table {
-        min-width: 100vw; /* Force une largeur minimum pour que les colonnes ne s'écrasent pas */
-        border-spacing: 1px;
+        width: 100%;       /* Occupe exactement la largeur du wrapper */
+        min-width: unset;  /* Supprime toute contrainte de largeur minimale */
+        table-layout: fixed; /* TRÈS IMPORTANT : force les colonnes à avoir la même largeur */
+        border-spacing: 2px; /* Réduit l'espace entre les cases pour gagner de la place */
     }
 
     th {
-        font-size: 0.8rem;
-        padding: 5px;
+        font-size: 0.6rem; /* Texte des titres très petit */
+        padding: 2px 0;
+        word-wrap: break-word;
     }
 
     td {
-        width: 30px;  /* Réduction de la taille des cases */
-        height: 50px;
-        font-size: 0.75rem; /* Texte plus petit pour qu'il tienne */
-        padding: 1px;
+        width: auto;      /* Laisse le navigateur calculer */
+        height: 60px;     /* On réduit la hauteur pour garder un aspect carré/rectangulaire */
+        font-size: 0.65rem; /* Texte petit pour tenir sur plusieurs lignes */
+        padding: 2px;
+        overflow: hidden;  /* Sécurité pour pas que le texte dépasse */
     }
+
+    /* On réduit la taille des images dans les cases pour pas qu'elles étirent la cellule */
+    .cell-img {
+        max-width: 100%;
+        height: auto;
+    }
+
+    /* Ajustement de la barre de recherche pour mobile */
+    #search-section {
+        flex-direction: row; /* On peut essayer de garder la ligne si les éléments sont petits */
+        flex-wrap: nowrap;
+        width: 100%;
+    }
+
+    .search-wrapper {
+        flex: 3; /* L'input prend 3 parts */
+    }
+
+    #modeBtn {
+        flex: 1; /* Le bouton prend 1 part */
+        padding: 0 5px;
+        font-size: 0.9rem;
+        height: 50px;
+    }
+}
 
     .cell-img {
         border-radius: 3px;
@@ -362,7 +359,7 @@
     .legend-item {
         font-size: 0.8rem;
     }
-}
+
 
     </style>
 </head>
@@ -374,7 +371,7 @@
     </div>
 
     <div id="victory-screen">
-        <h1 style="color: var(--gold); font-size: 2.5rem; margin: 0;">KING OF THE PIRATES !</h1>
+        <h1 style="color: var(--gold); font-size: 2.5rem; margin: 0;">Bravo !</h1>
         <img id="victory-img" src="" style="width: 220px; height: 220px; object-fit: cover; object-position: 50% 0%; border: 5px solid var(--gold); border-radius: 15px; margin: 15px 0;">
         <h2 id="victory-name" style="margin: 0; font-size: 2rem;"></h2>
         <p id="victory-stats" style="color: var(--gold);"></p>
@@ -399,7 +396,8 @@
                     <th>Équipage</th>
                     <th>Fruit</th>
                     <th>Origine</th>
-                    <th>Arc</th> <th>Taille (cm)</th>
+                    <th>Arc</th> 
+                    <th>Taille</th>
                     <th>Prime</th>
                 </tr>
             </thead>
@@ -410,8 +408,9 @@
     <div class="legend-wrapper">
         <div class="legend-item"><div class="box" style="background: var(--correct);"></div> Correct</div>
         <div class="legend-item"><div class="box" style="background: var(--wrong);"></div> Incorrect</div>
-        <div class="legend-item"><div class="icon-box up"></div> Plus Tard / Plus Haut</div>
-        <div class="legend-item"><div class="icon-box down"></div> Plus Tôt / Plus Bas</div>
+        <div class="legend-item"><div class="box" style="background: var(--near);"></div> Même océan / Même alliance</div>
+        <div class="legend-item"><div class="icon-box up"></div> Supérieur</div>
+        <div class="legend-item"><div class="icon-box down"></div> Inférieur</div>
         </div>
     </div>
 </div>
