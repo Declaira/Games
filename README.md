@@ -4,9 +4,9 @@ Site regroupant les jeux que j'ai créés.
 Lien : https://declaira.github.io/Games/accueil.html
 
 Avec des jeux classiques:
-- Puissance 4.
-- Bataille Navale.
-- Sudoku.
+- Le Puissance 4.
+- La Bataille Navale.
+- Le Sudoku.
 
 De géographie :
 - La carte du monde, où il faut trouver le nom d'une formation géographique à partir de son emplacement.
