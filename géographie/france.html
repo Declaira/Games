@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8"/>
 <title>🥖 Quiz Département</title>
-<link rel="icon" href="../logo.png" type="image/x-icon">
+<link rel="icon" href="../logo/logo.png" type="image/x-icon">
 <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@600&display=swap" rel="stylesheet">
 <style>
 *{
@@ -32,45 +32,58 @@ svg {
   width: 100%;
   max-width: 800px;
   height: auto;
-  max-height: 90vh;
+  max-height: 80vh;
 }
 
+/* --- Structure de base (Mobile) --- */
 .container {
   font-family: 'Quicksand', sans-serif;
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column; /* Force l'alignement vertical */
+  align-items: center;
+  padding: 10px;
+  width: 100%;
+}
+
+.formulaire {
+  width: 90%;
+  max-width: 400px; /* Évite que les inputs soient trop larges */
+  order: 1; /* S'assure que le formulaire est en haut */
+}
+
+.carte {
+  width: 100%;
+  order: 2; /* S'assure que la carte est en dessous */
+  display: flex;
   justify-content: center;
-  align-items: flex-start;
-  gap: 40px;
-  padding: 20px;
 }
 
-.formulaire, .carte {
-  flex: 1 1 100%;
-}
 
+/* --- Version Desktop (Ordinateur) --- */
 @media (min-width: 768px) {
+  .container {
+    flex-direction: row; /* Repasse en horizontal */
+    align-items: flex-start;
+    justify-content: center;
+    gap: 40px;
+    padding: 20px;
+  }
+
   .formulaire {
-    flex: 0 0 300px;
+    flex: 0 0 300px; /* Largeur fixe pour le formulaire sur PC */
+    order: 2; /* Optionnel : met le formulaire à droite sur PC */
   }
 
   .carte {
     flex: 1;
+    order: 2; /* Optionnel : met la carte à gauche sur PC */
   }
-}
-
-.formulaire {
-  max-width: 300px;
 }
 
 input, button {
   display: block;
   width: 100%;
   margin-bottom: 15px;
-}
-
-.carte {
-  width: 100%;
 }
 
 
@@ -155,7 +168,7 @@ button {
   <audio id="audio-correct" src="correct.mp3"></audio>
   <audio id="audio-wrong" src="wrong.mp3"></audio>
   <div class="container"><div class="formulaire">
-    <h2>Quel est le nom et la préfecture du département <span id="dept-number">??</span> ?</h2>
+    <h2>Devine le département et la préfecture du <span id="dept-number">??</span> ?</h2>
     <input id="dept-name" placeholder="Nom du département" type="text"/>
     <input id="prefecture" placeholder="Préfecture" type="text"/>
     <button onclick="checkAnswer()">Valider</button>

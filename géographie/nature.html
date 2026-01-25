@@ -3,65 +3,168 @@
 <head>
 <meta charset="UTF-8">
 <title>🧭 Quiz Géographie Physique</title>
-<link rel="icon" href="../logo.png" type="image/x-icon">
 <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@600&display=swap" rel="stylesheet">
 <style>
-body { font-family: 'Quicksand', sans-serif; background: linear-gradient(to bottom right, #fff3cd, #ffe5b4, #ffd1d1); margin: 0; padding: 0; overflow: hidden; }
-.container { display: flex; height: 100vh; overflow: hidden; }
-.quiz-section { width: 320px; text-align: center; padding: 20px; z-index: 10; background: transparent; backdrop-filter: blur(5px); }
-#type-selector { text-align: left; margin-bottom: 15px; padding: 12px; border-radius: 10px; background: rgba(255, 255, 255, 0.8); border: 1px solid rgba(0,0,0,0.1); }
-.filter-list { display: flex; flex-direction: column; gap: 2px; margin: 8px 0; font-size: 14px; }
-.filter-list label { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 2px 4px; border-radius: 4px; }
-.filter-list label:hover { background: rgba(0,0,0,0.05); }
-#answer { width: 85%; padding: 12px; margin: 15px auto; font-size: 16px; border-radius: 8px; border: 2px solid #ffca28; display: block; outline: none; }
-#answer:focus { border-color: #ff6f00; }
-button { background-color: #ff6f00; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; width: 100%; margin-bottom: 10px; }
-button:hover { background-color: #e65c00; }
-#bulk-toggle { background-color: #7f8c8d; font-size: 11px; padding: 5px; width: auto; }
-.zoom-wrapper { flex: 1; height: 100vh; overflow: hidden; cursor: grab; background: transparent; position: relative; }
-#map { transform-origin: 0 0; transition: transform 0.1s ease-out; }
-/* --- STYLE DE BASE (GRIS DISCRET) --- */
-.hitbox { 
-  transition: all 0.3s ease; 
-  pointer-events: none; 
-  stroke: rgba(120, 120, 120, 0.4); /* Gris pour les contours */
-  fill: rgba(150, 150, 150, 0.1);    /* Gris très clair pour l'intérieur */
+body { 
+  font-family: 'Quicksand', sans-serif; 
+  background: linear-gradient(to bottom right, #fff3cd, #ffe5b4, #ffd1d1); 
+  margin: 0; 
+  padding: 0; 
+  overflow: hidden; 
 }
 
-/* On garde les épaisseurs et styles de traits spécifiques */
+.container { 
+  display: flex; 
+  flex-direction: column; 
+  height: 100vh; 
+  padding: 10px                    
+}
+
+/* --- SECTION QUIZ --- */
+.quiz-section { 
+  width: 100%; 
+  padding: 5px 15px;         /* Réduit le padding haut/bas */
+  z-index: 10; 
+  flex: 0 0 auto;
+  display: flex;             
+  flex-direction: column;    
+  align-items: center;       
+  text-align: center;
+  gap: 2px;                  /* Contrôle précis de l'espace entre les éléments */
+}
+
+#type-selector { 
+  text-align: left;  
+  padding: 12px; 
+  border-radius: 10px; 
+  background: rgba(255, 255, 255, 0.95); 
+  border: 1px solid rgba(0,0,0,0.1); 
+  position: absolute; 
+  width: 90%;
+  max-width: 300px;
+  z-index: 20;
+}
+
+.filter-list { display: flex; flex-direction: column; gap: 2px; margin: 8px 0; font-size: 14px; }
+.filter-list label { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 2px 4px; border-radius: 4px; }
+
+#instruction {
+  margin: 5px 0;
+  padding: 10px;
+  font-size: 1.2rem;
+}
+#answer, button { 
+  width: 90%;               
+  max-width: 250px; /* Limite de largeur identique pour les deux */
+  margin: 4px 0;
+}
+
+#answer { 
+  padding: 10px;
+  font-size: 16px; 
+  border-radius: 8px; 
+  border: 2px solid #ffca28; 
+  outline: none; 
+  text-align: center; 
+  background: white;      
+}
+
+#answer:focus { border-color: #ff6f00; }
+
+button { 
+  background-color: #ff6f00; 
+  color: white; 
+  border: none; 
+  padding: 12px 20px; 
+  border-radius: 6px; 
+  cursor: pointer; 
+  font-weight: 600; 
+  transition: all 0.2s ease;
+}
+
+button:hover { 
+  background-color: #e65c00; 
+  transform: scale(1.02);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+button:active { transform: scale(0.98); }
+
+#bulk-toggle { 
+  background-color: #7f8c8d; 
+  font-size: 11px; 
+  padding: 5px; 
+  width: auto; 
+}
+
+#bulk-toggle:hover {
+  background-color: #636e72;
+}
+/* --- CARTE --- */
+.zoom-wrapper { 
+  flex: 1; 
+  width: 100%;
+  overflow: hidden; 
+  cursor: grab; 
+  position: relative; 
+  /* AJOUT : Aligne le contenu (le SVG) tout en haut du wrapper */
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start; 
+  align-items: center;
+}
+
+#map { 
+  transform-origin: top center; /* MODIFIÉ : Le zoom se fera à partir du haut */
+  transition: transform 0.1s ease-out; 
+  width: 100%;
+  height: auto; /* Laisse la hauteur s'adapter pour coller au haut */
+  display: block;
+}
+
+/* --- ÉTATS HITBOX --- */
+.hitbox { transition: all 0.3s ease; pointer-events: none; stroke: rgba(120, 120, 120, 0.4); fill: rgba(150, 150, 150, 0.1); }
 .type-fleuve { stroke-width: 4; fill: none !important; }
 .type-montagne { stroke-width: 8; stroke-dasharray: 8,4; fill: none !important; }
 .type-volcan { stroke-width: 2; }
 .type-ocean, .type-mer { stroke-width: 1; }
 .type-desert { stroke-width: 2; stroke-dasharray: 2,4; }
 
-/* --- ÉTAT : ÉLÉMENT ACTUEL (ORANGE) --- */
-.highlight-current { 
-  stroke: orange !important; 
-  fill: rgba(255, 140, 0, 0.3) !important; 
-  stroke-width: 3;
-  filter: drop-shadow(0 0 10px orange);
-  z-index: 100;
+.highlight-current { stroke: orange !important; fill: rgba(255, 140, 0, 0.3) !important; stroke-width: 3; filter: drop-shadow(0 0 10px orange); z-index: 100; }
+.state-correct { stroke: green !important; fill: rgba(39, 174, 96, 0.3) !important; stroke-width: 3; }
+.state-wrong { stroke: red !important; fill: rgba(192, 57, 43, 0.3) !important; stroke-width: 3; }
+
+.type-fleuve.state-correct, .type-montagne.state-correct, .type-fleuve.state-wrong, .type-montagne.state-wrong, .type-fleuve.highlight-current, .type-montagne.highlight-current { fill: none !important; }
+
+/* --- MEDIA QUERY : DESKTOP --- */
+@media (min-width: 768px) {
+  .container { 
+    flex-direction: row; 
+    gap: 0;
+  }
+
+  .quiz-section { 
+    width: 320px; 
+    height: 100vh;
+    padding-top: 40px;
+    justify-content: flex-start;
+    gap: 10px;               /* On redonne un peu d'air sur grand écran */
+  }
+
+  #answer, button {
+    width: 100%;
+    margin: 5px 0;
+  }
 }
 
-/* --- ÉTAT : CORRECT (VERT) --- */
-.state-correct { 
-  stroke: green !important; 
-  fill: rgba(39, 174, 96, 0.3) !important; 
-  stroke-width: 3; 
-}
+  #type-selector {
+    top: 20px;
+    left: 330px; 
+  }
 
-/* --- ÉTAT : ERREUR (ROUGE) --- */
-.state-wrong { 
-  stroke: red !important; 
-  fill: rgba(192, 57, 43, 0.3) !important; 
-  stroke-width: 3; 
-}
-
-/* Pour les fleuves et montagnes (qui n'ont pas de remplissage) */
-.type-fleuve.state-correct, .type-montagne.state-correct { fill: none !important; }
-.type-fleuve.state-wrong, .type-montagne.state-wrong { fill: none !important; }
-.type-fleuve.highlight-current, .type-montagne.highlight-current { fill: none !important; }
+  .zoom-wrapper { 
+    height: 100vh; 
+  }
 
 </style>
 </head>
@@ -90,7 +193,7 @@ button:hover { background-color: #e65c00; }
       </div>
       <button onclick="applyFilters()" style="background-color: #2c3e50;">Appliquer</button>
     </div>
-    <h2 id="instruction">Prêt ?</h2>
+    <h2 id="instruction">Quelle est cette formation géographique ?</h2>
     <input type="text" id="answer" placeholder="Attente..." autocomplete="off">
     <button onclick="checkAnswer()">Valider</button>
     <p id="result"></p>
@@ -289,5 +392,4 @@ document.getElementById('answer').addEventListener('keypress', (e) => { if (e.ke
 applyFilters();
 </script>
 </body>
-
 </html>
