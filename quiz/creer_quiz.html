@@ -2,8 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>🛠️ Créer un Quiz</title>
-    <link rel="icon" href="../logo.png" type="image/x-icon">
+    <title>Quiz Admin - Gestion Complète</title>
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@600&display=swap" rel="stylesheet">
     <style>
         body { 
@@ -12,6 +11,20 @@
             background: linear-gradient(to bottom right, #fff3cd, #ffe5b4, #ffd1d1, #ffc4e1); 
             color: #2c3e50; min-height: 100vh;
         }
+        
+        /* Styles de connexion */
+        .login-container {
+            max-width: 400px; margin: 50px auto; 
+            background: white; padding: 30px; border-radius: 15px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center;
+        }
+        .login-input {
+            width: 80%; padding: 12px; margin: 10px 0; 
+            border-radius: 8px; border: 1px solid #ccc;
+            font-family: 'Quicksand', sans-serif;
+        }
+
+        /* Styles de l'interface principale */
         .form-container, .list-container { 
             max-width: 800px; margin: 20px auto; 
             background: white; padding: 30px; border-radius: 12px; 
@@ -37,6 +50,7 @@
         .btn-save { background: #ff6f00; color: white; }
         .btn-validate-order { background: #ff6f00; color: white; margin-top: 20px; width: 100%; font-size: 1.1em; }
         .btn-cancel { background: #95a5a6; color: white; display: none; }
+        .btn-logout { background: #e74c3c; color: white; width: auto; margin-bottom: 20px; float: right; }
         
         /* Liste des questions */
         .q-item { 
@@ -52,45 +66,63 @@
         .btn-delete { background: #e74c3c; color: white; width: auto; padding: 8px 15px; }
         .btn-order { background: #f1c40f; color: #2c3e50; }
         
-        .hint { font-size: 0.85em; color: #666; margin-top: 5px; }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
-    <div class="form-container">
-        <h1 id="form-title">➕ Créer une Question</h1>
-        <label>Texte de la question :</label>
-        <input type="text" id="questionText" placeholder="Ex: Quel est cet animal ?">
-
-        <label>Type de média :</label>
-        <select id="mediaType">
-            <option value="none">Texte uniquement</option>
-            <option value="image">Image (.png, .jpg)</option>
-            <option value="audio">Audio (.mp3)</option>
-            <option value="video">Vidéo (.mp4)</option>
-        </select>
-
-        <label>URL du média :</label>
-        <input type="text" id="mediaUrl" placeholder="Lien vers le fichier (Firebase Storage ou URL)...">
-
-        <label>Bonne réponse :</label>
-        <input type="text" id="correctAnswer" placeholder="La réponse attendue">
-
-        <div class="btn-group">
-            <button id="addQuestionBtn" class="btn-save">Enregistrer la Question</button>
-            <button id="cancelEditBtn" class="btn-cancel">Annuler</button>
-        </div>
+    <div id="auth-container" class="login-container">
+        <h2 style="color: #ff6f00; background: none;">🔐 Connexion Créateur</h2>
+        <p>Identifiez-vous pour modifier le quiz.</p>
+        <input type="email" id="email" class="login-input" placeholder="Email Admin">
+        <input type="password" id="password" class="login-input" placeholder="Mot de passe">
+        <br>
+        <button id="loginBtn" class="btn-save" style="width: 85%;">Se connecter</button>
+        <p id="auth-error" style="color: #e74c3c; font-weight: bold; margin-top: 10px;"></p>
     </div>
 
-    <div class="list-container">
-        <h2>📋 Gérer le Quiz</h2>
-        <div id="questionsList">Chargement des questions...</div>
-        <button id="saveOrderBtn" class="btn-validate-order">💾 Valider l'ordre final dans Firebase</button>
+    <div id="app-content" class="hidden">
+        <div style="max-width: 800px; margin: 0 auto; overflow: hidden;">
+            <button id="logoutBtn" class="btn-logout">Déconnexion</button>
+        </div>
+
+        <div class="form-container">
+            <h1 id="form-title">➕ Créer une Question</h1>
+            <label>Texte de la question :</label>
+            <input type="text" id="questionText" placeholder="Ex: Quel est cet animal ?">
+
+            <label>Type de média :</label>
+            <select id="mediaType">
+                <option value="none">Texte uniquement</option>
+                <option value="image">Image (.png, .jpg)</option>
+                <option value="audio">Audio (.mp3)</option>
+                <option value="video">Vidéo (.mp4)</option>
+            </select>
+
+            <label>URL du média :</label>
+            <input type="text" id="mediaUrl" placeholder="Lien vers le fichier (Firebase Storage ou URL)...">
+
+            <label>Bonne réponse :</label>
+            <input type="text" id="correctAnswer" placeholder="La réponse attendue">
+
+            <div class="btn-group">
+                <button id="addQuestionBtn" class="btn-save">Enregistrer la Question</button>
+                <button id="cancelEditBtn" class="btn-cancel">Annuler</button>
+            </div>
+        </div>
+
+        <div class="list-container">
+            <h2>📋 Gérer le Quiz</h2>
+            <div id="questionsList">Chargement des questions...</div>
+            <button id="saveOrderBtn" class="btn-validate-order">💾 Valider l'ordre final dans Firebase</button>
+        </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
         import { getDatabase, ref, push, set, onValue, remove, update } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+        // AJOUT : Imports pour l'authentification
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyB29fMpTwBgsqkjijkNoQJ2kGChSeQDX_w",
@@ -104,20 +136,57 @@
 
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
+        const auth = getAuth(app); // Initialisation Auth
         
         let editingId = null;
         let allQuestions = [];
+        let userIsLoggedIn = false;
 
-        // --- CHARGEMENT INITIAL ---
-        onValue(ref(database, 'questions'), (snap) => {
-            const data = snap.val() || {};
-            // On ne rafraîchit la liste globale que si on n'est pas en train d'éditer
-            if (!editingId) {
-                allQuestions = Object.keys(data).map(id => ({ id, ...data[id] }));
-                allQuestions.sort((a, b) => (a.order || 0) - (b.order || 0));
-                renderList();
+        // --- GESTION LOGIN / LOGOUT ---
+
+        document.getElementById('loginBtn').onclick = () => {
+            const email = document.getElementById('email').value;
+            const pass = document.getElementById('password').value;
+            document.getElementById('auth-error').textContent = "";
+
+            signInWithEmailAndPassword(auth, email, pass)
+                .catch((error) => {
+                    document.getElementById('auth-error').textContent = "Erreur : " + error.message;
+                });
+        };
+
+        document.getElementById('logoutBtn').onclick = () => {
+            signOut(auth);
+            location.reload();
+        };
+
+        // Surveillance de l'état (Connecté ou non ?)
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                userIsLoggedIn = true;
+                document.getElementById('auth-container').classList.add('hidden');
+                document.getElementById('app-content').classList.remove('hidden');
+                // On lance le chargement des données seulement quand on est connecté
+                loadData(); 
+            } else {
+                userIsLoggedIn = false;
+                document.getElementById('auth-container').classList.remove('hidden');
+                document.getElementById('app-content').classList.add('hidden');
             }
         });
+
+        // --- CHARGEMENT DES DONNÉES ---
+        function loadData() {
+            onValue(ref(database, 'questions'), (snap) => {
+                const data = snap.val() || {};
+                // On ne rafraîchit la liste globale que si on n'est pas en train d'éditer
+                if (!editingId) {
+                    allQuestions = Object.keys(data).map(id => ({ id, ...data[id] }));
+                    allQuestions.sort((a, b) => (a.order || 0) - (b.order || 0));
+                    renderList();
+                }
+            });
+        }
 
         // --- AFFICHAGE DE LA LISTE ---
         function renderList() {
@@ -150,26 +219,33 @@
 
         // --- AJOUTER / MODIFIER ---
         document.getElementById('addQuestionBtn').onclick = async () => {
+            if (!userIsLoggedIn) return alert("Non connecté !");
+
             const text = document.getElementById('questionText').value.trim();
+            const mediaType = document.getElementById('mediaType').value; // Ajouté pour info si besoin plus tard
             const media = document.getElementById('mediaUrl').value.trim();
             const answer = document.getElementById('correctAnswer').value.trim();
 
             if (!text || !answer) return alert("Le texte et la réponse sont obligatoires !");
 
-            if (editingId) {
-                // Mise à jour d'une question existante
-                await update(ref(database, `questions/${editingId}`), {
-                    text, media, answer
-                });
-                stopEdit();
-            } else {
-                // Création d'une nouvelle question (à la fin)
-                const newOrder = allQuestions.length;
-                await push(ref(database, 'questions'), {
-                    text, media, answer, order: newOrder
-                });
+            try {
+                if (editingId) {
+                    // Mise à jour d'une question existante
+                    await update(ref(database, `questions/${editingId}`), {
+                        text, media, answer
+                    });
+                    stopEdit();
+                } else {
+                    // Création d'une nouvelle question (à la fin)
+                    const newOrder = allQuestions.length;
+                    await push(ref(database, 'questions'), {
+                        text, media, answer, order: newOrder
+                    });
+                }
+                clearForm();
+            } catch (error) {
+                alert("Erreur d'écriture : " + error.message + "\n(Vérifiez vos règles Firebase ou si vous êtes bien admin)");
             }
-            clearForm();
         };
 
         // --- CHANGER L'ORDRE LOCALEMENT ---
@@ -187,6 +263,8 @@
 
         // --- SAUVEGARDER L'ORDRE DANS FIREBASE ---
         document.getElementById('saveOrderBtn').onclick = async () => {
+            if (!userIsLoggedIn) return alert("Non connecté !");
+            
             const updates = {};
             allQuestions.forEach((q, index) => {
                 updates[`questions/${q.id}/order`] = index;
@@ -205,6 +283,7 @@
             const q = allQuestions.find(item => item.id === id);
             editingId = id;
             document.getElementById('questionText').value = q.text;
+            document.getElementById('mediaType').value = "none"; // Reset simple ou logique auto à améliorer
             document.getElementById('mediaUrl').value = q.media || "";
             document.getElementById('correctAnswer').value = q.answer;
             
@@ -223,8 +302,10 @@
         };
 
         window.deleteQ = (id) => {
+            if (!userIsLoggedIn) return alert("Non connecté !");
             if(confirm("Supprimer définitivement cette question ?")) {
-                remove(ref(database, `questions/${id}`));
+                remove(ref(database, `questions/${id}`))
+                .catch(e => alert("Erreur suppression : " + e.message));
             }
         };
 
@@ -232,11 +313,10 @@
             document.getElementById('questionText').value = "";
             document.getElementById('mediaUrl').value = "";
             document.getElementById('correctAnswer').value = "";
+            document.getElementById('mediaType').value = "none";
         }
 
         document.getElementById('cancelEditBtn').onclick = stopEdit;
     </script>
 </body>
 </html>
-
-
