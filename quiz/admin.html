@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Admin - Contrôle Live & Classement</title>
+    <title>Admin - Contrôle (Mode Lecture)</title>
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@600&display=swap" rel="stylesheet">
     <style>
         body { 
@@ -33,58 +33,25 @@
         .btn-validate { background: #27ae60; padding: 5px 10px; }
         .btn-wrong { background: #e67e22; padding: 5px 10px; }
 
-        /* Style bouton lecture type quiz.html */
-        .play-btn {
-            background: linear-gradient(to right, #ff9a00, #ff4e00); 
-            color: white; padding: 10px 20px; border: none; 
-            border-radius: 8px; cursor: pointer; font-size: 1.2em; margin-top: 10px;
-        }
-        .play-btn:hover { background-color: #e65c00; }
-
-        #media-content img, #media-content video { max-width: 100%; border-radius: 10px; margin-top: 10px; }
-        
+        .hidden { display: none !important; }
         .response-item {
             background: #f9f9f9; padding: 15px; margin: 10px 0;
             border-radius: 10px; border-left: 5px solid #ff6f00;
             display: flex; justify-content: space-between; align-items: center;
         }
-
         .ranking-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         .ranking-table th, .ranking-table td { padding: 15px; border: 1px solid #eee; text-align: left; }
         .ranking-table th { background: #ff9a00; color: white; }
-        
-        /* Classe utilitaire pour cacher les éléments */
-        .hidden { display: none !important; }
-
-        /* Style spécifique Login */
-        .login-input {
-            width: 80%; padding: 12px; margin: 10px 0; 
-            border-radius: 8px; border: 1px solid #ccc;
-            font-family: 'Quicksand', sans-serif;
-        }
     </style>
 </head>
 <body>
     <header>⚙️ Panneau Administration</header>
     
-    <div id="auth-container" class="container" style="text-align: center; max-width: 400px;">
-        <h2 style="color: #ff6f00;">🔐 Connexion Admin</h2>
-        <p>Veuillez vous identifier pour gérer le quiz.</p>
-        <input type="email" id="email" class="login-input" placeholder="Votre email admin">
-        <input type="password" id="password" class="login-input" placeholder="Votre mot de passe">
-        <br>
-        <button id="loginBtn" class="btn btn-next" style="width: 85%;">Se connecter</button>
-        <p id="auth-error" style="color: #e74c3c; font-weight: bold; margin-top: 10px;"></p>
-    </div>
-
-    <div class="container hidden" id="admin-main">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div id="status">Question : <strong id="q-num">0</strong> / <span id="q-total">0</span></div>
-            <button id="logoutBtn" class="btn btn-reset" style="padding: 5px 10px; font-size: 0.8em;">Déconnexion</button>
-        </div>
+    <div class="container" id="admin-main">
+        <div id="status">Question : <strong id="q-num">0</strong> / <span id="q-total">0</span></div>
         
         <div id="question-display" style="text-align: center; background: #fff8e1; padding: 20px; border-radius: 10px; margin: 20px 0;">
-            <h2 id="q-text">En attente...</h2>
+            <h2 id="q-text">Chargement...</h2>
             <div id="media-content"></div>
             <div id="answer-display" style="margin-top: 20px; font-size: 1.5em; color: #27ae60; font-weight: bold; display: none;"></div>
         </div>
@@ -118,8 +85,6 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
         import { getDatabase, ref, onValue, set, update, remove, runTransaction } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
-        // Importation des outils d'authentification
-        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyB29fMpTwBgsqkjijkNoQJ2kGChSeQDX_w",
@@ -133,83 +98,57 @@
 
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
-        const auth = getAuth(app);
 
         let questions = {};
         let currentState = { currentQ: 0 };
         let questionsLoaded = false;
         let fullRankingList = [];
         let currentRankToShow = 0;
-        let isAdminLoggedIn = false;
 
-        // --- GESTION DE L'AUTHENTIFICATION ---
-        
-        // Connexion
-        document.getElementById('loginBtn').onclick = () => {
-            const email = document.getElementById('email').value;
-            const pass = document.getElementById('password').value;
-            document.getElementById('auth-error').textContent = "";
-
-            signInWithEmailAndPassword(auth, email, pass)
-                .catch((error) => {
-                    let msg = "Erreur de connexion.";
-                    if(error.code === 'auth/wrong-password') msg = "Mot de passe incorrect.";
-                    if(error.code === 'auth/user-not-found') msg = "Utilisateur inconnu.";
-                    if(error.code === 'auth/invalid-email') msg = "Email invalide.";
-                    document.getElementById('auth-error').textContent = msg;
-                    console.error(error);
-                });
-        };
-
-        // Déconnexion
-        document.getElementById('logoutBtn').onclick = () => {
-            signOut(auth);
-            location.reload();
-        };
-
-        // Surveillance de l'état de connexion
-        onAuthStateChanged(auth, (user) => {
-            const loginContainer = document.getElementById('auth-container');
-            const adminContainer = document.getElementById('admin-main');
-            
-            if (user) {
-                // L'utilisateur est connecté
-                isAdminLoggedIn = true;
-                loginContainer.classList.add('hidden');
-                // On lance la logique d'affichage du quiz
-                checkState(); 
-            } else {
-                // L'utilisateur est déconnecté
-                isAdminLoggedIn = false;
-                loginContainer.classList.remove('hidden');
-                adminContainer.classList.add('hidden');
-                document.getElementById('ranking-section').classList.add('hidden');
-            }
-        });
-
-        // --- LOGIQUE DU QUIZ ---
+        // --- LECTURE DES DONNÉES (Fonctionnera toujours si .read = true) ---
 
         onValue(ref(database, 'questions'), (snap) => {
             questions = snap.val() || {};
             document.getElementById('q-total').textContent = Object.keys(questions).length;
             questionsLoaded = true;
-            if(isAdminLoggedIn) checkState();
+            checkState();
         });
 
         onValue(ref(database, 'control'), (snap) => {
             currentState = snap.val() || { currentQ: 0 };
             document.getElementById('q-num').textContent = currentState.currentQ;
-            if(isAdminLoggedIn) checkState();
+            checkState();
+        });
+
+        // Affichage des réponses en temps réel
+        onValue(ref(database, 'responses'), (snap) => {
+            const list = document.getElementById('responsesList');
+            list.innerHTML = '';
+            const players = snap.val() || {};
+            const qKeys = Object.keys(questions);
+            
+            if (currentState.currentQ === 0 || currentState.currentQ > qKeys.length) return;
+            const currentKey = qKeys[currentState.currentQ - 1];
+
+            for (let id in players) {
+                if (players[id][currentKey]) {
+                    const resp = players[id][currentKey];
+                    const div = document.createElement('div');
+                    div.className = "response-item";
+                    div.innerHTML = `<span><strong>${players[id].name}</strong> : ${resp.answer}</span>
+                        <div>
+                            <button onclick="window.validate('${id}', true)" class="btn btn-validate" ${resp.validated ? 'disabled' : ''}>CORRECT</button>
+                            <button onclick="window.validate('${id}', false)" class="btn btn-wrong" ${resp.validated ? 'disabled' : ''}>FAUX</button>
+                        </div>`;
+                    list.appendChild(div);
+                }
+            }
         });
 
         function checkState() {
-            if (!isAdminLoggedIn) return; // Sécurité visuelle supplémentaire
-
             const qKeys = Object.keys(questions);
-            // Si pas de questions chargées, on attend
             if (!questionsLoaded) return;
 
-            // Logique de bascule entre Quiz et Classement
             if (currentState.currentQ > qKeys.length && currentState.currentQ !== 0 && qKeys.length > 0) {
                 prepareRanking();
             } else {
@@ -229,49 +168,17 @@
                 const q = questions[qKeys[currentState.currentQ - 1]];
                 title.textContent = q.text || "Question " + currentState.currentQ;
                 container.innerHTML = "";
-
-                // CAS IMPORTATION MUSIQUE
-                if (q.media === "musique") {
-                    container.innerHTML = `
-                        <input type="file" id="musicUpload" accept=".mp3" style="display:none">
-                        <button onclick="document.getElementById('musicUpload').click()" class="btn" style="background:#666;">📁 Importer le MP3</button>
-                        <div id="fileTitle" style="margin-top:10px; font-size:0.9em;"></div>
-                        <div id="music-controls" class="hidden">
-                            <button id="play-btn" class="play-btn" onclick="window.toggleAudio()">🎵 Lire</button>
-                            <audio id="audio-player"></audio>
-                        </div>
-                    `;
-                    setupMusicImport();
-                } 
-                // CAS IMPORTATION VIDEO
-                else if (q.media === "video") {
-                    container.innerHTML = `
-                        <input type="file" id="videoUpload" accept=".mp4,.webm" style="display:none">
-                        <button onclick="document.getElementById('videoUpload').click()" class="btn" style="background:#444;">🎬 Importer la Vidéo</button>
-                        <div id="videoTitle" style="margin-top:10px; font-size:0.9em;"></div>
-                        <div id="video-box" class="hidden">
-                            <video id="video-player" style="width:100%; max-height:300px; margin-top:10px; border-radius:10px;"></video>
-                            <br>
-                            <button id="play-vid-btn" class="play-btn" onclick="window.toggleVideo()">▶️ Lire la Vidéo</button>
-                        </div>
-                    `;
-                    setupVideoImport();
-                }
-                // MÉDIAS PAR URL (Standard)
-                else if (q.media) {
+                
+                if (q.media) {
                     const url = q.media.toLowerCase();
-                    if (url.endsWith('.png') || url.endsWith('.jpg') || url.endsWith('.jpeg')) {
-                        container.innerHTML = `<img src="${q.media}">`;
+                    if (url.endsWith('.png') || url.endsWith('.jpg')) {
+                        container.innerHTML = `<img src="${q.media}" style="max-width:100%">`;
                     } else if (url.endsWith('.mp3')) {
                         container.innerHTML = `<audio controls src="${q.media}"></audio>`;
                     } else if (url.endsWith('.mp4')) {
-                        container.innerHTML = `<video controls src="${q.media}"></video>`;
+                        container.innerHTML = `<video controls src="${q.media}" style="max-width:100%"></video>`;
                     }
-                } else {
-                    // Pas de média
-                     container.innerHTML = "";
                 }
-
                 answerDiv.textContent = "Réponse : " + (q.answer || "");
                 answerDiv.style.display = currentState.showAnswers ? "block" : "none";
             } else {
@@ -280,78 +187,33 @@
             }
         }
 
-        function setupMusicImport() {
-            const input = document.getElementById('musicUpload');
-            const player = document.getElementById('audio-player');
-            input.onchange = (e) => {
-                const file = e.target.files[0];
-                if (file) {
-                    player.src = URL.createObjectURL(file);
-                    document.getElementById('fileTitle').textContent = file.name;
-                    document.getElementById('music-controls').classList.remove('hidden');
-                }
-            };
-            window.toggleAudio = () => {
-                const btn = document.getElementById('play-btn');
-                if (player.paused) { player.play(); btn.textContent = "⏸️ Pause"; }
-                else { player.pause(); btn.textContent = "🎵 Lire"; }
-            };
-        }
+        // --- ACTIONS (Nécessitent .write = true ou Auth Admin) ---
+        // Si vous utilisez ce fichier sans auth, ces boutons échoueront si la base est protégée.
 
-        function setupVideoImport() {
-            const input = document.getElementById('videoUpload');
-            const player = document.getElementById('video-player');
-            input.onchange = (e) => {
-                const file = e.target.files[0];
-                if (file) {
-                    player.src = URL.createObjectURL(file);
-                    document.getElementById('videoTitle').textContent = file.name;
-                    document.getElementById('video-box').classList.remove('hidden');
-                }
-            };
-            window.toggleVideo = () => {
-                const btn = document.getElementById('play-vid-btn');
-                if (player.paused) { player.play(); btn.textContent = "⏸️ Pause"; }
-                else { player.pause(); btn.textContent = "▶️ Lire la Vidéo"; }
-            };
-        }
-
-        // --- VALIDATION ET CLASSEMENT ---
-        window.validate = (playerId, isCorrect) => {
-            // Sécurité : ne fonctionne que si connecté
-            if (!auth.currentUser) return alert("Vous devez être connecté !");
-
-            const qKeys = Object.keys(questions);
-            const currentKey = qKeys[currentState.currentQ - 1];
-            update(ref(database, `responses/${playerId}/${currentKey}`), { validated: true, correct: isCorrect });
-            if (isCorrect) runTransaction(ref(database, `scores/${playerId}`), (s) => (s || 0) + 1);
+        document.getElementById('prevBtn').onclick = () => { 
+            if (currentState.currentQ > 0) update(ref(database, 'control'), { currentQ: currentState.currentQ - 1, showAnswers: false }).catch(e => alert("Erreur (accès refusé ?) : " + e.message)); 
+        };
+        document.getElementById('nextBtn').onclick = () => { 
+            update(ref(database, 'control'), { currentQ: currentState.currentQ + 1, showAnswers: false }).catch(e => alert("Erreur (accès refusé ?) : " + e.message)); 
+        };
+        document.getElementById('revealBtn').onclick = () => update(ref(database, 'control'), { showAnswers: true });
+        document.getElementById('resetBtn').onclick = () => { 
+            if(confirm("Reset complet ?")) { 
+                remove(ref(database, 'responses')); 
+                remove(ref(database, 'scores')); 
+                set(ref(database, 'control'), { currentQ: 0, showAnswers: false }); 
+                location.reload(); 
+            }
         };
 
-        onValue(ref(database, 'responses'), (snap) => {
-            const list = document.getElementById('responsesList');
-            list.innerHTML = '';
-            const players = snap.val() || {};
+        window.validate = (playerId, isCorrect) => {
             const qKeys = Object.keys(questions);
-            
-            // Si pas de question active, rien à afficher
-            if (currentState.currentQ === 0 || currentState.currentQ > qKeys.length) return;
-
             const currentKey = qKeys[currentState.currentQ - 1];
+            update(ref(database, `responses/${playerId}/${currentKey}`), { validated: true, correct: isCorrect })
+            .catch(e => alert("Erreur validation : " + e.message));
             
-            for (let id in players) {
-                if (players[id][currentKey]) {
-                    const resp = players[id][currentKey];
-                    const div = document.createElement('div');
-                    div.className = "response-item";
-                    div.innerHTML = `<span><strong>${players[id].name}</strong> : ${resp.answer}</span>
-                        <div>
-                            <button onclick="window.validate('${id}', true)" class="btn btn-validate" ${resp.validated ? 'disabled' : ''}>CORRECT</button>
-                            <button onclick="window.validate('${id}', false)" class="btn btn-wrong" ${resp.validated ? 'disabled' : ''}>FAUX</button>
-                        </div>`;
-                    list.appendChild(div);
-                }
-            }
-        });
+            if (isCorrect) runTransaction(ref(database, `scores/${playerId}`), (s) => (s || 0) + 1);
+        };
 
         function prepareRanking() {
             document.getElementById('admin-main').classList.add('hidden');
@@ -376,25 +238,6 @@
                 row.innerHTML = `<td>#${fullRankingList.length - currentRankToShow}</td><td>${player.name}</td><td>${player.pts} pts</td>`;
                 document.getElementById('rankingBody').insertBefore(row, document.getElementById('rankingBody').firstChild);
                 currentRankToShow++;
-            }
-        };
-
-        // Actions boutons (ne fonctionnent que si connecté grâce aux règles Firebase, mais on vérifie aussi ici pour l'UX)
-        document.getElementById('prevBtn').onclick = () => { 
-            if (auth.currentUser && currentState.currentQ > 0) update(ref(database, 'control'), { currentQ: currentState.currentQ - 1, showAnswers: false }); 
-        };
-        document.getElementById('nextBtn').onclick = () => { 
-            if (auth.currentUser) update(ref(database, 'control'), { currentQ: currentState.currentQ + 1, showAnswers: false }); 
-        };
-        document.getElementById('revealBtn').onclick = () => {
-            if (auth.currentUser) update(ref(database, 'control'), { showAnswers: true });
-        };
-        document.getElementById('resetBtn').onclick = () => { 
-            if(auth.currentUser && confirm("Reset ? Cela effacera toutes les réponses et scores.")) { 
-                remove(ref(database, 'responses')); 
-                remove(ref(database, 'scores')); 
-                set(ref(database, 'control'), { currentQ: 0, showAnswers: false }); 
-                location.reload(); 
             }
         };
     </script>
