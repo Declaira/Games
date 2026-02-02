@@ -2,8 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>🧠 Page Host</title>
-    <link rel="icon" href="../logo.png" type="image/x-icon">
+    <title>Admin - Contrôle Live & Classement</title>
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@600&display=swap" rel="stylesheet">
     <style>
         body { 
@@ -53,14 +52,36 @@
         .ranking-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         .ranking-table th, .ranking-table td { padding: 15px; border: 1px solid #eee; text-align: left; }
         .ranking-table th { background: #ff9a00; color: white; }
+        
+        /* Classe utilitaire pour cacher les éléments */
         .hidden { display: none !important; }
+
+        /* Style spécifique Login */
+        .login-input {
+            width: 80%; padding: 12px; margin: 10px 0; 
+            border-radius: 8px; border: 1px solid #ccc;
+            font-family: 'Quicksand', sans-serif;
+        }
     </style>
 </head>
 <body>
     <header>⚙️ Panneau Administration</header>
     
-    <div class="container" id="admin-main">
-        <div id="status">Question : <strong id="q-num">0</strong> / <span id="q-total">0</span></div>
+    <div id="auth-container" class="container" style="text-align: center; max-width: 400px;">
+        <h2 style="color: #ff6f00;">🔐 Connexion Admin</h2>
+        <p>Veuillez vous identifier pour gérer le quiz.</p>
+        <input type="email" id="email" class="login-input" placeholder="Votre email admin">
+        <input type="password" id="password" class="login-input" placeholder="Votre mot de passe">
+        <br>
+        <button id="loginBtn" class="btn btn-next" style="width: 85%;">Se connecter</button>
+        <p id="auth-error" style="color: #e74c3c; font-weight: bold; margin-top: 10px;"></p>
+    </div>
+
+    <div class="container hidden" id="admin-main">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div id="status">Question : <strong id="q-num">0</strong> / <span id="q-total">0</span></div>
+            <button id="logoutBtn" class="btn btn-reset" style="padding: 5px 10px; font-size: 0.8em;">Déconnexion</button>
+        </div>
         
         <div id="question-display" style="text-align: center; background: #fff8e1; padding: 20px; border-radius: 10px; margin: 20px 0;">
             <h2 id="q-text">En attente...</h2>
@@ -97,6 +118,8 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
         import { getDatabase, ref, onValue, set, update, remove, runTransaction } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+        // Importation des outils d'authentification
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyB29fMpTwBgsqkjijkNoQJ2kGChSeQDX_w",
@@ -110,30 +133,84 @@
 
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
+        const auth = getAuth(app);
 
         let questions = {};
         let currentState = { currentQ: 0 };
         let questionsLoaded = false;
         let fullRankingList = [];
         let currentRankToShow = 0;
+        let isAdminLoggedIn = false;
+
+        // --- GESTION DE L'AUTHENTIFICATION ---
+        
+        // Connexion
+        document.getElementById('loginBtn').onclick = () => {
+            const email = document.getElementById('email').value;
+            const pass = document.getElementById('password').value;
+            document.getElementById('auth-error').textContent = "";
+
+            signInWithEmailAndPassword(auth, email, pass)
+                .catch((error) => {
+                    let msg = "Erreur de connexion.";
+                    if(error.code === 'auth/wrong-password') msg = "Mot de passe incorrect.";
+                    if(error.code === 'auth/user-not-found') msg = "Utilisateur inconnu.";
+                    if(error.code === 'auth/invalid-email') msg = "Email invalide.";
+                    document.getElementById('auth-error').textContent = msg;
+                    console.error(error);
+                });
+        };
+
+        // Déconnexion
+        document.getElementById('logoutBtn').onclick = () => {
+            signOut(auth);
+            location.reload();
+        };
+
+        // Surveillance de l'état de connexion
+        onAuthStateChanged(auth, (user) => {
+            const loginContainer = document.getElementById('auth-container');
+            const adminContainer = document.getElementById('admin-main');
+            
+            if (user) {
+                // L'utilisateur est connecté
+                isAdminLoggedIn = true;
+                loginContainer.classList.add('hidden');
+                // On lance la logique d'affichage du quiz
+                checkState(); 
+            } else {
+                // L'utilisateur est déconnecté
+                isAdminLoggedIn = false;
+                loginContainer.classList.remove('hidden');
+                adminContainer.classList.add('hidden');
+                document.getElementById('ranking-section').classList.add('hidden');
+            }
+        });
+
+        // --- LOGIQUE DU QUIZ ---
 
         onValue(ref(database, 'questions'), (snap) => {
             questions = snap.val() || {};
             document.getElementById('q-total').textContent = Object.keys(questions).length;
             questionsLoaded = true;
-            checkState();
+            if(isAdminLoggedIn) checkState();
         });
 
         onValue(ref(database, 'control'), (snap) => {
             currentState = snap.val() || { currentQ: 0 };
             document.getElementById('q-num').textContent = currentState.currentQ;
-            checkState();
+            if(isAdminLoggedIn) checkState();
         });
 
         function checkState() {
+            if (!isAdminLoggedIn) return; // Sécurité visuelle supplémentaire
+
             const qKeys = Object.keys(questions);
-            if (!questionsLoaded || qKeys.length === 0) return;
-            if (currentState.currentQ > qKeys.length && currentState.currentQ !== 0) {
+            // Si pas de questions chargées, on attend
+            if (!questionsLoaded) return;
+
+            // Logique de bascule entre Quiz et Classement
+            if (currentState.currentQ > qKeys.length && currentState.currentQ !== 0 && qKeys.length > 0) {
                 prepareRanking();
             } else {
                 document.getElementById('admin-main').classList.remove('hidden');
@@ -190,10 +267,16 @@
                     } else if (url.endsWith('.mp4')) {
                         container.innerHTML = `<video controls src="${q.media}"></video>`;
                     }
+                } else {
+                    // Pas de média
+                     container.innerHTML = "";
                 }
 
                 answerDiv.textContent = "Réponse : " + (q.answer || "");
                 answerDiv.style.display = currentState.showAnswers ? "block" : "none";
+            } else {
+                title.textContent = "En attente du démarrage...";
+                container.innerHTML = "";
             }
         }
 
@@ -235,6 +318,9 @@
 
         // --- VALIDATION ET CLASSEMENT ---
         window.validate = (playerId, isCorrect) => {
+            // Sécurité : ne fonctionne que si connecté
+            if (!auth.currentUser) return alert("Vous devez être connecté !");
+
             const qKeys = Object.keys(questions);
             const currentKey = qKeys[currentState.currentQ - 1];
             update(ref(database, `responses/${playerId}/${currentKey}`), { validated: true, correct: isCorrect });
@@ -246,7 +332,12 @@
             list.innerHTML = '';
             const players = snap.val() || {};
             const qKeys = Object.keys(questions);
+            
+            // Si pas de question active, rien à afficher
+            if (currentState.currentQ === 0 || currentState.currentQ > qKeys.length) return;
+
             const currentKey = qKeys[currentState.currentQ - 1];
+            
             for (let id in players) {
                 if (players[id][currentKey]) {
                     const resp = players[id][currentKey];
@@ -288,12 +379,24 @@
             }
         };
 
-        document.getElementById('prevBtn').onclick = () => { if (currentState.currentQ > 0) update(ref(database, 'control'), { currentQ: currentState.currentQ - 1, showAnswers: false }); };
-        document.getElementById('nextBtn').onclick = () => { update(ref(database, 'control'), { currentQ: currentState.currentQ + 1, showAnswers: false }); };
-        document.getElementById('revealBtn').onclick = () => update(ref(database, 'control'), { showAnswers: true });
-        document.getElementById('resetBtn').onclick = () => { if(confirm("Reset ?")) { remove(ref(database, 'responses')); remove(ref(database, 'scores')); set(ref(database, 'control'), { currentQ: 0, showAnswers: false }); location.reload(); }};
+        // Actions boutons (ne fonctionnent que si connecté grâce aux règles Firebase, mais on vérifie aussi ici pour l'UX)
+        document.getElementById('prevBtn').onclick = () => { 
+            if (auth.currentUser && currentState.currentQ > 0) update(ref(database, 'control'), { currentQ: currentState.currentQ - 1, showAnswers: false }); 
+        };
+        document.getElementById('nextBtn').onclick = () => { 
+            if (auth.currentUser) update(ref(database, 'control'), { currentQ: currentState.currentQ + 1, showAnswers: false }); 
+        };
+        document.getElementById('revealBtn').onclick = () => {
+            if (auth.currentUser) update(ref(database, 'control'), { showAnswers: true });
+        };
+        document.getElementById('resetBtn').onclick = () => { 
+            if(auth.currentUser && confirm("Reset ? Cela effacera toutes les réponses et scores.")) { 
+                remove(ref(database, 'responses')); 
+                remove(ref(database, 'scores')); 
+                set(ref(database, 'control'), { currentQ: 0, showAnswers: false }); 
+                location.reload(); 
+            }
+        };
     </script>
 </body>
 </html>
-
-
