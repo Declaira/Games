@@ -128,6 +128,152 @@
         #modeBtn:active {
           transform: scale(0.97);
         }
+        /* === NOUVEAU CSS POUR LE CHANGEMENT DE FOND === */
+
+/* --- LE PARENT (Conteneur horizontal) --- */
+#search-section {
+    width: 100%;
+    max-width: 850px; /* On l'élargit un peu pour accommoder les 2 boutons */
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center; /* Aligne verticalement la barre et les boutons */
+    gap: 10px;
+    margin: 20px auto;
+    box-sizing: border-box;
+}
+
+/* --- LA BARRE (Prend tout l'espace restant) --- */
+.search-wrapper {
+    position: relative;
+    flex: 1; /* Force la barre à être large */
+    min-width: 0; 
+}
+
+/* --- LE GROUPE DE BOUTONS (Reste à droite) --- */
+.actions-wrapper {
+    display: flex;
+    gap: 10px;
+    flex-shrink: 0; /* Empêche les boutons de rétrécir */
+}
+
+/* Style commun pour les boutons */
+#modeBtn, #bgBtn {
+    height: 50px;
+    padding: 0 15px;
+    font-family: 'Pirata One', cursive;
+    font-size: 1.1rem;
+    border: 1px solid var(--gold);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: 0.3s;
+    white-space: nowrap; /* Empêche le texte du bouton de revenir à la ligne */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#bgBtn {
+    background: var(--soft-bg);
+    color: #333;
+}
+
+#bgBtn:hover {
+    background: var(--gold);
+}
+
+/* 2. La fenêtre modale (le fond sombre) */
+.modal {
+    display: none; /* Caché par défaut */
+    position: fixed; 
+    z-index: 2000; /* Au-dessus de tout */
+    left: 0;
+    top: 0;
+    width: 100%; 
+    height: 100%; 
+    overflow: auto; 
+    background-color: rgba(0,0,0,0.8); /* Fond noir semi-transparent */
+    backdrop-filter: blur(5px); /* Petit effet de flou sympa */
+    animation: fadeIn 0.3s;
+}
+
+/* Le contenu de la fenêtre */
+.modal-content {
+    background: var(--dark-bg);
+    border: 2px solid var(--gold);
+    border-radius: 15px;
+    margin: 10% auto; /* Centré verticalement et horizontalement */
+    padding: 25px;
+    width: 90%;
+    max-width: 500px;
+    position: relative;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+.modal-content h3 { color: var(--gold); margin-top: 0; }
+
+/* Bouton de fermeture (la croix) */
+.close-modal {
+    color: var(--gold);
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    position: absolute;
+    right: 15px;
+    top: 10px;
+}
+.close-modal:hover { color: #fff; }
+
+/* 3. Les miniatures des fonds */
+.bg-options {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin: 25px 0;
+}
+.bg-preview {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 10px;
+    border: 3px solid transparent;
+    cursor: pointer;
+    transition: 0.3s;
+    background: #000;
+}
+.bg-preview:hover { transform: scale(1.1); }
+/* Style pour l'image sélectionnée */
+.bg-preview.selected-bg { border-color: var(--gold); box-shadow: 0 0 15px var(--gold); }
+
+/* 4. Section Upload */
+.upload-section p { font-size: 1.1rem; margin-bottom: 10px; }
+.upload-label {
+    display: inline-block;
+    padding: 10px 20px;
+    font-family: 'Pirata One', cursive;
+    font-size: 1.2rem;
+    background: var(--soft-bg);
+    color: #333;
+    border: 2px dashed var(--gold);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+.upload-label:hover { background: var(--gold); color: var(--dark-bg); }
+
+/* AJUSTEMENT MOBILE POUR LES BOUTONS */
+@media (max-width: 920px) {
+    #search-section { flex-wrap: wrap; }
+    .search-wrapper { flex: 1 1 100%; order: 2; } /* La barre passe en dessous */
+    .actions-wrapper { 
+        flex: 1 1 100%; 
+        order: 1; /* Les boutons passent au-dessus */
+        justify-content: space-between; 
+        margin-bottom: 10px;
+    }
+    #modeBtn, #bgBtn { flex: 1; } /* Ils prennent la moitié chacun */
+}
 
 
         /* 2. Les suggestions en absolu pour flotter au-dessus du reste */
@@ -224,9 +370,49 @@
             transform-style: preserve-3d;
             font-size: 1rem;
         }
+        .square-wrapper {
+            width: 100%;
+            position: relative;
+            padding-bottom: 100%; /* Technique du ratio 1:1 sans aspect-ratio */
+            height: 0;
+        }
+
+        .square-wrapper > img, 
+        .square-wrapper > span, 
+        .square-wrapper > div {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 2px;
+            box-sizing: border-box;
+        }
 
         .cell-img { width: 100%; height: 100%; object-fit: cover; border-radius: 5px; }
+        /* Style de base de l'icône Berry */
+        .berry-icon {
+            width: 0.9em; /* Elle fera 90% de la taille du texte */
+            height: auto;
+            filter: brightness(0) invert(1);
+            vertical-align: middle;
+            margin-left: 2px;
+        }
 
+        /* On s'assure que le contenu de la prime ne dépasse pas du carré */
+        .bounty-content {
+            display: flex;
+            flex-wrap: wrap; /* Permet au texte de revenir à la ligne si la prime est longue */
+            justify-content: center;
+            align-items: center;
+            padding: 2px;
+            line-height: 1;
+        }
         /* === Écran de Victoire === */
         #victory-screen {
             display: none;
@@ -269,7 +455,7 @@
       }
         
 
-        @keyframes fadeIn { from {opacity: 0;} to {opacity: 1;} }
+@keyframes fadeIn { from {opacity: 0;} to {opacity: 1;} }
 
         /* === Légende === */
         .legend-wrapper {
@@ -289,57 +475,110 @@
         .down { background-image: url('images_onepiece/arrow-down.png'); }
 
     /* === ADAPTATION MOBILE === */
-@media (max-width: 768px) {
-    /* On enlève les min-width qui forcent le dépassement */
+@media (max-width: 920px) {
     table {
-        width: 100%;       /* Occupe exactement la largeur du wrapper */
-        min-width: unset;  /* Supprime toute contrainte de largeur minimale */
-        table-layout: fixed; /* TRÈS IMPORTANT : force les colonnes à avoir la même largeur */
-        border-spacing: 2px; /* Réduit l'espace entre les cases pour gagner de la place */
+        width: 100%;
+        min-width: unset;
+        table-layout: fixed; 
+        border-spacing: 2px;
     }
 
     th {
-        font-size: 0.6rem; /* Texte des titres très petit */
-        padding: 2px 0;
+        font-size: 0.6rem;
         word-wrap: break-word;
     }
 
     td {
-        width: auto;      /* Laisse le navigateur calculer */
-        height: 60px;     /* On réduit la hauteur pour garder un aspect carré/rectangulaire */
-        font-size: 0.65rem; /* Texte petit pour tenir sur plusieurs lignes */
-        padding: 2px;
-        overflow: hidden;  /* Sécurité pour pas que le texte dépasse */
+        width: auto;
+        height: auto; 
+        font-size: 0.65rem;
+        padding: 0; /* Important : on enlève le padding ici */
+        overflow: hidden;
+        vertical-align: middle;
     }
 
-    /* On réduit la taille des images dans les cases pour pas qu'elles étirent la cellule */
-    .cell-img {
-        max-width: 100%;
-        height: auto;
-    }
-
-    /* Ajustement de la barre de recherche pour mobile */
-    #search-section {
-        flex-direction: row; /* On peut essayer de garder la ligne si les éléments sont petits */
-        flex-wrap: nowrap;
+    /* --- SOLUTION : On cible précisément les éléments directs --- */
+    .square-wrapper > img, 
+    .square-wrapper > span, 
+    .square-wrapper > div {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
         width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 2px;
+        box-sizing: border-box;
+    }
+
+    /* On s'assure que l'image de fond (le perso) garde son ratio */
+    .square-wrapper > img.cell-img {
+        object-fit: cover;
+    }
+
+    /* On protège l'icône Berry pour qu'elle garde sa taille définie plus haut */
+    .berry-icon {
+        width: 0.9em !important; 
+        height: auto !important;
+        position: static !important; /* Elle ne doit pas être en absolute */
+        transform: none !important;
+    }
+
+  #search-section {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        align-items: center !important;
+        gap: 8px;
+        width: 100%;
+        box-sizing: border-box;
     }
 
     .search-wrapper {
-        flex: 3; /* L'input prend 3 parts */
+        /* On lui donne une grande priorité de croissance */
+        flex: 3 !important; 
+        order: 1 !important;
+        min-width: 0; /* Permet à la barre de se réduire pour laisser de la place aux boutons */
     }
 
-    #modeBtn {
-        flex: 1; /* Le bouton prend 1 part */
-        padding: 0 5px;
-        font-size: 0.9rem;
-        height: 50px;
+    .actions-wrapper {
+        /* On lui permet de grandir ET de rétrécir */
+        flex: 1.5 !important; 
+        display: flex !important;
+        flex-direction: row !important;
+        gap: 5px;
+        order: 2 !important;
+        /* margin-left: auto; <- Supprime cette ligne si elle crée un vide trop grand */
     }
-}
 
-    .cell-img {
-        border-radius: 3px;
+    input#guessInput {
+        width: 100%;
+        height: 45px;
+        font-size: 0.95rem;
+        padding: 0 8px;
     }
+
+    #modeBtn, #bgBtn {
+        /* CRUCIAL : On autorise le bouton à s'adapter à l'espace disponible */
+        flex: 1 !important; 
+        min-width: 0; /* Autorise le bouton à être plus petit que son texte si besoin */
+        
+        padding: 0 4px;
+        font-size: 0.8rem;
+        height: 45px;
+        white-space: nowrap; 
+        overflow: hidden; /* Sécurité */
+        text-overflow: ellipsis; /* Ajoute "..." si le texte "Mode : Facile" est vraiment trop long */
+        
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+    }
+
 
     /* 3. Ajustement de l'écran de victoire */
     #victory-img {
@@ -359,9 +598,9 @@
     .legend-item {
         font-size: 0.8rem;
     }
+}
 
-
-    </style>
+</style>
 </head>
 <body>
 
@@ -379,13 +618,16 @@
     </div>
 
     <div id="search-section">
-        <div class="search-wrapper">
-            <input type="text" id="guessInput" placeholder="Chercher un pirate..." autocomplete="off">
-            <div id="suggestions" class="suggestions"></div>
-        </div>
-        
-        <button id="modeBtn" class="facile" onclick="toggleDifficulty()">Mode : Facile</button>
-    </div>
+      <div class="search-wrapper">
+          <input type="text" id="guessInput" placeholder="Tapez le nom d'un personnage..." autocomplete="off">
+          <div id="suggestions" class="suggestions"></div>
+      </div>
+  
+      <div class="actions-wrapper">
+          <button id="modeBtn" class="facile" onclick="toggleDifficulty()">Mode : Facile</button>
+          <button id="bgBtn" title="Changer le fond d'écran">🖼️ Fond</button>
+      </div>
+  </div>
 
     <div class="table-wrapper">
         <table>
@@ -414,10 +656,28 @@
         </div>
     </div>
 </div>
+<div id="bgModal" class="modal">
+  <div class="modal-content">
+      <span class="close-modal">&times;</span>
+      <h3>Choisissez un fond d'écran</h3>
+      
+      <div class="bg-options">
+          <img src="images_onepiece/bg.png" class="bg-preview selected-bg" data-bg="bg.png" title="Original">
+          <img src="images_onepiece/bg1.png" class="bg-preview" data-bg="bg1.png" title="Fond 1">
+          <img src="images_onepiece/bg2.png" class="bg-preview" data-bg="bg2.png" title="Fond 2">
+      </div>
+      
+      <div class="upload-section">
+          <p>Ou importez votre image :</p>
+          <input type="file" id="bgUpload" accept="image/png, image/jpeg, image/webp" hidden>
+          <label for="bgUpload" class="upload-label">📂 Explorer les fichiers</label>
+      </div>
+  </div>
+</div>
 
 <script>
 // === DATA ===
-  const data = [
+const data = [
   {
     "name": "A O",
     "gender": "Masculin",
@@ -14117,6 +14377,75 @@ function toggleDifficulty() {
     initGame();
 }
 
+// ==========================================
+// === GESTION DU CHANGEMENT DE FOND D'ÉCRAN ===
+// ==========================================
+
+// Éléments du DOM
+const bgModal = document.getElementById('bgModal');
+const bgBtn = document.getElementById('bgBtn');
+const closeModalSpan = document.getElementsByClassName('close-modal')[0];
+const bgPreviews = document.querySelectorAll('.bg-preview');
+const bgUploadInput = document.getElementById('bgUpload');
+
+// 1. Ouvrir la modale
+bgBtn.onclick = function() {
+    bgModal.style.display = "block";
+}
+
+// 2. Fermer la modale (clic sur la croix)
+closeModalSpan.onclick = function() {
+    bgModal.style.display = "none";
+}
+
+// 3. Fermer la modale (clic en dehors de la fenêtre)
+window.onclick = function(event) {
+    if (event.target == bgModal) {
+        bgModal.style.display = "none";
+    }
+}
+
+// 4. Gérer le clic sur les images prédéfinies
+bgPreviews.forEach(img => {
+    img.addEventListener('click', function() {
+        // Retire la classe 'selected' des autres
+        bgPreviews.forEach(preview => preview.classList.remove('selected-bg'));
+        // Ajoute la classe à celle cliquée
+        this.classList.add('selected-bg');
+        
+        // Change le fond du body
+        const bgName = this.getAttribute('data-bg');
+        document.body.style.backgroundImage = `url('images_onepiece/${bgName}')`;
+        
+        // Ferme la modale après un court instant
+        setTimeout(() => bgModal.style.display = "none", 300);
+    });
+});
+
+// 5. Gérer l'upload de fichier local
+bgUploadInput.addEventListener('change', function(event) {
+    const file = event.target.files[0]; // Récupère le fichier sélectionné
+    
+    if (file) {
+        // On utilise FileReader pour lire le fichier local
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            // e.target.result contient l'image en base64
+            document.body.style.backgroundImage = `url('${e.target.result}')`;
+            
+            // Retire la sélection visuelle des prédéfinis
+            bgPreviews.forEach(preview => preview.classList.remove('selected-bg'));
+            
+            // Ferme la modale
+            bgModal.style.display = "none";
+        };
+        
+        // Lit le fichier comme une URL de données
+        reader.readAsDataURL(file);
+    }
+});
+
 const arcsWithChapters = [
   { arc: "Romance Dawn", chapitre_debut: 1, chapitre_fin: 7 },
   { arc: "Ville d’Orange", chapitre_debut: 8, chapitre_fin: 21 },
@@ -14282,6 +14611,7 @@ input.addEventListener('input', () => {
     // === REMPLACER LA LOGIQUE DANS input.addEventListener('input', ...) ===
 
     const val = input.value.toLowerCase();
+    suggestions.scrollTop = 0;
     suggestions.innerHTML = "";
 
     if (val.length < 1) {
@@ -14371,26 +14701,23 @@ function submitGuess(char) {
     const row = document.createElement('tr');
     tableBody.insertBefore(row, tableBody.firstChild);
 
-    // Colonnes à comparer
-// --- Dans ta fonction submitGuess ---
+    const cells = [
+        { val: char.image, type: 'img' },
+        { val: char.gender, target: targetCharacter.gender },
+        { val: char.affiliation, target: targetCharacter.affiliation, type: 'affiliation' },
+        { val: char.dftype || "✖", target: targetCharacter.dftype || "✖" },
+        { val: char.origin, target: targetCharacter.origin, type: 'origin' },
+        { 
+            val: getArcInfo(char.firstChapter).name, 
+            index: getArcInfo(char.firstChapter).index,
+            targetIndex: getArcInfo(targetCharacter.firstChapter).index,
+            type: 'arc' 
+        },
+        { val: char.height, type: 'num', target: targetCharacter.height },
+        { val: char.bounty, type: 'num', target: targetCharacter.bounty }
+    ];
 
-const cells = [
-    { val: char.image, type: 'img' },
-    { val: char.gender, target: targetCharacter.gender },
-    { val: char.affiliation, target: targetCharacter.affiliation, type: 'affiliation' },
-    { val: char.dftype || "✖", target: targetCharacter.dftype || "✖" },
-    { val: char.origin, target: targetCharacter.origin, type: 'origin' },
-    { 
-        val: getArcInfo(char.firstChapter).name, 
-        index: getArcInfo(char.firstChapter).index,
-        targetIndex: getArcInfo(targetCharacter.firstChapter).index,
-        type: 'arc' 
-    },
-    { val: char.height, type: 'num', target: targetCharacter.height },
-    { val: char.bounty, type: 'num', target: targetCharacter.bounty }
-];
-
-cells.forEach((c, i) => {
+    cells.forEach((c, i) => {
     const td = document.createElement('td');
     row.appendChild(td);
 
@@ -14403,14 +14730,43 @@ cells.forEach((c, i) => {
             let isCorrect = (c.val == c.target);
             let isNear = false;
 
-            // 1. GESTION DES IMAGES
+            // 1. GESTION DES VALEURS D'AFFICHAGE (Correction vide/inconnu)
+            let displayValue = c.val;
+            if (!displayValue || displayValue === "" || displayValue === "Inconnue") {
+                displayValue = "Inconnu";
+            }
+
+            // 2. LOGIQUE DES COULEURS (Orange / Vert)
+            if (c.type === 'origin') {
+                const oceanGuest = getOceanFromOrigin(c.val);
+                const oceanTarget = getOceanFromOrigin(targetCharacter.origin);
+                if (oceanGuest !== "Inconnu" && oceanGuest === oceanTarget) {
+                    if (c.val === c.target || c.val === oceanGuest || targetCharacter.origin === oceanTarget) {
+                        isCorrect = true; 
+                    } else {
+                        isNear = true;
+                    }
+                }
+            }
+            
+            if (c.type === 'affiliation' && !isCorrect) {
+                const classGuest = getAffiliationClass(c.val);
+                const classTarget = getAffiliationClass(targetCharacter.affiliation);
+                if (classGuest !== "Inconnu" && classGuest === classTarget) {
+                    isNear = true;
+                }
+            }
+
+            if (isCorrect) backgroundColor = 'var(--correct)';
+            else if (isNear) backgroundColor = 'var(--near)';
+
+            // 3. CRÉATION DU CONTENU AVEC LE WRAPPER CARRÉ
             if (c.type === 'img') {
-                td.innerHTML = `<img src="${c.val}" class="cell-img">`;
+                td.innerHTML = `<div class="square-wrapper"><img src="${c.val}" class="cell-img"></div>`;
                 backgroundColor = 'transparent';
             } 
-            // 2. GESTION DES ARCS
             else if (c.type === 'arc') {
-                td.textContent = c.val;
+                td.innerHTML = `<div class="square-wrapper"><span>${displayValue}</span></div>`;
                 isCorrect = (c.index === c.targetIndex);
                 backgroundColor = isCorrect ? 'var(--correct)' : 'var(--wrong)';
                 
@@ -14419,67 +14775,35 @@ cells.forEach((c, i) => {
                     applyArrow(td, arrow);
                 }
             } 
-            // 3. GESTION DES TEXTES ET LOGIQUE ORANGE
-            else {
-                // Check spécifique pour l'ORIGINE (Vert si même mer et un générique, Orange si même mer)
-                if (c.type === 'origin') {
-                    const oceanGuest = getOceanFromOrigin(c.val);
-                    const oceanTarget = getOceanFromOrigin(targetCharacter.origin);
-
-                    if (oceanGuest !== "Inconnu" && oceanGuest === oceanTarget) {
-                        // Cas VERT : Exactement pareil OU l'un des deux est le nom de la mer (ex: Grand Line)
-                        if (c.val === c.target || c.val === oceanGuest || targetCharacter.origin === oceanTarget) {
-                            isNear = true;
-                        } else {
-                            isCorrect = true;
-                        }
-                    }
-                }
-                
-                // Check spécifique pour l'AFFILIATION (Orange si même groupe)
-                if (c.type === 'affiliation' && !isCorrect) {
-                    const classGuest = getAffiliationClass(c.val);
-                    const classTarget = getAffiliationClass(targetCharacter.affiliation);
-                    if (classGuest !== "Inconnu" && classGuest === classTarget) {
-                        isNear = true;
-                    }
-                }
-
-                // Attribution finale de la couleur
-                if (isCorrect) {
-                    backgroundColor = 'var(--correct)';
-                } else if (isNear) {
-                    backgroundColor = 'var(--near)';
-                }
-
-                // Rendu du texte
-                if (i === 7 && c.val !== "Inconnue") {
-                    const formattedBounty = Number(c.val).toLocaleString(); 
-                    td.innerHTML = `<div>${formattedBounty} <img src="images_onepiece/berries.png" style="width:12px; filter: brightness(0) invert(1); vertical-align: middle;"></div>`;
-                } else {
-                    td.textContent = c.val === "Inconnue" ? "?" : c.val;
-                }
-
-                // Flèches pour les nombres (Taille et Prime)
-                if (c.type === 'num' && !isCorrect && c.val !== "Inconnue" && c.target !== "Inconnue") {
-                    const arrow = parseFloat(c.val) < parseFloat(c.target) ? 'up' : 'down';
-                    applyArrow(td, arrow);
-                }
+            else if (i === 7 && displayValue !== "Inconnu") { // Cas Prime (Bounty)
+                const formattedBounty = Number(c.val).toLocaleString(); 
+                td.innerHTML = `
+                    <div class="square-wrapper">
+                        <div class="bounty-content">
+                            ${formattedBounty} 
+                            <img src="images_onepiece/berries.png" class="berry-icon">
+                        </div>
+                    </div>`;
+            }
+            else { // Autres colonnes (Genre, Fruit, Origine, Taille)
+                // Pour la taille, si c'est inconnu on peut mettre "?"
+                let textToShow = (c.type === 'num' && displayValue === "Inconnu") ? "?" : displayValue;
+                td.innerHTML = `<div class="square-wrapper"><span>${textToShow}</span></div>`;
             }
 
-            td.style.background = backgroundColor;
+            // 4. LOGIQUE DES FLÈCHES POUR LES NOMBRES (Taille et Prime)
+            if (c.type === 'num' && !isCorrect && displayValue !== "Inconnu" && c.target !== "Inconnue") {
+                const arrow = parseFloat(c.val) < parseFloat(c.target) ? 'up' : 'down';
+                applyArrow(td, arrow);
+            }
+
+            // 5. APPLICATION FINALE DU STYLE
+            // On utilise backgroundColor (et non background) pour ne pas effacer les flèches
+            td.style.backgroundColor = backgroundColor;
             td.style.transform = "rotateY(0deg)";
         }, 200);
     }, i * 150);
 });
-
-// Fonction utilitaire pour éviter la répétition du code des flèches
-function applyArrow(element, direction) {
-    element.style.backgroundImage = `url('images_onepiece/arrow-${direction}.png')`;
-    element.style.backgroundSize = "contain";
-    element.style.backgroundRepeat = "no-repeat";
-    element.style.backgroundPosition = "center";
-}
 
     if (char.name === targetCharacter.name) {
         gameOver = true;
@@ -14487,12 +14811,32 @@ function applyArrow(element, direction) {
     }
 }
 
+// Fonction applyArrow mise à jour pour centrer parfaitement derrière le texte
+function applyArrow(element, direction) {
+    element.style.backgroundImage = `url('images_onepiece/arrow-${direction}.png')`;
+    element.style.backgroundSize = "contain"; // L'image prend toute la place possible sans être coupée
+    element.style.backgroundRepeat = "no-repeat";
+    element.style.backgroundPosition = "center";
+}
+
+
+
 function showVictory() {
-    searchSection.style.display = 'none';
+    // On cache tout le bloc de recherche (Barre + Boutons Mode et Fond)
+    const searchSection = document.getElementById('search-section');
+    if (searchSection) {
+        searchSection.style.setProperty('display', 'none', 'important');
+    }
+
+    // On affiche l'écran de victoire
     victoryScreen.style.display = 'block';
+    
+    // Remplissage des infos de victoire
     document.getElementById('victory-img').src = targetCharacter.image;
     document.getElementById('victory-name').textContent = targetCharacter.name;
     document.getElementById('victory-stats').textContent = `Trouvé en ${attempts.length} tentatives !`;
+    
+    // Petit effet visuel : remonter en haut de page pour voir le message
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
