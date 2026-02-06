@@ -20,7 +20,7 @@
     }
         body {
             font-family: 'Pirata One', cursive;
-            background: url('images_onepiece/bg.png') no-repeat center center fixed;
+            background: url('images_onepiece/bg2.png') no-repeat center center fixed;
             background-size: cover;
             color: #fff;
             margin: 0;
@@ -245,7 +245,30 @@
 .bg-preview:hover { transform: scale(1.1); }
 /* Style pour l'image sélectionnée */
 .bg-preview.selected-bg { border-color: var(--gold); box-shadow: 0 0 15px var(--gold); }
+/* Conteneur de chaque fond */
+.bg-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px; /* Espace entre l'image et le texte */
+    cursor: pointer;
+}
 
+/* Le titre sous l'image */
+.bg-title {
+    font-size: 0.9em;
+    color: white; /* Ou la couleur de ton choix */
+    font-weight: bold;
+}
+
+/* Ajustement du conteneur parent pour qu'ils soient côte à côte */
+.bg-options {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
 /* 4. Section Upload */
 .upload-section p { font-size: 1.1rem; margin-bottom: 10px; }
 .upload-label {
@@ -661,11 +684,22 @@
       <span class="close-modal">&times;</span>
       <h3>Choisissez un fond d'écran</h3>
       
-      <div class="bg-options">
-          <img src="images_onepiece/bg.png" class="bg-preview selected-bg" data-bg="bg.png" title="Original">
-          <img src="images_onepiece/bg1.png" class="bg-preview" data-bg="bg1.png" title="Fond 1">
-          <img src="images_onepiece/bg2.png" class="bg-preview" data-bg="bg2.png" title="Fond 2">
+  <div class="bg-options">
+      <div class="bg-item">
+          <img src="images_onepiece/bg2.png" class="bg-preview selected-bg" data-bg="bg2.png">
+          <span class="bg-title">Sunny</span>
       </div>
+
+      <div class="bg-item">
+          <img src="images_onepiece/bg.png" class="bg-preview" data-bg="bg.png">
+          <span class="bg-title">Wano</span>
+      </div>
+
+      <div class="bg-item">
+          <img src="images_onepiece/bg1.png" class="bg-preview" data-bg="bg1.png">
+          <span class="bg-title">EggHead</span>
+      </div>
+  </div>
       
       <div class="upload-section">
           <p>Ou importez votre image :</p>
@@ -14735,30 +14769,40 @@ function submitGuess(char) {
             if (!displayValue || displayValue === "" || displayValue === "Inconnue") {
                 displayValue = "Inconnu";
             }
-
-            // 2. LOGIQUE DES COULEURS (Orange / Vert)
+            // --- Logique pour l'ORIGINE (Mer) ---
             if (c.type === 'origin') {
                 const oceanGuest = getOceanFromOrigin(c.val);
                 const oceanTarget = getOceanFromOrigin(targetCharacter.origin);
-                if (oceanGuest !== "Inconnu" && oceanGuest === oceanTarget) {
-                    if (c.val === c.target || c.val === oceanGuest || targetCharacter.origin === oceanTarget) {
-                        isCorrect = true; 
-                    } else {
-                        isNear = true;
-                    }
+
+                if (c.val === c.target) {
+                    // VERT : L'île ou la mention est strictement identique
+                    isCorrect = true;
+                } else if (oceanGuest !== "Inconnu" && oceanGuest === oceanTarget) {
+                    // ORANGE : C'est la même mer, mais pas la même île
+                    isNear = true;
                 }
+                // Sinon, ça reste par défaut sur "wrong" (rouge/gris)
             }
             
-            if (c.type === 'affiliation' && !isCorrect) {
+            // --- Logique pour l'AFFILIATION (Groupes) ---
+            else if (c.type === 'affiliation') {
                 const classGuest = getAffiliationClass(c.val);
                 const classTarget = getAffiliationClass(targetCharacter.affiliation);
-                if (classGuest !== "Inconnu" && classGuest === classTarget) {
+
+                if (c.val === c.target) {
+                    isCorrect = true;
+                } else if (classGuest !== "Inconnu" && classGuest === classTarget) {
+                    // Même groupe (ex: CP9 et Marine) mais pas la même entité précise
                     isNear = true;
                 }
             }
 
-            if (isCorrect) backgroundColor = 'var(--correct)';
-            else if (isNear) backgroundColor = 'var(--near)';
+            // --- Attribution finale de la couleur ---
+            if (isCorrect) {
+                backgroundColor = 'var(--correct)';
+            } else if (isNear) {
+                backgroundColor = 'var(--near)';
+            }
 
             // 3. CRÉATION DU CONTENU AVEC LE WRAPPER CARRÉ
             if (c.type === 'img') {
