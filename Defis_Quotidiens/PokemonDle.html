@@ -6,7 +6,7 @@
 <link rel="icon" type="image/png" href="images_pokemon/pokeball.png">
 <style>
 body {
-  background: url("images_pokemon/bg2.png") no-repeat center center fixed;
+  background: url("images_pokemon/bg1.png") no-repeat center center fixed;
   background-size: cover;
   font-family: 'Verdana', sans-serif;
   color: #333;
@@ -79,6 +79,108 @@ body {
   white-space: nowrap;
 }
 #genButton:hover { background: #e3f2fd; }
+/* === BOUTON FOND (Style identique à GenButton) === */
+#bgBtn {
+  background: rgba(255, 255, 255, 0.95);
+  border: 2px solid #1976d2;
+  border-radius: 10px;
+  padding: 10px 14px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  cursor: pointer;
+  font-weight: bold;
+  color: #1976d2; /* Même bleu que le menu */
+  font-size: 14px;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+#bgBtn:hover { background: #e3f2fd; }
+
+/* === MODALE FOND D'ÉCRAN === */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 2000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.8);
+    backdrop-filter: blur(5px);
+    animation: fadeIn 0.3s;
+}
+.modal-content {
+    background: rgba(240, 244, 247, 0.95);
+    border: 2px solid #1976d2;
+    border-radius: 15px;
+    margin: 10% auto;
+    padding: 25px;
+    width: 90%;
+    max-width: 500px;
+    position: relative;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    color: #333;
+}
+.modal-content h3 { color: #1976d2; margin-top: 0; }
+.close-modal {
+    color: #1976d2;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    position: absolute;
+    right: 15px;
+    top: 10px;
+}
+.close-modal:hover { color: #0d47a1; }
+
+.bg-options {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin: 25px 0;
+}
+.bg-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+.bg-preview {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 10px;
+    border: 3px solid transparent;
+    cursor: pointer;
+    transition: 0.3s;
+    background: #000;
+}
+.bg-preview:hover { transform: scale(1.1); }
+.bg-preview.selected-bg { border-color: #1976d2; box-shadow: 0 0 15px #1976d2; }
+.bg-title { font-size: 0.9em; color: #333; font-weight: bold; }
+
+.upload-label {
+    display: inline-block;
+    padding: 10px 20px;
+    font-weight: bold;
+    background: #fff;
+    color: #1976d2;
+    border: 2px dashed #1976d2;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+.upload-label:hover { background: #e3f2fd; }
+@keyframes fadeIn { from {opacity: 0;} to {opacity: 1;} }
 #genDropdown {
   display: none;
   position: absolute;   /* relative à #genMenu maintenant */
@@ -237,6 +339,7 @@ td.flip { transform: rotateY(90deg); }
         </div>
       </div>
     </div>
+    <button id="bgBtn" title="Changer le fond d'écran">🖼️ Fond</button>
     <div id="suggestions"></div>
   </div>
 
@@ -261,7 +364,35 @@ td.flip { transform: rotateY(90deg); }
 
   <button id="replayBtn">Rejouer</button>
 </div>
+<div id="bgModal" class="modal">
+  <div class="modal-content">
+      <span class="close-modal">&times;</span>
+      <h3>Choisissez un fond d'écran</h3>
+      
+      <div class="bg-options">
+          <div class="bg-item">
+              <img src="images_pokemon/bg1.png" class="bg-preview selected-bg" data-bg="bg1.png">
+              <span class="bg-title">Kalos</span>
+          </div>
 
+          <div class="bg-item">
+              <img src="images_pokemon/bg2.png" class="bg-preview" data-bg="bg2.png">
+              <span class="bg-title">Galar</span>
+          </div>
+
+          <div class="bg-item">
+              <img src="images_pokemon/bg3.png" class="bg-preview" data-bg="bg3.png">
+              <span class="bg-title">Hoenn</span>
+          </div>
+      </div>
+      
+      <div class="upload-section">
+          <p>Ou importez votre image :</p>
+          <input type="file" id="bgUpload" accept="image/png, image/jpeg, image/webp" hidden>
+          <label for="bgUpload" class="upload-label">📂 Explorer les fichiers</label>
+      </div>
+  </div>
+</div>
 <script>
 // === Données Pokémon ===
 
@@ -13404,6 +13535,56 @@ function handleGuess(nom){
   }
 }
 
+// === GESTION DU FOND D'ÉCRAN ===
+const bgModal = document.getElementById('bgModal');
+const bgBtnElement = document.getElementById('bgBtn'); // Renommé pour éviter conflit
+const closeModalSpan = document.querySelector('.close-modal');
+const bgPreviews = document.querySelectorAll('.bg-preview');
+const bgUploadInput = document.getElementById('bgUpload');
+
+// Ouvrir
+bgBtnElement.addEventListener('click', () => {
+    bgModal.style.display = "block";
+});
+
+// Fermer (Croix)
+closeModalSpan.addEventListener('click', () => {
+    bgModal.style.display = "none";
+});
+
+// Fermer (Clic extérieur)
+window.addEventListener('click', (event) => {
+    if (event.target == bgModal) {
+        bgModal.style.display = "none";
+    }
+});
+
+// Sélection image prédéfinie
+bgPreviews.forEach(img => {
+    img.addEventListener('click', function() {
+        bgPreviews.forEach(preview => preview.classList.remove('selected-bg'));
+        this.classList.add('selected-bg');
+        
+        const bgName = this.getAttribute('data-bg');
+        // Attention au chemin : images_pokemon/
+        document.body.style.backgroundImage = `url('images_pokemon/${bgName}')`;
+        setTimeout(() => bgModal.style.display = "none", 300);
+    });
+});
+
+// Upload image perso
+bgUploadInput.addEventListener('change', function(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.body.style.backgroundImage = `url('${e.target.result}')`;
+            bgPreviews.forEach(preview => preview.classList.remove('selected-bg'));
+            bgModal.style.display = "none";
+        };
+        reader.readAsDataURL(file);
+    }
+});
 // === Nouvelle partie ===
 function startNewGame(){
   selectedPokemon=filteredPokemons[Math.floor(Math.random()*filteredPokemons.length)];
