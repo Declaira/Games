@@ -8,7 +8,7 @@ Avec des jeux classiques:
 - La Bataille Navale.
 - Le Sudoku.
 
-De géographie :
+De la géographie :
 - La carte du monde, où il faut trouver le nom d'une formation géographique à partir de son emplacement.
 - La carte de France, où il faut trouver le nom et la préfecture d'un département à partir de son numéro et de son emplacement.
 - La carte du monde, où il faut trouver le nom et la capitale d'un pays à partir de son drapeau et de son emplacement.
