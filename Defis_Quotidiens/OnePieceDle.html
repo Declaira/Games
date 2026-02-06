@@ -357,7 +357,7 @@
           
           /* Optionnel : assure-toi qu'il n'y a pas de marges résiduelles */
           display: block;
-          border-radius: 5px; /* Pour garder les coins arrondis de tes cases */
+          border-radius: 8px; /* Pour garder les coins arrondis de tes cases */
       }
         .img-square{
             width: 100%;
@@ -365,7 +365,7 @@
             object-fit: cover;
             /* 50% horizontal (centré), 20% vertical (focus sur le visage) */
             object-position: 50% 0%; 
-            border-radius: 5px;
+            border-radius: 8px;
         }
 
         /* Ajustement spécifique pour les suggestions (garder une taille fixe) */
@@ -493,7 +493,16 @@
         }
         .legend-item { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; }
         .box { width: 18px; height: 18px; border-radius: 3px; }
-        .icon-box { width: 22px; height: 22px; background-size: contain; background-repeat: no-repeat; }
+        .icon-box { 
+            width: 22px; 
+            height: 22px; 
+            background-size: contain; 
+            background-repeat: no-repeat;
+            /* Ajout des bords arrondis */
+            border-radius: 5px; /* Ajustez la valeur (en px ou %) selon l'arrondi souhaité */
+            overflow: hidden;    /* Garantit que l'image ne dépasse pas du bord arrondi */
+        }
+
         .up { background-image: url('images_onepiece/arrow-up.png'); }
         .down { background-image: url('images_onepiece/arrow-down.png'); }
 

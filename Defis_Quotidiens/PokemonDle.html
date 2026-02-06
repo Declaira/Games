@@ -312,9 +312,12 @@ td.flip { transform: rotateY(90deg); }
 <div id="game">
   <img src="images_pokemon/titre.png" alt="PokémonDle" id="titreImage">
 
-  <div id="victoryScreen" style="display:none;">
-    <h1>Félicitations ! Tu as trouvé !</h1>
-    <img id="victoryImage" src="" alt="Pokémon">
+  <div id="victoryScreen" style="display:none; text-align:center;">
+      <h1>Félicitations ! Tu as trouvé !</h1>
+      <div>
+          <img id="victoryImage" src="" alt="Pokémon">
+      </div> 
+      <button id="replayBtn">Rejouer</button>
   </div>
 
   <!-- === BARRE D'ENTRÉE + MENU GÉNÉRATIONS === -->
@@ -361,8 +364,6 @@ td.flip { transform: rotateY(90deg); }
     <div class="legend-item"><span class="legend-box legend-up"></span> Plus grand</div>
     <div class="legend-item"><span class="legend-box legend-down"></span> Plus petit</div>
   </div>
-
-  <button id="replayBtn">Rejouer</button>
 </div>
 <div id="bgModal" class="modal">
   <div class="modal-content">
@@ -13529,6 +13530,8 @@ function handleGuess(nom){
   if(guess.nom===selectedPokemon.nom){
     input.style.display="none";
     suggestionsDiv.style.display="none";
+    genButton.style.display = "none";
+    bgBtn.style.display = "none";
     victoryImage.src=selectedPokemon.image_path;
     victoryScreen.style.display="block";
     replayBtn.style.display="inline-block";
@@ -13592,6 +13595,7 @@ function startNewGame(){
   attempts=[]; tbody.innerHTML=""; feedbackDiv.textContent="";
   input.disabled=false; input.style.display="block"; input.value="";
   suggestionsDiv.style.display="none"; victoryScreen.style.display="none"; replayBtn.style.display="none";
+  genButton.style.display = "block"; bgBtn.style.display = "block";
   document.getElementById('attemptsTable').style.display="none";
   document.getElementById('legend').style.display="none";
 }
