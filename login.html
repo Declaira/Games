@@ -178,8 +178,12 @@
                     if (exists) return alert("⚠️ Ce pseudo est déjà pris !");
                 }
 
+                // 1. D'abord on se connecte anonymement
                 const userCred = await signInAnonymously(auth);
-                await set(ref(db, `users/${userCred.user.uid}`), { 
+                const uid = userCred.user.uid;
+
+                // 2. ENSUITE on écrit dans la DB
+                await set(ref(db, `users/${uid}`), { 
                     username: pseudo, 
                     avatar: selectedAvatar 
                 });
