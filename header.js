@@ -77,8 +77,11 @@ function injectHeader(options = {}) {
 
         <div class="profile-dropdown" id="header-dropdown">
           <div id="menu-logged-in" class="hidden">
-            <button class="dropdown-item" onclick="window.location.href='compte.html'">⚙️ Mon Compte</button>
-            <button class="dropdown-item" onclick="window.location.href='login.html'">🔄 Changer de profil</button>
+          // Pour le bouton Paramètres
+          <button class="dropdown-item" onclick="window.location.href='${homeLink.replace('accueil.html', 'compte.html')}'">⚙️ Mon Compte</button>
+
+          // Pour le bouton Changer de profil
+          <button class="dropdown-item" onclick="window.location.href='${homeLink.replace('accueil.html', 'login.html')}'">🔄 Changer de profil</button>
             <div class="dropdown-divider"></div>
             <button class="dropdown-item" id="header-logout-btn" style="color: #e74c3c;">🚪 Déconnexion</button>
           </div>
@@ -151,8 +154,9 @@ function injectHeader(options = {}) {
       const logoutBtn = document.getElementById('header-logout-btn');
       if(logoutBtn) {
         logoutBtn.onclick = () => {
-          signOut(auth).then(() => window.location.href = 'login.html');
-        };
+          signOut(auth).then(() => {
+          window.location.href = '${homeLink.replace('accueil.html', 'login.html')}';
+      });
       }
     </script>
   `);
