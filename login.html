@@ -83,6 +83,15 @@
     </div>
 
     <script type="module">
+        // Fonction pour retourner à la page précédente ou à l'accueil par défaut
+        const redirectBack = () => {
+            const fallback = "accueil.html"; // Page par défaut si historique vide
+            if (document.referrer && document.referrer !== window.location.href) {
+                window.location.href = document.referrer;
+            } else {
+                window.location.href = fallback;
+            }
+        };
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
         import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
@@ -151,8 +160,8 @@
                         
                         // Action au clic : Simuler la connexion avec cet UID
                         card.onclick = () => {
-                            // On pourrait forcer un re-login ici, mais pour l'instant on redirige
-                            window.location.href = "Puissance_4.html"; 
+                            // On pourrait ici sauvegarder l'UID choisi dans le LocalStorage si besoin
+                            redirectBack(); 
                         };
                         container.appendChild(card);
                     });
