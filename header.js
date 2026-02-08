@@ -18,8 +18,20 @@ window.injectHeader = function(options = {}) {
     }
 
     .header-title { font-size: 2.2em; font-weight: bold; text-shadow: 1px 1px 2px rgba(0,0,0,0.1); }
-    .home-icon { position: absolute; left: 20px; font-size: 2.2em; text-decoration: none; color: white; transition: transform 0.2s; }
-    .home-icon:hover { transform: scale(1.1); }
+    .home-icon { 
+      position: absolute; left: 20px; 
+      width: 48px; height: 48px; 
+      background: white; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px; text-decoration: none;
+      border: 2px solid rgba(255,255,255,0.5);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      transition: transform 0.2s, background 0.2s;
+    }
+    .home-icon:hover { 
+      transform: scale(1.1); 
+      background: #f8f9fa;
+    }
 
     .user-profile-widget {
       position: absolute; right: 20px; display: flex; align-items: center;
