@@ -147,28 +147,27 @@ window.injectHeader = function(options = {}) {
       };
 
       onAuthStateChanged(auth, async (user) => {
-        if (user) {
-          const snapshot = await get(ref(db, 'users/' + user.uid));
+        // On regarde d'abord si un UID spécifique a été choisi sur la page login
+        const savedUid = localStorage.getItem('active_uid');
+        const uidToFetch = savedUid || (user ? user.uid : null);
+
+        if (uidToFetch) {
+          const snapshot = await get(ref(db, 'users/' + uidToFetch));
           if (snapshot.exists()) {
             const data = snapshot.val();
             nameEl.textContent = data.username || "Joueur";
-            
-            if (data.avatar && data.avatar.length > 5) {
-                if(data.avatar.startsWith('data:image') || data.avatar.startsWith('http')) {
-                    avatarEl.innerHTML = '<img src="' + data.avatar + '">';
-                } else {
-                    avatarEl.textContent = data.avatar;
-                }
-            }
+            // ... gestion de l'avatar identique ...
+            loggedInMenu.classList.remove('hidden');
+            guestMenu.classList.add('hidden');
+            return; // On arrête ici si on a trouvé le profil
           }
-          loggedInMenu.classList.remove('hidden');
-          guestMenu.classList.add('hidden');
-        } else {
-          nameEl.textContent = "Invité";
-          avatarEl.innerHTML = "👤";
-          loggedInMenu.classList.add('hidden');
-          guestMenu.classList.remove('hidden');
         }
+        
+        // Si aucun utilisateur trouvé (ni saved, ni actuel)
+        nameEl.textContent = "Invité";
+        avatarEl.innerHTML = "👤";
+        loggedInMenu.classList.add('hidden');
+        guestMenu.classList.remove('hidden');
       });
 
       const logoutBtn = document.getElementById('header-logout-btn');

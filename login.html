@@ -92,6 +92,24 @@
                 window.location.href = fallback;
             }
         };
+        // Fonction pour se connecter avec un profil existant
+        const loginWithProfile = async (uid) => {
+            try {
+                // Firebase Auth anonyme lie la session au navigateur. 
+                // Pour "changer" de compte sans mot de passe, nous stockons l'UID choisi
+                // afin que le header puisse le récupérer.
+                localStorage.setItem('active_uid', uid);
+                
+                // On effectue une connexion anonyme si ce n'est pas déjà fait
+                if (!auth.currentUser) {
+                    await signInAnonymously(auth);
+                }
+                
+                redirectBack();
+            } catch (e) {
+                alert("Erreur de connexion : " + e.message);
+            }
+        };
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
         import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
@@ -158,11 +176,8 @@
                             <div class="account-name">${data.username}</div>
                         `;
                         
-                        // Action au clic : Simuler la connexion avec cet UID
-                        card.onclick = () => {
-                            // On pourrait ici sauvegarder l'UID choisi dans le LocalStorage si besoin
-                            redirectBack(); 
-                        };
+                        // MODIFICATION ICI : On appelle une fonction de connexion avec l'UID
+                        card.onclick = () => loginWithProfile(uid); 
                         container.appendChild(card);
                     });
                 } else {
