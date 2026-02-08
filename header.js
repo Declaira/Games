@@ -87,7 +87,7 @@ function injectHeader(options = {}) {
           </div>
           
           <div id="menu-guest" class="hidden">
-            <button class="dropdown-item" onclick="window.location.href='login.html'">🔑 Se connecter / Créer</button>
+            <button class="dropdown-item" onclick="window.location.href='${homeLink.replace('accueil.html', 'login.html')}'">🔑 Se connecter / Créer</button>
           </div>
         </div>
       </div>
