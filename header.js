@@ -146,8 +146,8 @@ window.injectHeader = function(options = {}) {
           window.location.href = "${loginPath}?mode=signup";
       };
 
+      // --- DANS header.js (Bloc de détection d'auth) ---
       onAuthStateChanged(auth, async (user) => {
-        // On regarde d'abord si un UID spécifique a été choisi sur la page login
         const savedUid = localStorage.getItem('active_uid');
         const uidToFetch = savedUid || (user ? user.uid : null);
 
@@ -156,24 +156,38 @@ window.injectHeader = function(options = {}) {
           if (snapshot.exists()) {
             const data = snapshot.val();
             nameEl.textContent = data.username || "Joueur";
-            // ... gestion de l'avatar identique ...
+            
+            // Gestion de l'affichage de l'avatar (Emoji ou Image)
+            if (data.avatar && data.avatar.length > 5) {
+                if(data.avatar.startsWith('data:image') || data.avatar.startsWith('http')) {
+                    avatarEl.innerHTML = '<img src="' + data.avatar + '">';
+                } else {
+                    avatarEl.textContent = data.avatar;
+                }
+            } else {
+                avatarEl.innerHTML = "👤";
+            }
+
             loggedInMenu.classList.remove('hidden');
             guestMenu.classList.add('hidden');
-            return; // On arrête ici si on a trouvé le profil
+            return; 
           }
         }
         
-        // Si aucun utilisateur trouvé (ni saved, ni actuel)
+        // Si déconnecté
         nameEl.textContent = "Invité";
         avatarEl.innerHTML = "👤";
         loggedInMenu.classList.add('hidden');
         guestMenu.classList.remove('hidden');
       });
 
+      // --- DANS header.js (Bloc Déconnexion) ---
       const logoutBtn = document.getElementById('header-logout-btn');
       if(logoutBtn) {
         logoutBtn.onclick = () => {
           signOut(auth).then(() => {
+            // ON NETTOIE LE STOCKAGE LORS DE LA DÉCONNEXION
+            localStorage.removeItem('active_uid');
             window.location.href = "${loginPath}";
           });
         };
