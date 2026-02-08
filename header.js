@@ -1,4 +1,4 @@
-function injectHeader(options = {}) {
+window.injectHeader = function(options = {}) {
   const {
     title = "Déclaira",
     homeLink = "accueil.html",
@@ -42,7 +42,7 @@ function injectHeader(options = {}) {
 
     .profile-dropdown {
       position: absolute; top: 65px; right: 0; background: white; color: #333;
-      border-radius: 12px; width: 200px; box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+      border-radius: 12px; width: 210px; box-shadow: 0 8px 20px rgba(0,0,0,0.15);
       display: none; flex-direction: column; padding: 8px 0; z-index: 1100;
     }
     .profile-dropdown.show { display: flex; animation: fadeInMenu 0.2s ease-out; }
@@ -63,6 +63,9 @@ function injectHeader(options = {}) {
   </style>
   `;
 
+  const loginPath = homeLink.replace('accueil.html', 'login.html');
+  const comptePath = homeLink.replace('accueil.html', 'compte.html');
+
   document.write(`
     ${style}
     <header>
@@ -76,23 +79,23 @@ function injectHeader(options = {}) {
         <div class="user-avatar-circle" id="header-avatar">👤</div>
 
         <div class="profile-dropdown" id="header-dropdown">
+          
           <div id="menu-logged-in" class="hidden">
-          // Pour le bouton Paramètres
-          <button class="dropdown-item" onclick="window.location.href='${homeLink.replace('accueil.html', 'compte.html')}'">⚙️ Mon Compte</button>
-
-          // Pour le bouton Changer de profil
-          <button class="dropdown-item" onclick="window.location.href='${homeLink.replace('accueil.html', 'login.html')}'">🔄 Changer de profil</button>
+            <button class="dropdown-item" onclick="window.location.href='${comptePath}'">⚙️ Mon Compte</button>
+            <button class="dropdown-item" onclick="window.location.href='${loginPath}'">🔄 Changer de profil</button>
             <div class="dropdown-divider"></div>
             <button class="dropdown-item" id="header-logout-btn" style="color: #e74c3c;">🚪 Déconnexion</button>
           </div>
-          
+                  
           <div id="menu-guest" class="hidden">
-            <button class="dropdown-item" onclick="window.location.href='${homeLink.replace('accueil.html', 'login.html')}'">🔑 Se connecter / Créer</button>
+            <button class="dropdown-item" id="btn-goto-login">🔑 Se connecter</button>
+            <button class="dropdown-item" id="btn-goto-signup">✨ Créer un compte</button>
           </div>
+
         </div>
       </div>
     </header>
-
+    
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
       import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
@@ -116,12 +119,20 @@ function injectHeader(options = {}) {
       const dropdown = document.getElementById('header-dropdown');
       const nameEl = document.getElementById('header-username');
       const avatarEl = document.getElementById('header-avatar');
-      
       const loggedInMenu = document.getElementById('menu-logged-in');
       const guestMenu = document.getElementById('menu-guest');
 
+      // Gestion du menu déroulant
       trigger.onclick = (e) => { e.stopPropagation(); dropdown.classList.toggle('show'); };
       document.addEventListener('click', () => dropdown.classList.remove('show'));
+
+      // Redirections mode Guest
+      document.getElementById('btn-goto-login').onclick = () => {
+          window.location.href = "${loginPath}?mode=login";
+      };
+      document.getElementById('btn-goto-signup').onclick = () => {
+          window.location.href = "${loginPath}?mode=signup";
+      };
 
       onAuthStateChanged(auth, async (user) => {
         if (user) {
@@ -138,14 +149,11 @@ function injectHeader(options = {}) {
                 }
             }
           }
-          // Afficher le menu complet
           loggedInMenu.classList.remove('hidden');
           guestMenu.classList.add('hidden');
         } else {
-          // Mode Invité
           nameEl.textContent = "Invité";
           avatarEl.innerHTML = "👤";
-          // Afficher uniquement le bouton connexion
           loggedInMenu.classList.add('hidden');
           guestMenu.classList.remove('hidden');
         }
@@ -155,8 +163,9 @@ function injectHeader(options = {}) {
       if(logoutBtn) {
         logoutBtn.onclick = () => {
           signOut(auth).then(() => {
-          window.location.href = '${homeLink.replace('accueil.html', 'login.html')}';
-      });
+            window.location.href = "${loginPath}";
+          });
+        };
       }
     </script>
   `);

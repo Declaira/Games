@@ -14,32 +14,29 @@
         .container { flex: 1; display: flex; justify-content: center; align-items: center; padding: 20px; }
         .auth-box {
             background: white; padding: 30px; border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 500px; text-align: center;
         }
         h2 { color: #e67e22; margin-top: 0; }
         .hidden { display: none !important; }
         
-        /* Avatars */
-        .avatar-grid { display: flex; justify-content: center; gap: 10px; margin: 20px 0; flex-wrap: wrap; }
-        .avatar-opt {
-            width: 50px; height: 50px; border: 2px solid #ddd; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 24px; cursor: pointer; transition: 0.2s; background: #f9f9f9;
+        /* Suggestions de comptes (Récupérés depuis Firebase) */
+        #accounts-suggestions { 
+            display: flex; flex-wrap: wrap; justify-content: center; 
+            max-height: 300px; overflow-y: auto; margin: 15px 0; padding: 10px;
         }
-        .avatar-opt.selected { border-color: #e67e22; background: #fff3cd; transform: scale(1.1); }
-
-        /* Suggestions de comptes */
         .account-card {
             display: inline-flex; flex-direction: column; align-items: center; 
-            cursor: pointer; width: 90px; margin: 10px; transition: transform 0.2s;
+            cursor: pointer; width: 85px; margin: 8px; transition: transform 0.2s;
         }
         .account-card:hover { transform: translateY(-5px); }
         .avatar-circle {
-            width: 70px; height: 70px; border-radius: 50%; border: 3px solid #eee;
-            display: flex; align-items: center; justify-content: center; font-size: 35px;
+            width: 65px; height: 65px; border-radius: 50%; border: 3px solid #eee;
+            display: flex; align-items: center; justify-content: center; font-size: 30px;
             background: white; margin-bottom: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+            overflow: hidden;
         }
-        .account-name { font-weight: bold; color: #2c3e50; font-size: 0.9em; }
+        .avatar-circle img { width: 100%; height: 100%; object-fit: cover; }
+        .account-name { font-weight: bold; color: #2c3e50; font-size: 0.85em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
 
         input {
             width: 100%; padding: 12px; margin: 15px 0; border: 2px solid #ddd;
@@ -49,60 +46,46 @@
             width: 100%; padding: 12px; background: #e67e22; color: white; border: none;
             border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer;
         }
-        .btn-link { background: none; color: #7f8c8d; text-decoration: underline; margin-top: 15px; font-size: 0.9em; width: auto; }
+        .btn-link { background: none; color: #7f8c8d; text-decoration: underline; margin-top: 15px; font-size: 0.9em; width: auto; border:none; cursor: pointer; }
+        .btn-link:hover {color: #e67e22; text-shadow: 0 0 5px rgba(230, 126, 34, 0.2);}
     </style>
 </head>
 <body>
     <script src="header.js"></script>
-    <script>injectHeader({ title: "Mon Compte" });</script>
+    <script>
+        function loadH() {
+            if(typeof injectHeader === 'function') injectHeader({ title: "Mon Compte" });
+            else setTimeout(loadH, 50);
+        }
+        loadH();
+    </script>
 
     <div class="container">
         <div class="auth-box">
             <div id="view-login">
                 <h2>Qui est-ce ?</h2>
-                <div id="accounts-suggestions"></div>
+                <div id="accounts-suggestions">Chargement des profils...</div>
                 <button onclick="toggleView('view-signup')" class="btn-link">+ Créer un nouveau profil</button>
             </div>
 
             <div id="view-signup" class="hidden">
-            <h2>Nouveau Profil</h2>
-            
-            <div class="avatar-container" style="position: relative; display: inline-block; margin: 20px;">
-                <div id="preview-circle" class="avatar-circle" style="width:100px; height:100px; font-size:50px;">👤</div>
-                <label for="file-input" style="position:absolute; bottom:0; right:0; background:#e67e22; color:white; border-radius:50%; width:30px; height:30px; display:flex; align-items:center; justify-content:center; cursor:pointer; border:2px solid white;">+</label>
-                <input type="file" id="file-input" accept="image/*" style="display:none;">
-            </div>
-
-            <input type="text" id="username" placeholder="Ton pseudo...">
-            <button id="btn-create">Créer mon compte</button>
+                <h2>Nouveau Profil</h2>
+                <div class="avatar-container" style="position: relative; display: inline-block; margin: 20px;">
+                    <div id="preview-circle" class="avatar-circle" style="width:100px; height:100px; font-size:50px;">👤</div>
+                    <label for="file-input" style="position:absolute; bottom:0; right:0; background:#e67e22; color:white; border-radius:50%; width:30px; height:30px; display:flex; align-items:center; justify-content:center; cursor:pointer; border:2px solid white;">+</label>
+                    <input type="file" id="file-input" accept="image/*" style="display:none;">
+                </div>
+                <input type="text" id="username" placeholder="Ton pseudo..." maxlength="15">
+                <button id="btn-create">Créer mon compte</button>
+                <button onclick="toggleView('view-login')" class="btn-link">Retour</button>
             </div>
         </div>
     </div>
 
-    <script>
-    // Logique de compression d'image
-    document.getElementById('file-input').onchange = function(e) {
-        const reader = new FileReader();
-        reader.onload = function(event) {
-            const img = new Image();
-            img.onload = function() {
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                canvas.width = 128; canvas.height = 128; // On réduit la taille pour la DB
-                ctx.drawImage(img, 0, 0, 128, 128);
-                selectedAvatar = canvas.toDataURL('image/jpeg', 0.7); // Qualité 70%
-                document.getElementById('preview-circle').innerHTML = `<img src="${selectedAvatar}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
-            };
-            img.src = event.target.result;
-        };
-        reader.readAsDataURL(e.target.files[0]);
-    };
-</script>
-
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-        import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+        import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyB29fMpTwBgsqkjijkNoQJ2kGChSeQDX_w",
@@ -125,49 +108,91 @@
             document.getElementById('view-signup').classList.toggle('hidden', viewId !== 'view-signup');
         };
 
-        window.selectAvatar = (emoji) => {
-            selectedAvatar = emoji;
-            document.querySelectorAll('.avatar-opt').forEach(el => el.classList.toggle('selected', el.innerText === emoji));
+        // --- GESTION IMAGE ---
+        document.getElementById('file-input').onchange = (e) => {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = 128; canvas.height = 128;
+                    ctx.drawImage(img, 0, 0, 128, 128);
+                    selectedAvatar = canvas.toDataURL('image/jpeg', 0.7);
+                    document.getElementById('preview-circle').innerHTML = `<img src="${selectedAvatar}">`;
+                };
+                img.src = event.target.result;
+            };
+            if(e.target.files[0]) reader.readAsDataURL(e.target.files[0]);
         };
 
-        function loadSuggestions() {
-            const saved = JSON.parse(localStorage.getItem('declaira_accounts') || "[]");
+        // --- CHARGER TOUS LES COMPTES DEPUIS FIREBASE ---
+        async function loadAllProfiles() {
             const container = document.getElementById('accounts-suggestions');
-            if (saved.length === 0) return toggleView('view-signup');
+            try {
+                const snapshot = await get(ref(db, 'users'));
+                container.innerHTML = "";
 
-            saved.forEach(acc => {
-                const card = document.createElement('div');
-                card.className = 'account-card';
-                card.innerHTML = `<div class="avatar-circle">${acc.avatar}</div><div class="account-name">${acc.pseudo}</div>`;
-                card.onclick = () => loginAs(acc.uid);
-                container.appendChild(card);
-            });
+                if (snapshot.exists()) {
+                    const users = snapshot.val();
+                    // On transforme l'objet en tableau pour boucler dessus
+                    Object.entries(users).forEach(([uid, data]) => {
+                        const card = document.createElement('div');
+                        card.className = 'account-card';
+                        
+                        let avatarHtml = (data.avatar && data.avatar.startsWith('data:image')) 
+                            ? `<img src="${data.avatar}">` 
+                            : (data.avatar || '👤');
+
+                        card.innerHTML = `
+                            <div class="avatar-circle">${avatarHtml}</div>
+                            <div class="account-name">${data.username}</div>
+                        `;
+                        
+                        // Action au clic : Simuler la connexion avec cet UID
+                        card.onclick = () => {
+                            // On pourrait forcer un re-login ici, mais pour l'instant on redirige
+                            window.location.href = "Puissance_4.html"; 
+                        };
+                        container.appendChild(card);
+                    });
+                } else {
+                    container.innerHTML = "Aucun profil créé.";
+                }
+            } catch (e) {
+                container.innerHTML = "Erreur de chargement.";
+                console.error(e);
+            }
         }
 
-        async function loginAs(uid) {
-            // Note : L'auth anonyme est persistante. En cliquant, on laisse Firebase Auth reprendre la session.
-            window.location.href = "Puissance_4.html"; 
-        }
-
-        document.getElementById('btn-create').addEventListener('click', async () => {
+        // --- CRÉATION ---
+        document.getElementById('btn-create').onclick = async () => {
             const pseudo = document.getElementById('username').value.trim();
-            if(!pseudo) return;
+            if(!pseudo) return alert("Pseudo requis !");
 
             try {
+                const snapshot = await get(ref(db, 'users'));
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    const exists = Object.values(data).some(u => u.username.toLowerCase() === pseudo.toLowerCase());
+                    if (exists) return alert("⚠️ Ce pseudo est déjà pris !");
+                }
+
                 const userCred = await signInAnonymously(auth);
-                const uid = userCred.user.uid;
-
-                await set(ref(db, `users/${uid}`), { username: pseudo, avatar: selectedAvatar });
-
-                const saved = JSON.parse(localStorage.getItem('declaira_accounts') || "[]");
-                saved.push({ uid, pseudo, avatar: selectedAvatar });
-                localStorage.setItem('declaira_accounts', JSON.stringify(saved));
+                await set(ref(db, `users/${userCred.user.uid}`), { 
+                    username: pseudo, 
+                    avatar: selectedAvatar 
+                });
 
                 window.location.href = "Puissance_4.html";
             } catch (e) { alert("Erreur : " + e.message); }
-        });
+        };
 
-        loadSuggestions();
+        // --- INIT ---
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('mode') === 'signup') toggleView('view-signup');
+        loadAllProfiles();
+
     </script>
 </body>
 </html>
