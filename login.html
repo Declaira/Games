@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Connexion - Déclaira</title>
+    <title>Connexion</title>
+    <link rel="icon" href="logo/logo.png" type="image/x-icon">
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@600;700&display=swap" rel="stylesheet">
     <style>
         body {
@@ -63,7 +64,8 @@
     <div class="container">
         <div class="auth-box">
             <div id="view-login">
-                <h2>Qui est-ce ?</h2>
+                <h2>Connexion</h2>
+                <input type="text" id="search-account" placeholder="Rechercher un pseudo..." style="margin-bottom: 5px;">
                 <div id="accounts-suggestions">Chargement des profils...</div>
                 <button onclick="toggleView('view-signup')" class="btn-link">+ Créer un nouveau profil</button>
             </div>
@@ -77,7 +79,7 @@
                 </div>
                 <input type="text" id="username" placeholder="Ton pseudo..." maxlength="15">
                 <button id="btn-create">Créer mon compte</button>
-                <button onclick="toggleView('view-login')" class="btn-link">Retour</button>
+                <button onclick="redirectBack()" class="btn-link">Retour</button>
             </div>
         </div>
     </div>
@@ -135,7 +137,7 @@
             document.getElementById('view-signup').classList.toggle('hidden', viewId !== 'view-signup');
         };
 
-        // --- GESTION IMAGE ---
+        let allUsers = {};
         document.getElementById('file-input').onchange = (e) => {
             const reader = new FileReader();
             reader.onload = (event) => {
@@ -158,36 +160,59 @@
             const container = document.getElementById('accounts-suggestions');
             try {
                 const snapshot = await get(ref(db, 'users'));
-                container.innerHTML = "";
-
                 if (snapshot.exists()) {
-                    const users = snapshot.val();
-                    // On transforme l'objet en tableau pour boucler dessus
-                    Object.entries(users).forEach(([uid, data]) => {
-                        const card = document.createElement('div');
-                        card.className = 'account-card';
-                        
-                        let avatarHtml = (data.avatar && data.avatar.startsWith('data:image')) 
-                            ? `<img src="${data.avatar}">` 
-                            : (data.avatar || '👤');
-
-                        card.innerHTML = `
-                            <div class="avatar-circle">${avatarHtml}</div>
-                            <div class="account-name">${data.username}</div>
-                        `;
-                        
-                        // MODIFICATION ICI : On appelle une fonction de connexion avec l'UID
-                        card.onclick = () => loginWithProfile(uid); 
-                        container.appendChild(card);
-                    });
+                    allUsers = snapshot.val();
+                    container.innerHTML = ""; // On laisse vide au départ
                 } else {
                     container.innerHTML = "Aucun profil créé.";
                 }
             } catch (e) {
                 container.innerHTML = "Erreur de chargement.";
-                console.error(e);
             }
         }
+
+        // Fonction pour générer le HTML des cartes
+        function renderProfiles(usersToDisplay) {
+            const container = document.getElementById('accounts-suggestions');
+            container.innerHTML = "";
+            
+            Object.entries(usersToDisplay).forEach(([uid, data]) => {
+                const card = document.createElement('div');
+                card.className = 'account-card';
+                let avatarHtml = (data.avatar && data.avatar.startsWith('data:image')) 
+                    ? `<img src="${data.avatar}">` 
+                    : (data.avatar || '👤');
+
+                card.innerHTML = `
+                    <div class="avatar-circle">${avatarHtml}</div>
+                    <div class="account-name">${data.username}</div>
+                `;
+                card.onclick = () => loginWithProfile(uid); 
+                container.appendChild(card);
+            });
+        }
+
+        document.getElementById('search-account').oninput = (e) => {
+            const query = e.target.value.toLowerCase().trim();
+            const container = document.getElementById('accounts-suggestions');
+            
+            if (query.length >= 3) {
+                const filtered = Object.fromEntries(
+                    Object.entries(allUsers).filter(([uid, data]) => 
+                        data.username.toLowerCase().includes(query)
+                    )
+                );
+                
+                if (Object.keys(filtered).length > 0) {
+                    renderProfiles(filtered);
+                } else {
+                    container.innerHTML = "Aucun profil correspondant.";
+                }
+            } else {
+                // Désaffiche tout si moins de 3 lettres ou champ vide
+                container.innerHTML = ""; 
+            }
+        };
 
         // --- CRÉATION ---
         document.getElementById('btn-create').onclick = async () => {
