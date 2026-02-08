@@ -1,98 +1,159 @@
 function injectHeader(options = {}) {
   const {
-    logo = null,        // URL de l'image du logo
-    title = "Déclaira", // texte du titre si pas d'image
+    title = "Déclaira",
     homeLink = "accueil.html",
-    showHome = true,
-    modeBtn = null      // texte du bouton mode ou null si absent
+    showHome = true
   } = options;
 
   const style = `
   <style>
-    @keyframes slideFadeIn {
-      0% { opacity: 0; transform: translateY(-20px); }
-      100% { opacity: 1; transform: translateY(0); }
-    }
-
+    @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@600;700&display=swap');
+    
     header {
       background: linear-gradient(to right, #ff9a00, #ff4e00);
-      color: white;
-      height: 100px;
-      position: relative;
+      color: white; height: 100px; position: relative;
       font-family: 'Quicksand', sans-serif;
-      animation: slideFadeIn 0.8s ease-out;
-      display: flex;
-      justify-content: center;  /* centre le contenu principal */
-      align-items: center;
+      display: flex; justify-content: center; align-items: center;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1); z-index: 1000;
     }
 
-    .header-logo {
-      max-height: 100%;
-      height: auto;
-      display: block;
+    .header-title { font-size: 2.2em; font-weight: bold; text-shadow: 1px 1px 2px rgba(0,0,0,0.1); }
+    .home-icon { position: absolute; left: 20px; font-size: 2.2em; text-decoration: none; color: white; transition: transform 0.2s; }
+    .home-icon:hover { transform: scale(1.1); }
+
+    .user-profile-widget {
+      position: absolute; right: 20px; display: flex; align-items: center;
+      gap: 12px; cursor: pointer; padding: 5px 10px; border-radius: 30px;
+      transition: background 0.2s;
+    }
+    .user-profile-widget:hover { background: rgba(255,255,255,0.1); }
+
+    .user-avatar-circle {
+      width: 48px; height: 48px; background: white; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px; border: 2px solid rgba(255,255,255,0.5);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1); overflow: hidden;
+    }
+    .user-avatar-circle img { width: 100%; height: 100%; object-fit: cover; }
+
+    .user-info-text { display: none; flex-direction: column; text-align: right; }
+    @media (min-width: 600px) { .user-info-text { display: flex; } }
+    .user-name { font-weight: bold; font-size: 0.95em; }
+
+    .profile-dropdown {
+      position: absolute; top: 65px; right: 0; background: white; color: #333;
+      border-radius: 12px; width: 200px; box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+      display: none; flex-direction: column; padding: 8px 0; z-index: 1100;
+    }
+    .profile-dropdown.show { display: flex; animation: fadeInMenu 0.2s ease-out; }
+
+    @keyframes fadeInMenu {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
-    .header-title {
-      font-size: 2.5em;
-      font-weight: bold;
-      color: white;
+    .dropdown-item {
+      padding: 12px 20px; border: none; background: none; text-align: left;
+      font-family: inherit; font-size: 0.95em; cursor: pointer;
+      display: flex; align-items: center; gap: 10px; color: #2c3e50; width: 100%;
     }
-
-    .home-icon {
-      position: absolute;
-      left: 20px;
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: 2.5em;
-      text-decoration: none;
-      color: white;
-    }
-
-    .home-icon:hover {
-      color: #f1f1f1;
-    }
-
-    .mode-btn {
-      position: absolute;
-      right: 20px;
-      top: 50%;
-      transform: translateY(-50%);
-      padding: 8px 18px;
-      font-size: 16px;
-      border-radius: 8px;
-      background: #38d46a;
-      color: #fff;
-      border: 2px solid #fff;
-      cursor: pointer;
-      font-family: 'Quicksand', sans-serif;
-      transition: background 0.3s, transform 0.2s;
-    }
-
-    .mode-btn:hover {
-      background: #2ecc71;
-      transform: scale(1.05);
-    }
+    .dropdown-item:hover { background: #f8f9fa; color: #ff4e00; }
+    .dropdown-divider { height: 1px; background: #eee; margin: 5px 0; }
+    .hidden { display: none !important; }
   </style>
   `;
-
-  const homeIcon = showHome
-    ? `<a href="${homeLink}" class="home-icon">🏠</a>`
-    : "";
-
-  const content = logo
-    ? `<img src="${logo}" alt="Logo" class="header-logo">`
-    : `<span class="header-title">${title}</span>`;
-
-  const modeButtonHTML = modeBtn
-    ? `<button class="mode-btn">${modeBtn}</button>`
-    : "";
 
   document.write(`
     ${style}
     <header>
-      ${homeIcon}
-      ${content}
-      ${modeButtonHTML}
+      ${showHome ? `<a href="${homeLink}" class="home-icon">🏠</a>` : ""}
+      <span class="header-title">${title}</span>
+
+      <div class="user-profile-widget" id="header-profile-trigger">
+        <div class="user-info-text">
+          <span class="user-name" id="header-username">Chargement...</span>
+        </div>
+        <div class="user-avatar-circle" id="header-avatar">👤</div>
+
+        <div class="profile-dropdown" id="header-dropdown">
+          <div id="menu-logged-in" class="hidden">
+            <button class="dropdown-item" onclick="window.location.href='compte.html'">⚙️ Mon Compte</button>
+            <button class="dropdown-item" onclick="window.location.href='login.html'">🔄 Changer de profil</button>
+            <div class="dropdown-divider"></div>
+            <button class="dropdown-item" id="header-logout-btn" style="color: #e74c3c;">🚪 Déconnexion</button>
+          </div>
+          
+          <div id="menu-guest" class="hidden">
+            <button class="dropdown-item" onclick="window.location.href='login.html'">🔑 Se connecter / Créer</button>
+          </div>
+        </div>
+      </div>
     </header>
+
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+      import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+      import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyB29fMpTwBgsqkjijkNoQJ2kGChSeQDX_w",
+        authDomain: "quiz-ea203.firebaseapp.com",
+        databaseURL: "https://quiz-ea203-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "quiz-ea203",
+        storageBucket: "quiz-ea203.firebasestorage.app",
+        messagingSenderId: "605137421110",
+        appId: "1:605137421110:web:289e0876fe06108deaa997"
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
+      const db = getDatabase(app);
+
+      const trigger = document.getElementById('header-profile-trigger');
+      const dropdown = document.getElementById('header-dropdown');
+      const nameEl = document.getElementById('header-username');
+      const avatarEl = document.getElementById('header-avatar');
+      
+      const loggedInMenu = document.getElementById('menu-logged-in');
+      const guestMenu = document.getElementById('menu-guest');
+
+      trigger.onclick = (e) => { e.stopPropagation(); dropdown.classList.toggle('show'); };
+      document.addEventListener('click', () => dropdown.classList.remove('show'));
+
+      onAuthStateChanged(auth, async (user) => {
+        if (user) {
+          const snapshot = await get(ref(db, 'users/' + user.uid));
+          if (snapshot.exists()) {
+            const data = snapshot.val();
+            nameEl.textContent = data.username || "Joueur";
+            
+            if (data.avatar && data.avatar.length > 5) {
+                if(data.avatar.startsWith('data:image') || data.avatar.startsWith('http')) {
+                    avatarEl.innerHTML = '<img src="' + data.avatar + '">';
+                } else {
+                    avatarEl.textContent = data.avatar;
+                }
+            }
+          }
+          // Afficher le menu complet
+          loggedInMenu.classList.remove('hidden');
+          guestMenu.classList.add('hidden');
+        } else {
+          // Mode Invité
+          nameEl.textContent = "Invité";
+          avatarEl.innerHTML = "👤";
+          // Afficher uniquement le bouton connexion
+          loggedInMenu.classList.add('hidden');
+          guestMenu.classList.remove('hidden');
+        }
+      });
+
+      const logoutBtn = document.getElementById('header-logout-btn');
+      if(logoutBtn) {
+        logoutBtn.onclick = () => {
+          signOut(auth).then(() => window.location.href = 'login.html');
+        };
+      }
+    </script>
   `);
 }
