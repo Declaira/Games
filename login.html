@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion - Déclaira</title>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Quicksand', sans-serif;
+            background: linear-gradient(135deg,#fff3cd,#ffe5b4,#ffd1d1,#ffc4e1);
+            margin: 0; display: flex; flex-direction: column; min-height: 100vh;
+        }
+        .container { flex: 1; display: flex; justify-content: center; align-items: center; padding: 20px; }
+        .auth-box {
+            background: white; padding: 30px; border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center;
+        }
+        h2 { color: #e67e22; margin-top: 0; }
+        .hidden { display: none !important; }
+        
+        /* Avatars */
+        .avatar-grid { display: flex; justify-content: center; gap: 10px; margin: 20px 0; flex-wrap: wrap; }
+        .avatar-opt {
+            width: 50px; height: 50px; border: 2px solid #ddd; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px; cursor: pointer; transition: 0.2s; background: #f9f9f9;
+        }
+        .avatar-opt.selected { border-color: #e67e22; background: #fff3cd; transform: scale(1.1); }
+
+        /* Suggestions de comptes */
+        .account-card {
+            display: inline-flex; flex-direction: column; align-items: center; 
+            cursor: pointer; width: 90px; margin: 10px; transition: transform 0.2s;
+        }
+        .account-card:hover { transform: translateY(-5px); }
+        .avatar-circle {
+            width: 70px; height: 70px; border-radius: 50%; border: 3px solid #eee;
+            display: flex; align-items: center; justify-content: center; font-size: 35px;
+            background: white; margin-bottom: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        }
+        .account-name { font-weight: bold; color: #2c3e50; font-size: 0.9em; }
+
+        input {
+            width: 100%; padding: 12px; margin: 15px 0; border: 2px solid #ddd;
+            border-radius: 8px; font-family: inherit; box-sizing: border-box;
+        }
+        button {
+            width: 100%; padding: 12px; background: #e67e22; color: white; border: none;
+            border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer;
+        }
+        .btn-link { background: none; color: #7f8c8d; text-decoration: underline; margin-top: 15px; font-size: 0.9em; width: auto; }
+    </style>
+</head>
+<body>
+    <script src="header.js"></script>
+    <script>injectHeader({ title: "Mon Compte" });</script>
+
+    <div class="container">
+        <div class="auth-box">
+            <div id="view-login">
+                <h2>Qui est-ce ?</h2>
+                <div id="accounts-suggestions"></div>
+                <button onclick="toggleView('view-signup')" class="btn-link">+ Créer un nouveau profil</button>
+            </div>
+
+            <div id="view-signup" class="hidden">
+            <h2>Nouveau Profil</h2>
+            
+            <div class="avatar-container" style="position: relative; display: inline-block; margin: 20px;">
+                <div id="preview-circle" class="avatar-circle" style="width:100px; height:100px; font-size:50px;">👤</div>
+                <label for="file-input" style="position:absolute; bottom:0; right:0; background:#e67e22; color:white; border-radius:50%; width:30px; height:30px; display:flex; align-items:center; justify-content:center; cursor:pointer; border:2px solid white;">+</label>
+                <input type="file" id="file-input" accept="image/*" style="display:none;">
+            </div>
+
+            <input type="text" id="username" placeholder="Ton pseudo...">
+            <button id="btn-create">Créer mon compte</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // Logique de compression d'image
+    document.getElementById('file-input').onchange = function(e) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = 128; canvas.height = 128; // On réduit la taille pour la DB
+                ctx.drawImage(img, 0, 0, 128, 128);
+                selectedAvatar = canvas.toDataURL('image/jpeg', 0.7); // Qualité 70%
+                document.getElementById('preview-circle').innerHTML = `<img src="${selectedAvatar}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+            };
+            img.src = event.target.result;
+        };
+        reader.readAsDataURL(e.target.files[0]);
+    };
+</script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+        import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyB29fMpTwBgsqkjijkNoQJ2kGChSeQDX_w",
+            authDomain: "quiz-ea203.firebaseapp.com",
+            databaseURL: "https://quiz-ea203-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "quiz-ea203",
+            storageBucket: "quiz-ea203.firebasestorage.app",
+            messagingSenderId: "605137421110",
+            appId: "1:605137421110:web:289e0876fe06108deaa997"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+
+        let selectedAvatar = '👤';
+
+        window.toggleView = (viewId) => {
+            document.getElementById('view-login').classList.toggle('hidden', viewId !== 'view-login');
+            document.getElementById('view-signup').classList.toggle('hidden', viewId !== 'view-signup');
+        };
+
+        window.selectAvatar = (emoji) => {
+            selectedAvatar = emoji;
+            document.querySelectorAll('.avatar-opt').forEach(el => el.classList.toggle('selected', el.innerText === emoji));
+        };
+
+        function loadSuggestions() {
+            const saved = JSON.parse(localStorage.getItem('declaira_accounts') || "[]");
+            const container = document.getElementById('accounts-suggestions');
+            if (saved.length === 0) return toggleView('view-signup');
+
+            saved.forEach(acc => {
+                const card = document.createElement('div');
+                card.className = 'account-card';
+                card.innerHTML = `<div class="avatar-circle">${acc.avatar}</div><div class="account-name">${acc.pseudo}</div>`;
+                card.onclick = () => loginAs(acc.uid);
+                container.appendChild(card);
+            });
+        }
+
+        async function loginAs(uid) {
+            // Note : L'auth anonyme est persistante. En cliquant, on laisse Firebase Auth reprendre la session.
+            window.location.href = "Puissance_4.html"; 
+        }
+
+        document.getElementById('btn-create').addEventListener('click', async () => {
+            const pseudo = document.getElementById('username').value.trim();
+            if(!pseudo) return;
+
+            try {
+                const userCred = await signInAnonymously(auth);
+                const uid = userCred.user.uid;
+
+                await set(ref(db, `users/${uid}`), { username: pseudo, avatar: selectedAvatar });
+
+                const saved = JSON.parse(localStorage.getItem('declaira_accounts') || "[]");
+                saved.push({ uid, pseudo, avatar: selectedAvatar });
+                localStorage.setItem('declaira_accounts', JSON.stringify(saved));
+
+                window.location.href = "Puissance_4.html";
+            } catch (e) { alert("Erreur : " + e.message); }
+        });
+
+        loadSuggestions();
+    </script>
+</body>
+</html>

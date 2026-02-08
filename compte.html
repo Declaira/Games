@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Mon Compte - Déclaira</title>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Quicksand', sans-serif; background: linear-gradient(135deg,#fff3cd,#ffe5b4,#ffd1d1,#ffc4e1);; margin: 0; }
+        .main-container { max-width: 500px; margin: 40px auto; padding: 20px; }
+        .card { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); text-align: center; }
+        .profile-pic { width: 120px; height: 120px; border-radius: 50%; border: 4px solid #ff9a00; object-fit: cover; margin-bottom: 15px; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 2px solid #eee; border-radius: 10px; box-sizing: border-box; font-family: inherit; }
+        .btn-save { background: #ff9a00; color: white; border: none; padding: 15px; width: 100%; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 20px; }
+        .btn-danger { background: #ffeded; color: #e74c3c; border: none; padding: 10px; margin-top: 30px; cursor: pointer; border-radius: 8px; font-size: 0.9em; }
+        .btn-danger:hover { background: #e74c3c; color: white; }
+    </style>
+</head>
+<body>
+    <script src="header.js"></script>
+    <script>injectHeader({ title: "Paramètres" });</script>
+
+    <div class="main-container">
+        <div class="card">
+            <div id="loading">Chargement du profil...</div>
+            <div id="content" class="hidden">
+                <div style="position: relative; display: inline-block;">
+                    <img id="current-pic" class="profile-pic" src="">
+                    <label for="change-pic" style="position:absolute; bottom:15px; right:5px; background:#333; color:white; border-radius:50%; width:35px; height:35px; display:flex; align-items:center; justify-content:center; cursor:pointer; border:3px solid white;">📷</label>
+                    <input type="file" id="change-pic" accept="image/*" style="display:none;">
+                </div>
+                
+                <p>Modifier mon pseudo :</p>
+                <input type="text" id="new-pseudo">
+                
+                <button class="btn-save" id="btn-update">Enregistrer les modifications</button>
+                <button class="btn-danger" id="btn-delete">Supprimer mon compte définitivement</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged, deleteUser } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+        import { getDatabase, ref, get, update, remove } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+        const firebaseConfig = { /* Ta config ici */ };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+
+        let userUID = null;
+        let base64Image = null;
+
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) { window.location.href = 'login.html'; return; }
+            userUID = user.uid;
+            
+            const snap = await get(ref(db, `users/${user.uid}`));
+            if (snap.exists()) {
+                const data = snap.val();
+                document.getElementById('new-pseudo').value = data.username;
+                document.getElementById('current-pic').src = data.avatar.startsWith('data') ? data.avatar : 'https://api.dicebear.com/7.x/bottts/svg?seed=' + data.username;
+                base64Image = data.avatar;
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('content').classList.remove('hidden');
+            }
+        });
+
+        // Changement d'image
+        document.getElementById('change-pic').onchange = (e) => {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 128; canvas.height = 128;
+                    canvas.getContext('2d').drawImage(img, 0, 0, 128, 128);
+                    base64Image = canvas.toDataURL('image/jpeg', 0.7);
+                    document.getElementById('current-pic').src = base64Image;
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(e.target.files[0]);
+        };
+
+        // Mise à jour
+        document.getElementById('btn-update').onclick = async () => {
+            const newName = document.getElementById('new-pseudo').value.trim();
+            if(!newName) return;
+            await update(ref(db, `users/${userUID}`), { username: newName, avatar: base64Image });
+            alert("Profil mis à jour !");
+            location.reload();
+        };
+
+        // Suppression
+        document.getElementById('btn-delete').onclick = async () => {
+            if(confirm("⚠️ Es-tu certain ? Cela supprimera toutes tes données et tes scores.")) {
+                // 1. Supprimer de la DB
+                await remove(ref(db, `users/${userUID}`));
+                // 2. Supprimer du LocalStorage
+                const saved = JSON.parse(localStorage.getItem('declaira_accounts') || "[]");
+                const filtered = saved.filter(a => a.uid !== userUID);
+                localStorage.setItem('declaira_accounts', JSON.stringify(filtered));
+                // 3. Supprimer l'utilisateur Firebase
+                deleteUser(auth.currentUser).then(() => {
+                    window.location.href = 'login.html';
+                });
+            }
+        };
+    </script>
+</body>
+</html>
