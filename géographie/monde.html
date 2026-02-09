@@ -1295,7 +1295,7 @@ function updatePreviewCount() {
 }
 // --- FILTRAGE ---
 
-window.applyContinentFilter = () => {
+window.applyContinentFilter = async () => { // Ajoute async ici
     const checkboxes = document.querySelectorAll('.continent-checkbox:not(#continent-all):checked');
     const selected = Array.from(checkboxes).map(cb => cb.value);
 
@@ -1304,13 +1304,24 @@ window.applyContinentFilter = () => {
     // 1. On filtre
     activeCountries = countries.filter(c => selected.includes(c.continent));
     
-    // 2. On sauvegarde
+    // 2. On sauvegarde les filtres
     saveFilters(selected);
     
-    // 3. ON MET À JOUR LE COMPTEUR (Nouveau)
+    // --- NOUVEAU : VIDE LA MÉMOIRE DES RÉPONSES ---
+    if (currentUserUid) {
+        try {
+            // On supprime la session en cours dans Firebase pour repartir à zéro
+            await remove(ref(db, `users/${currentUserUid}/games/monde/session`));
+        } catch(e) { console.error("Erreur reset session Firebase:", e); }
+    }
+    // ----------------------------------------------
+
+    // 3. On met à jour le compteur visuel
     updatePreviewCount();
     
     document.getElementById('continent-selector').style.display = "none";
+    
+    // 4. On relance le quiz proprement
     resetQuiz();
 };
 
