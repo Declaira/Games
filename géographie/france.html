@@ -174,8 +174,15 @@ button {
     <input id="prefecture" placeholder="Préfecture" type="text"/>
     <button onclick="checkAnswer()">Valider</button>
     <p id="result"></p><p>Score : <span id="score">0</span> /101</p>
-    <button id="replay" style="display: none;" onclick="location.reload()">🔁 Rejouer</button>
   </div>
+  <div id="end-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; flex-direction: column; color: white; font-family: 'Quicksand', sans-serif;">
+    <div style="background: white; color: #2c3e50; padding: 30px; border-radius: 20px; text-align: center; max-width: 400px; width: 90%;">
+        <h2 style="color: #e67e22;">Bravo !</h2>
+        <p style="font-size: 1.2em;">Score final : <span id="final-score" style="font-weight: bold; color: #ff6f00;">0</span>%</p>
+        <p>Moyenne globale : <span id="global-average" style="font-weight: bold;">--</span>%</p>
+        <button onclick="startNewGame()" style="margin-top: 20px; width: 100%; padding: 10px; background: #e67e22; color: white; border: none; border-radius: 5px; cursor: pointer;">Rejouer</button>
+    </div>
+</div>
   <div class="carte">
 <svg version="1.1" viewbox="0 0 667 578" x="0px" xml:space="preserve" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
 <path class="region-01 departement departement-971 departement-guadeloupe" d="M35.87,487.13l0.7,7.2l-4.5-1.1l-2,1.7l-5.8-0.6l-1.7-1.2l4.9,0.5l3.2-4.4L35.87,487.13z M104.87,553.63 l-4.4-1.8l-1.9,0.8l0.2,2.1l-1.9,0.3l-2.2,4.9l0.7,2.4l1.7,2.9l3.4,1.2l3.4-0.5l5.3-5l-0.4-2.5L104.87,553.63z M110.27,525.53 l-6.7-2.2l-2.4-4.2l-11.1-2.5l-2.7-5.7l-0.7-7.7l-6.2-4.7l-5.9,5.5l-0.8,2.9l1.2,4.5l3.1,1.2l-1,3.4l-2.6,1.2l-2.5,5.1l-1.9-0.2 l-1,1.9l-4.3-0.7l1.8-0.7l-3.5-3.7l-10.4-4.1l-3.4,1.6l-2.4,4.8l-0.5,3.5l3.1,9.7l0.6,12l6.3,9l0.6,2.7c3-1.2,6-2.5,9.1-3.7l5.9-6.9 l-0.4-8.7l-2.8-5.3l0.2-5.5l3.6,0.2l0.9-1.7l1.4,3.1l6.8,2l13.8-4.9L110.27,525.53z" id="971" title="Guadeloupe"></path>
@@ -280,8 +287,29 @@ button {
 <path class="region-94 departement departement-2A departement-corse-du-sud" d="m640.5,554.2l3.2-1.7l0.7,8.4l-0.15,0.54 l-1.85,4.86l-2.7,1.9l3.3,0.4l-5.8,14.7l-3.1-1.2l-1.2-2.8l-11.2-3.4l-4.8-4.4l0.2-3l4.9-3.3l-9.5-1.9l2.7-7l-0.9-5.8l-7.3,2.6 l3-8.4l2.6-1.6l-7.9-4.4l-1.1-5.5l5.3-3.8l-3.8-4.2l-2.6,1l0.5-2.7l13.6,2.1l1.2,3.5l6,3.4l6,5.9l0.5,3.2l2.7,1.1l3.7,11 L640.5,554.2z" id="2A" title="Corse-du-Sud"></path>
 <path class="region-94 departement departement-2B departement-haute-corse" d="m643.7,551.5v1l-3.2,1.7l-3.8-0.5l-3.7-11 l-2.7-1.1l-0.5-3.2l-6-5.9l-6-3.4l-1.2-3.5l-13.6-2.1v-0.2l3.9-5l-0.3-3.4l2.2-2.8l2.8-0.3l0.9-2.9l10.7-4.2l3.5-4.9l8.6,1.3 l-0.5-17.4l2.4-2l2.9,1.1l0.18,0.89l1.52,8.21l-0.5,10.6l4,5.6l3.8,26l-5.4,11.9V551.5L643.7,551.5z" id="2B" title="Haute-Corse"></path>
 </svg>
-</div></div><script>
-  const  allDepartments = [
+</div></div><script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+import { getDatabase, ref, set, get, update, remove } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyB29fMpTwBgsqkjijkNoQJ2kGChSeQDX_w",
+    authDomain: "quiz-ea203.firebaseapp.com",
+    databaseURL: "https://quiz-ea203-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "quiz-ea203",
+    storageBucket: "quiz-ea203.firebasestorage.app",
+    messagingSenderId: "605137421110",
+    appId: "1:605137421110:web:289e0876fe06108deaa997"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
+
+
+let currentUserUid = null;
+let score = 0;
+  const  departments = [
 { number: "01", name: "Ain", prefecture: "Bourg-en-Bresse" },
 { number: "02", name: "Aisne", prefecture: "Laon" },
 { number: "03", name: "Allier", prefecture: "Moulins" },
@@ -385,104 +413,173 @@ button {
 { number: "976", name: "Mayotte", prefecture: "Dzaoudzi" }
 ];
 
-let remainingDepartments = [...allDepartments]; // Copie de travail
-let current = {};
-let score = 0;
+let current = null;
+let remainingDepartments = [...departments]; // Copie de la liste complète
+
+// --- GESTION DE SESSION ---
+
+async function restoreSession() {
+    if (!currentUserUid) return;
+    
+    const sessionRef = ref(db, `users/${currentUserUid}/games/france/session`);
+    const snapshot = await get(sessionRef);
+    
+    remainingDepartments = [...departments]; // Reset liste
+    score = 0;
+
+    if (snapshot.exists()) {
+        const data = snapshot.val();
+        Object.keys(data).forEach(deptNum => {
+            const el = document.getElementById(deptNum); // L'ID du path SVG doit correspondre au numéro
+            const result = data[deptNum];
+
+            if (el) {
+                if (result === 'correct') {
+                    el.classList.add('correct');
+                    score++;
+                } else {
+                    el.classList.add('incorrect');
+                }
+                el.classList.remove('highlight');
+            }
+            // On retire ce département de la liste à jouer
+            remainingDepartments = remainingDepartments.filter(d => d.number !== deptNum);
+        });
+    }
+    document.getElementById("score").textContent = score;
+}
+
+// --- LOGIQUE DU JEU ---
 
 function getRandomDepartment() {
-  if (remainingDepartments.length === 0) {
-    document.getElementById("dept-number").textContent = "✔️ Terminé !";
-    document.getElementById("result").textContent = `🎉 Quiz terminé ! Score final : ${score}/${allDepartments.length}`;
-
-    // Masquer les champs et le bouton
-    document.getElementById("dept-name").style.display = "none";
-    document.getElementById("prefecture").style.display = "none";
-    document.querySelector("button").style.display = "none";
-    document.getElementById("replay").style.display = "block";
-
-  return;
-  }
-
-  const randomIndex = Math.floor(Math.random() * remainingDepartments.length);
-  current = remainingDepartments.splice(randomIndex, 1)[0]; // Retire du tableau
-  document.getElementById("dept-number").textContent = current.number;
-  document.getElementById("dept-name").value = "";
-  document.getElementById("prefecture").value = "";
-  document.getElementById("result").textContent = "";
-
-  // Retirer uniquement la classe highlight, ne pas toucher aux couleurs déjà appliquées
-  document.querySelectorAll("svg path").forEach(p => p.classList.remove("highlight"));
-  const target = document.getElementById(current.number);
-  if (target) target.classList.add("highlight");
-}
-function playSound(resultType) {
-  const correctSound = document.getElementById("audio-correct");
-  const wrongSound = document.getElementById("audio-wrong");
-  if (resultType === "correct") {
-    correctSound.play();
-  } else if (resultType === "incorrect") {
-    wrongSound.play();
-  }
-}
-
-function normalize(str) {
-  return str.toLowerCase().replace(/\s+/g, '').replace(/-/g, '');
-}
-
-function checkAnswer() {
-  const deptInput = document.getElementById("dept-name").value.trim();
-  const prefInput = document.getElementById("prefecture").value.trim();
-  const correctDept = current.name;
-  const correctPref = current.prefecture;
-  const path = document.getElementById(current.number);
-
-  if (
-    normalize(deptInput) === normalize(correctDept) &&
-    normalize(prefInput) === normalize(correctPref)
-  ) {
-    playSound("correct"); // si réponse correcte
-    document.getElementById("result").textContent = "✅ Bonne réponse !";
-    score++;
-    if (path) {
-      path.classList.remove("highlight");
-      path.classList.add("correct");
+    if (remainingDepartments.length === 0) {
+        handleGameOver();
+        return;
     }
-  } else {
-    playSound("incorrect"); // si mauvaise réponse
-    document.getElementById("result").textContent =
-      `❌ Mauvais ! C'était ${correctDept}, préfecture : ${correctPref}`;
-    if (path) {
-      path.classList.remove("highlight");
-      path.classList.add("incorrect");
+
+    // Nettoyage visuel précédent
+    if (current) {
+        const prevPath = document.getElementById(current.number);
+        if (prevPath && !prevPath.classList.contains('correct') && !prevPath.classList.contains('incorrect')) {
+            prevPath.classList.remove('highlight');
+        }
     }
-  }
 
-  document.getElementById("score").textContent = score;
+    const index = Math.floor(Math.random() * remainingDepartments.length);
+    current = remainingDepartments[index];
+    document.getElementById("dept-number").textContent = current.number;
+    // Highlight sur la carte
+    const path = document.getElementById(current.number);
+    if (path) {
+        path.classList.add("highlight");
+        // Optionnel : Zoom ou focus sur la carte ici si nécessaire
+    }
 
-  // Nouvelle question après 1 seconde
-  setTimeout(getRandomDepartment, 1000);
-
-  // Remet le focus sur l'input du nom du département
-  document.getElementById("dept-name").focus();
+    // Reset des champs
+    document.getElementById("dept-name").value = "";
+    document.getElementById("prefecture").value = "";
+    document.getElementById("result").textContent = "";
+    document.getElementById("dept-name").focus();
 }
 
+async function checkAnswer() {
+    if (!current) return;
 
-// Navigation clavier
-document.addEventListener("DOMContentLoaded", () => {
-  const deptInput = document.getElementById("dept-name");
-  const prefInput = document.getElementById("prefecture");
+    const deptInput = document.getElementById("dept-name").value;
+    const prefInput = document.getElementById("prefecture").value;
+    const path = document.getElementById(current.number);
 
-  const handleKey = (e) => {
-    if (e.key === "Enter") checkAnswer();
-    if (e.key === "ArrowDown") prefInput.focus();
-    if (e.key === "ArrowUp") deptInput.focus();
-  };
+    // Fonction de normalisation (accents, minuscules)
+    const normalize = (str) => str.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
-  deptInput.addEventListener("keydown", handleKey);
-  prefInput.addEventListener("keydown", handleKey);
+    const isCorrect = normalize(deptInput) === normalize(current.name) && 
+                      normalize(prefInput) === normalize(current.prefecture);
 
-  getRandomDepartment();
+    if (isCorrect) {
+        if(window.playSound) playSound("correct");
+        document.getElementById("result").textContent = "✅ Bonne réponse !";
+        score++;
+        if (path) { path.classList.remove("highlight"); path.classList.add("correct"); }
+    } else {
+        if(window.playSound) playSound("incorrect");
+        document.getElementById("result").textContent = `❌ Perdu ! C'était ${current.name} (${current.prefecture})`;
+        if (path) { path.classList.remove("highlight"); path.classList.add("incorrect"); }
+    }
+
+    document.getElementById("score").textContent = score;
+
+    // Mise à jour Firebase Session
+    if (currentUserUid) {
+        await update(ref(db, `users/${currentUserUid}/games/france/session`), {
+            [current.number]: isCorrect ? 'correct' : 'wrong'
+        });
+    }
+
+    // On retire le département joué de la liste courante
+    remainingDepartments = remainingDepartments.filter(d => d.number !== current.number);
+
+    setTimeout(() => { getRandomDepartment(); }, 1500);
+}
+
+async function handleGameOver() {
+    const total = departments.length;
+    const finalPercent = Math.round((score / total) * 100);
+    document.getElementById('final-score').textContent = finalPercent;
+
+    if (currentUserUid) {
+        const statsRef = ref(db, `users/${currentUserUid}/games/france/stats`);
+        const snap = await get(statsRef);
+        let games = 1, avg = finalPercent;
+
+        if (snap.exists()) {
+            const d = snap.val();
+            games = (d.gamesPlayed || 0) + 1;
+            avg = Math.round(((d.averageScore || 0) * (games - 1) + finalPercent) / games);
+        }
+
+        await update(statsRef, { 
+            gamesPlayed: games, 
+            averageScore: avg, 
+            lastPlayed: new Date().toISOString() 
+        });
+        document.getElementById('global-average').textContent = avg;
+    }
+    document.getElementById('end-modal').style.display = 'flex';
+}
+
+async function startNewGame() {
+    document.getElementById('end-modal').style.display = 'none';
+    if (currentUserUid) {
+        await remove(ref(db, `users/${currentUserUid}/games/france/session`));
+    }
+    // Reset local
+    score = 0;
+    remainingDepartments = [...departments];
+    document.querySelectorAll('svg path').forEach(p => p.classList.remove('correct', 'incorrect', 'highlight'));
+    document.getElementById("score").textContent = "0";
+    getRandomDepartment();
+}
+
+// --- INITIALISATION ---
+
+onAuthStateChanged(auth, async (user) => {
+    currentUserUid = localStorage.getItem('active_uid') || (user ? user.uid : null);
+    if (currentUserUid) {
+        await restoreSession();
+    }
+    // Lancer le jeu si pas déjà lancé
+    if (!current) getRandomDepartment();
 });
+
+// Gestion Clavier
+document.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") checkAnswer();
+});
+
+// Exposer les fonctions au HTML
+window.checkAnswer = checkAnswer;
+window.startNewGame = startNewGame;
+
 </script>
 </body>
 </html>
