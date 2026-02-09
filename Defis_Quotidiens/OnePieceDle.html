@@ -14075,36 +14075,34 @@ const giveUpBtn = document.getElementById('giveUpBtn');
 
 // --- 4. FIREBASE RESTORE ---
 async function restoreSession() {
-    if (!currentUserUid) {
-        initGame();
-        return;
-    }
+    if (!currentUserUid) return;
+    const sessionRef = ref(db, `users/${currentUserUid}/games/onepiece/session`);
+    const snap = await get(sessionRef);
 
-    // Restaurer Mode
-    const settingsSnap = await get(ref(db, `users/${currentUserUid}/games/onepiece/settings`));
-    if (settingsSnap.exists()) {
-        const s = settingsSnap.val();
-        currentDifficulty = s.difficulty || 'normal';
+    if (snap.exists()) {
+        const session = snap.val();
+        currentDifficulty = session.difficulty || 'normal';
         updateModeBtn();
-    }
 
-    // Restaurer Session
-    const sessionSnap = await get(ref(db, `users/${currentUserUid}/games/onepiece/session`));
-    if (sessionSnap.exists()) {
-        const d = sessionSnap.val();
-        targetCharacter = data.find(c => c.name === d.targetName);
+        // On retrouve le personnage dans la database locale 'data' par son nom
+        const recoveredChar = data.find(c => c.name === session.targetName);
         
-        if (!targetCharacter) {
+        if (recoveredChar) {
+            targetCharacter = recoveredChar;
+            // On relance l'init mais avec le perso déjà chargé
+            initGame(); 
+            
+            // On restaure les tentatives précédentes
+            if (session.attempts && session.attempts.length > 0) {
+                // On boucle sur les noms pour soumettre les essais sans re-sauvegarder à chaque fois
+                session.attempts.forEach(name => {
+                    const charAttempt = data.find(c => c.name === name);
+                    if (charAttempt) submitGuess(charAttempt, false); // false pour ne pas boucler saveSession
+                });
+            }
+        } else {
+            // Si le perso n'existe plus dans les datas, on repart à zéro
             initGame();
-            return;
-        }
-
-        // Restaurer Essais
-        if (d.guesses) {
-            d.guesses.forEach(name => {
-                const char = data.find(c => c.name === name);
-                if (char) submitGuess(char, false);
-            });
         }
     } else {
         initGame();
@@ -14283,32 +14281,39 @@ function initGame() {
     attempts = [];
     tableBody.innerHTML = "";
     
-    // Reset Affichage
+    // Reset UI
     if(endScreen) endScreen.style.display = 'none';
-    if(searchSection) searchSection.style.display = 'block';
+    if(searchSection) searchSection.style.display = 'flex'; // On garde le flex ici
     input.disabled = false;
     input.value = "";
     if(suggestions) suggestions.style.display = 'none';
 
-    // === LOGIQUE DIFFICULTÉ CORRIGÉE ===
     filteredData = data.filter(c => {
         if (currentDifficulty === 'normal') {
-            // En mode normal, on veut juste éviter les personnages "Inconnus" 
-            // qui rendent le jeu impossible, mais on accepte les primes à 0.
             return c.height !== "Inconnue" && c.origin !== "Inconnue";
         }
-        return true; // Mode Hard : tout le monde
+        return true; 
     });
 
-    // Sécurité : si le filtre est vide, on prend tout
     if(filteredData.length === 0) filteredData = data;
 
-    // Choix aléatoire
-    targetCharacter = filteredData[Math.floor(Math.random() * filteredData.length)];
-    
-    // Debug pour toi (à enlever en production)
-    console.log("Nombre de persos possibles en ce mode :", filteredData.length);
-    console.log("Cible choisie :", targetCharacter.name);
+    // --- LOGIQUE DE MÉMOIRE ---
+    // On ne choisit un nouveau perso QUE si targetCharacter n'existe pas déjà
+    if (!targetCharacter) {
+        targetCharacter = filteredData[Math.floor(Math.random() * filteredData.length)];
+        saveSession(); // On enregistre immédiatement ce nouveau perso
+    } else {
+    }
+}
+async function saveSession() {
+    if (!currentUserUid || !targetCharacter) return;
+    const sessionRef = ref(db, `users/${currentUserUid}/games/onepiece/session`);
+    await set(sessionRef, {
+        targetName: targetCharacter.name, // On stocke le nom pour le retrouver au retour
+        attempts: attempts,
+        difficulty: currentDifficulty,
+        lastUpdate: Date.now()
+    });
 }
 // Gardez cette version
 function toggleDifficulty() {
@@ -14464,7 +14469,10 @@ function submitGuess(char) {
     if (char.name === targetCharacter.name) {
         gameOver = true;
         handleEnd(true);
-        updateStats(true);
+        // Supprimer la session car la partie est finie
+        remove(ref(db, `users/${currentUserUid}/games/onepiece/session`));
+    } else {
+        if (shouldSave) saveSession();
     }
 }
 
