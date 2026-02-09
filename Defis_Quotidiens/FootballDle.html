@@ -39493,37 +39493,54 @@
         }
 
         // Restaure la session en cours
-        async function restoreSession() {
+async function restoreSession() {
             if (!currentUserUid) return;
 
-            // 1. Restaurer les réglages
+            // 1. Restaurer les réglages (Slider + Championnats)
             const setSnap = await get(ref(db, `users/${currentUserUid}/games/football/settings`));
             if (setSnap.exists()) {
                 const s = setSnap.val();
                 document.getElementById('marketValueSlider').value = s.minVal;
                 document.getElementById('marketValueText').value = s.minVal;
+                
+                // On met à jour les checkboxes des championnats
                 championnats.forEach(c => {
-                    championatCheckboxes[c].checked = s.championships.includes(c);
+                    if (championatCheckboxes[c]) {
+                        championatCheckboxes[c].checked = s.championships.includes(c);
+                    }
                 });
+                
+                // Mettre à jour l'état de la checkbox "Tout sélectionner"
+                const allChecked = championnats.every(c => championatCheckboxes[c].checked);
+                const selectAllCheckbox = document.getElementById('selectAllChampionnats');
+                if (selectAllCheckbox) selectAllCheckbox.checked = allChecked;
             }
 
             // 2. Restaurer le joueur cible et les essais
             const sessSnap = await get(ref(db, `users/${currentUserUid}/games/football/session`));
+            
             if (sessSnap.exists()) {
                 const data = sessSnap.val();
-                // On retrouve le joueur complet dans notre base locale 'players' via son nom (ou ID)
+                
+                // On retrouve le joueur cible via son nom
                 targetPlayer = players.find(p => p.nom === data.targetName);
                 
-                if (data.guesses) {
-                    // On refait les lignes pour chaque joueur déjà deviné
+                if (data.guesses && data.guesses.length > 0) {
+                    // --- AJOUT CRUCIAL : Rendre le jeu visible ---
+                    document.getElementById('board').style.display = 'flex';
+                    document.getElementById('legend').style.display = 'flex';
+
+                    // On reconstruit visuellement chaque ligne d'essai
                     data.guesses.forEach(playerName => {
-                    const p = players.find(pl => pl.nom === playerName);
-                    if (p) {
-                        makeGuess(p, false); // <--- Le "false" est crucial ici
-                    }
-                });
+                        const p = players.find(pl => pl.nom === playerName);
+                        if (p) {
+                            // Le "false" est vital pour ne pas créer une boucle de sauvegarde infinie
+                            makeGuess(p, false); 
+                        }
+                    });
                 }
             } else {
+                // Si aucune session n'existe, on choisit un nouveau joueur normalement
                 targetPlayer = selectTargetPlayer();
             }
         }
@@ -39982,16 +39999,23 @@ searchInput.addEventListener('keydown', (e) => {
             header.parentNode.insertBefore(row, header.nextSibling);
 
             if (shouldSave && currentUserUid && !gameOver) {
-                    const attemptsRef = ref(db, `users/${currentUserUid}/games/football/session/guesses`);
-                    get(attemptsRef).then((snapshot) => {
-                        let currentGuesses = snapshot.exists() ? snapshot.val() : [];
+                const sessionRef = ref(db, `users/${currentUserUid}/games/football/session`);
+                get(sessionRef).then((snapshot) => {
+                    let currentGuesses = [];
+                    if (snapshot.exists() && snapshot.val().guesses) {
+                        currentGuesses = snapshot.val().guesses;
+                    }
+                    
+                    // On n'ajoute que si le nom n'est pas déjà dans les essais sauvegardés
+                    if (!currentGuesses.includes(player.nom)) {
                         currentGuesses.push(player.nom);
-                        update(ref(db, `users/${currentUserUid}/games/football/session`), {
+                        update(sessionRef, {
                             guesses: currentGuesses,
                             targetName: targetPlayer.nom
                         }).catch(err => console.error("Erreur save guess:", err));
-                    });
-                }
+                    }
+                });
+            }
 
                 checkWin(player);
             }
@@ -40016,6 +40040,10 @@ searchInput.addEventListener('keydown', (e) => {
         // --- Nouvelle fonction unifiée pour l'écran de fin ---
         async function showEndScreen(isWin) {
             gameOver = true;
+
+            if (currentUserUid) {
+                await remove(ref(db, `users/${currentUserUid}/games/football/session`));
+            }
             
             // 1. Calcul du nombre d'essais
             const attempts = document.querySelectorAll('.guess-row').length;
