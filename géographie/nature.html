@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🧭 Quiz Géographie Physique</title>
+<title>🧭 Quiz Géographie</title>
+<link rel="icon" href="../logo/logo.png" type="image/x-icon">
 <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@600&display=swap" rel="stylesheet">
 <style>
 body { 
@@ -24,7 +25,8 @@ body {
 /* --- SECTION QUIZ --- */
 .quiz-section { 
   width: 100%; 
-  padding: 5px 15px;         /* Réduit le padding haut/bas */
+  margin-top: 50px;
+  padding: 5px;         /* Réduit le padding haut/bas */
   z-index: 10; 
   flex: 0 0 auto;
   display: flex;             
@@ -35,6 +37,7 @@ body {
 }
 
 #type-selector { 
+  margin-top: 100px;
   text-align: left;  
   padding: 12px; 
   border-radius: 10px; 
@@ -216,18 +219,18 @@ button:active { transform: scale(0.98); }
       <path id="geo-gange" class="hitbox type-fleuve" d="M1338,396 L1328,403 L1343,422 L1357,424 L1374,425 L1379,441" />
       <path id="geo-saint-laurent" class="hitbox type-fleuve" d="M582,322 L598,313 L612,305" />
 
-      <path id="geo-himalya" class="hitbox type-montagne" d="M1318,360 L1335,394 L1373,418 L1414,409" />
+      <path id="geo-himalaya" class="hitbox type-montagne" d="M1318,360 L1335,394 L1373,418 L1414,409" />
       <path id="geo-andes" class="hitbox type-montagne" d="M571,574 L591,617 L620,633 L619,685 L611,738 L601,787 L595,819 L603,842 L622,850" />
       <path id="geo-rocheuses" class="hitbox type-montagne" d="M252,173 L321,202 L371,268 L418,329 L439,397" />
       <path id="geo-alpes" class="hitbox type-montagne" d="M983,314 L993,306 L1027,303" />
       <path id="geo-pyrénées" class="hitbox type-montagne" d="M942,326 L967,332" />
       <path id="geo-oural" class="hitbox type-montagne" d="M1264,152 L1254,190 L1269,262" />
       <path id="geo-atlas" class="hitbox type-montagne" d="M901,411 L945,387 L994,376" />
-      <path id="geo-scandinave" class="hitbox type-montagne" d="M987,220 L1053,144" />
+      <path id="geo-scandes" class="hitbox type-montagne" d="M987,220 L1053,144" />
 
       <circle id="geo-fuji" class="hitbox type-volcan" cx="1626" cy="360" r="10" />
       <circle id="geo-etna" class="hitbox type-volcan" cx="1025" cy="358" r="10" />
-      <circle id="geo-kradovar" class="hitbox type-volcan" cx="1637" cy="568" r="10" />
+      <circle id="geo-krakatoa" class="hitbox type-volcan" cx="1637" cy="568" r="10" />
       <circle id="geo-kilimandjaro" class="hitbox type-volcan" cx="1133" cy="565" r="10" />
       <circle id="geo-popocatepetl" class="hitbox type-volcan" cx="467" cy="450" r="10" />
 
@@ -235,7 +238,7 @@ button:active { transform: scale(0.98); }
       <ellipse id="geo-atlantique" class="hitbox type-ocean" cx="808" cy="516" rx="81" ry="247" transform="rotate(-38 808 516)" />
       <ellipse id="geo-indien" class="hitbox type-ocean" cx="1319" cy="645" rx="142" ry="135" />
       <ellipse id="geo-arctique" class="hitbox type-ocean" cx="1037" cy="52" rx="460" ry="51" />
-      <ellipse id="geo-antartique" class="hitbox type-ocean" cx="1099" cy="809" rx="402" ry="30" />
+      <ellipse id="geo-antarctique" class="hitbox type-ocean" cx="1099" cy="809" rx="402" ry="30" />
       <ellipse id="geo-méditerranée" class="hitbox type-mer" cx="1038" cy="363" rx="84" ry="36" transform="rotate(13 1038 363)" />
       <ellipse id="geo-caraibes" class="hitbox type-mer" cx="589" cy="478" rx="68" ry="33" transform="rotate(12 589 478)" />
       <ellipse id="geo-rouge" class="hitbox type-mer" cx="1136" cy="445" rx="47" ry="9" transform="rotate(59 1136 445)" />
@@ -247,11 +250,39 @@ button:active { transform: scale(0.98); }
       <ellipse id="geo-australien" class="hitbox type-desert" cx="1589" cy="667" rx="46" ry="35" />
       <ellipse id="geo-atacama" class="hitbox type-desert" cx="617" cy="663" rx="11" ry="28" />
     </svg>
+
+  <div id="end-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; flex-direction: column; color: white; font-family: 'Quicksand', sans-serif;">
+    <div style="background: white; color: #2c3e50; padding: 30px; border-radius: 20px; text-align: center; max-width: 400px; width: 90%;">
+        <h2 style="color: #e67e22;">Partie Terminée !</h2>
+        <p style="font-size: 1.2em;">Ton score : <span id="final-score" style="font-weight: bold; color: #ff6f00;">0</span>%</p>
+        <p>Moyenne globale : <span id="global-average" style="font-weight: bold;">--</span>%</p>
+        <button onclick="startNewGame()" style="margin-top: 20px; width: 100%;">Rejouer</button>
+    </div>
+</div>
   </div>
 </div>
 
-<script>
-// (Garde tes variables targets inchangées ici)
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+import { getDatabase, ref, set, get, update, remove } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+// 1. CONFIGURATION & INITIALISATION (Placées en haut)
+const firebaseConfig = {
+    apiKey: "AIzaSyB29fMpTwBgsqkjijkNoQJ2kGChSeQDX_w",
+    authDomain: "quiz-ea203.firebaseapp.com",
+    databaseURL: "https://quiz-ea203-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "quiz-ea203",
+    storageBucket: "quiz-ea203.firebasestorage.app",
+    messagingSenderId: "605137421110",
+    appId: "1:605137421110:web:289e0876fe06108deaa997"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
+
+// 2. VARIABLES GLOBALES (Déclarées tôt pour éviter les ReferenceErrors)
 const targets = [
   { id: "geo-nil", name: "Nil", type: "fleuve" }, { id: "geo-amazone", name: "Amazone", type: "fleuve" },
   { id: "geo-mississippi", name: "Mississippi", type: "fleuve" }, { id: "geo-yangtse", name: "Yangtsé", type: "fleuve" },
@@ -261,136 +292,223 @@ const targets = [
   { id: "geo-himalaya", name: "Himalaya", type: "chaîne de montagnes" }, { id: "geo-andes", name: "Andes", type: "chaîne de montagnes" },
   { id: "geo-rocheuses", name: "Rocheuses", type: "chaîne de montagnes" }, { id: "geo-alpes", name: "Alpes", type: "chaîne de montagnes" },
   { id: "geo-oural", name: "Oural", type: "chaîne de montagnes" }, { id: "geo-atlas", name: "Atlas", type: "chaîne de montagnes" },
+  { id: "geo-scandes", name: "Scandes", type: "chaîne de montagnes" }, { id: "geo-pyrénées", name: "Pyrénées", type: "chaîne de montagnes" },
   { id: "geo-fuji", name: "Fuji", type: "volcan" }, { id: "geo-etna", name: "Etna", type: "volcan" },
   { id: "geo-krakatoa", name: "Krakatoa", type: "volcan" }, { id: "geo-kilimandjaro", name: "Kilimandjaro", type: "volcan" },
   { id: "geo-popocatepetl", name: "Popocatépetl", type: "volcan" }, { id: "geo-pacifique", name: "Pacifique", type: "océan" },
   { id: "geo-atlantique", name: "Atlantique", type: "océan" }, { id: "geo-indien", name: "Indien", type: "océan" },
-  { id: "geo-arctique", name: "Arctique", type: "océan" }, { id: "geo-mediterranee", name: "Méditerranée", type: "mer" },
+  { id: "geo-arctique", name: "Arctique", type: "océan" }, { id: "geo-antarctique", name: "Antarctique", type: "océan" },
+  { id: "geo-méditerranée", name: "Méditerranée", type: "mer" },{ id: "geo-noire", name: "Mer Noire", type: "mer" },
   { id: "geo-caraibes", name: "Mer des Caraïbes", type: "mer" }, { id: "geo-rouge", name: "Mer Rouge", type: "mer" },
-  { id: "geo-caspienne", name: "Mer Caspienne", type: "mer" }, { id: "geo-sahara", name: "Sahara", type: "désert" },
+  { id: "geo-caspienne", name: "Mer Caspienne", type: "mer" }, 
+  { id: "geo-sahara", name: "Sahara", type: "désert" }, { id: "geo-atacama", name: "Atacama", type: "désert" },
   { id: "geo-gobi", name: "Gobi", type: "désert" }, { id: "geo-australien", name: "Grand Désert Australien", type: "désert" }
 ];
 
+let currentUserUid = null;
 let score = 0, current = null, remainingTargets = [], activeTargets = [...targets];
 
-// --- INSERTION DU CODE ZOOM & PAN CORRIGÉ ICI ---
-const svg = document.getElementById("map");
-const container = document.getElementById("zoomContainer");
-let scale = 1, panX = 0, panY = 0, isPanning = false, start = { x: 0, y: 0 };
-
-function updateTransform() { 
-  svg.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`; 
+// 3. FONCTIONS DE PERSISTANCE (FILTRES & SESSION)
+async function saveFilters(selectedTypes) {
+    if (!currentUserUid) return;
+    try {
+        await set(ref(db, `users/${currentUserUid}/games/nature/settings/filters`), selectedTypes);
+    } catch (e) { console.error("Erreur saveFilters:", e); }
 }
 
-container.addEventListener("wheel", (e) => {
-  e.preventDefault();
-  const zoomSpeed = 0.15;
-  const delta = e.deltaY > 0 ? -zoomSpeed : zoomSpeed;
-  const oldScale = scale;
-  const newScale = Math.min(Math.max(scale * (1 + delta), 0.5), 15);
-
-  const rect = container.getBoundingClientRect();
-  const mouseX = e.clientX - rect.left;
-  const mouseY = e.clientY - rect.top;
-
-  panX = mouseX - (mouseX - panX) * (newScale / oldScale);
-  panY = mouseY - (mouseY - panY) * (newScale / oldScale);
-
-  scale = newScale;
-  updateTransform();
-}, { passive: false });
-
-container.addEventListener("mousedown", (e) => { 
-  isPanning = true; 
-  start = { x: e.clientX - panX, y: e.clientY - panY };
-});
-
-window.addEventListener("mousemove", (e) => { 
-  if (!isPanning) return; 
-  panX = e.clientX - start.x; 
-  panY = e.clientY - start.y; 
-  updateTransform(); 
-});
-
-window.addEventListener("mouseup", () => isPanning = false);
-
-// --- LE RESTE DE TA LOGIQUE (FILTRES / QUIZ) ---
-function toggleFilterMenu() {
-  const menu = document.getElementById('type-selector');
-  menu.style.display = menu.style.display === "none" ? "block" : "none";
+async function restoreFilters() {
+    if (!currentUserUid) return;
+    const snapshot = await get(ref(db, `users/${currentUserUid}/games/nature/settings/filters`));
+    if (snapshot.exists()) {
+        const selected = snapshot.val();
+        document.querySelectorAll('.type-filter').forEach(cb => cb.checked = selected.includes(cb.value));
+        activeTargets = targets.filter(t => selected.includes(t.type));
+    }
 }
 
-function toggleAllCheckboxes() {
-  const checkboxes = document.querySelectorAll('.type-filter');
-  const btn = document.getElementById('bulk-toggle');
-  const allChecked = Array.from(checkboxes).every(cb => cb.checked);
-  checkboxes.forEach(cb => cb.checked = !allChecked);
-  btn.textContent = !allChecked ? "Tout décocher" : "Tout cocher";
+async function restoreSession() {
+    if (!currentUserUid) return;
+    await restoreFilters(); // On charge les filtres d'abord
+    
+    // Application visuelle des filtres sur le SVG
+    const selectedTypes = Array.from(document.querySelectorAll('.type-filter:checked')).map(cb => cb.value);
+    targets.forEach(t => {
+        const el = document.getElementById(t.id);
+        if (el) el.style.display = selectedTypes.includes(t.type) ? "block" : "none";
+    });
+
+    const snapshot = await get(ref(db, `users/${currentUserUid}/games/nature/session`));
+    remainingTargets = [...activeTargets];
+    score = 0;
+
+    if (snapshot.exists()) {
+        const data = snapshot.val();
+        Object.keys(data).forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                const isCorrect = data[id] === 'correct';
+                el.classList.add(isCorrect ? 'state-correct' : 'state-wrong');
+                if (isCorrect) score++;
+            }
+            remainingTargets = remainingTargets.filter(t => t.id !== id);
+        });
+    }
+    updateScoreDisplay();
 }
 
-function applyFilters() {
-  const selectedTypes = Array.from(document.querySelectorAll('.type-filter:checked')).map(cb => cb.value);
-  if (selectedTypes.length === 0) return alert("Choisis au moins un type !");
-  activeTargets = targets.filter(t => selectedTypes.includes(t.type));
-  targets.forEach(t => {
-    const el = document.getElementById(t.id);
-    if (el) el.style.display = selectedTypes.includes(t.type) ? "block" : "none";
-  });
-  document.getElementById('type-selector').style.display = "none";
-  resetQuiz();
-}
-
-function getDeterminate(type) {
-  const vowels = ['a', 'e', 'i', 'o', 'u', 'y'];
-  if (vowels.includes(type.charAt(0).toLowerCase())) return "de l'" + type;
-  const feminin = ['mer', 'chaîne de montagnes', 'montagne'];
-  return feminin.includes(type.toLowerCase()) ? "de la " + type : "du " + type;
-}
-
-function resetQuiz() {
-  score = 0; remainingTargets = [...activeTargets];
-  document.getElementById('score').textContent = "0";
-  document.getElementById('total-display').textContent = remainingTargets.length;
-  document.querySelectorAll('.hitbox').forEach(el => el.classList.remove('state-correct', 'state-wrong', 'highlight-current'));
-  nextQuestion();
+// 4. LOGIQUE DU JEU
+function updateScoreDisplay() {
+    document.getElementById('score').textContent = score;
+    document.getElementById('total-display').textContent = activeTargets.length;
 }
 
 function nextQuestion() {
-  if (remainingTargets.length === 0) { document.getElementById('instruction').textContent = "Terminé !"; return; }
-  document.querySelectorAll('.hitbox').forEach(el => el.classList.remove('highlight-current'));
-  document.getElementById('answer').value = '';
-  document.getElementById('answer').disabled = false;
-  document.getElementById('result').textContent = '';
-  const index = Math.floor(Math.random() * remainingTargets.length);
-  current = remainingTargets.splice(index, 1)[0];
-  document.getElementById(current.id).classList.add('highlight-current');
-  document.getElementById('answer').placeholder = "Nom " + getDeterminate(current.type) + "...";
-  document.getElementById('answer').focus();
+    if (remainingTargets.length === 0) { handleGameOver(); return; }
+    document.querySelectorAll('.hitbox').forEach(el => el.classList.remove('highlight-current'));
+    document.getElementById('answer').value = '';
+    document.getElementById('answer').disabled = false;
+    document.getElementById('result').textContent = '';
+    
+    const index = Math.floor(Math.random() * remainingTargets.length);
+    current = remainingTargets.splice(index, 1)[0];
+    
+    const el = document.getElementById(current.id);
+    if (el) el.classList.add('highlight-current');
+    document.getElementById('answer').placeholder = "Nom " + getDeterminate(current.type) + "...";
+    document.getElementById('answer').focus();
 }
 
-function checkAnswer() {
-  const inputEl = document.getElementById('answer');
-  if (inputEl.disabled || !current) return;
-  const userVal = inputEl.value.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  const correctVal = current.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  const element = document.getElementById(current.id);
-  inputEl.disabled = true;
-  element.classList.remove('highlight-current');
-  if (userVal === correctVal) {
-    score++; element.classList.add('state-correct');
-    document.getElementById('result').textContent = "✅ " + current.name;
-    document.getElementById('result').style.color = "#27ae60";
-  } else {
-    element.classList.add('state-wrong');
-    document.getElementById('result').textContent = "❌ C'était " + current.name;
-    document.getElementById('result').style.color = "#c0392b";
-  }
-  document.getElementById('score').textContent = score;
-  setTimeout(nextQuestion, 1500);
+async function checkAnswer() {
+    const inputEl = document.getElementById('answer');
+    if (inputEl.disabled || !current) return;
+    inputEl.disabled = true;
+
+    const userVal = inputEl.value.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const correctVal = current.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const element = document.getElementById(current.id);
+    if (element) element.classList.remove('highlight-current');
+
+    const isCorrect = userVal === correctVal;
+    if (isCorrect) {
+        score++;
+        if (element) element.classList.add('state-correct');
+        document.getElementById('result').textContent = "✅ " + current.name;
+        document.getElementById('result').style.color = "#27ae60";
+    } else {
+        if (element) element.classList.add('state-wrong');
+        document.getElementById('result').textContent = "❌ C'était " + current.name;
+        document.getElementById('result').style.color = "#c0392b";
+    }
+
+    updateScoreDisplay();
+    if (currentUserUid) await update(ref(db, `users/${currentUserUid}/games/nature/session`), { [current.id]: isCorrect ? 'correct' : 'wrong' });
+
+    setTimeout(() => { nextQuestion(); }, 1500);
 }
+
+// 5. GESTION DES FILTRES
+function applyFilters() {
+    const selectedTypes = Array.from(document.querySelectorAll('.type-filter:checked')).map(cb => cb.value);
+    if (selectedTypes.length === 0) return alert("Choisis au moins un type !");
+    
+    activeTargets = targets.filter(t => selectedTypes.includes(t.type));
+    targets.forEach(t => {
+        const el = document.getElementById(t.id);
+        if (el) el.style.display = selectedTypes.includes(t.type) ? "block" : "none";
+    });
+
+    saveFilters(selectedTypes);
+    document.getElementById('type-selector').style.display = "none";
+    resetQuiz();
+}
+
+function resetQuiz() {
+    score = 0;
+    remainingTargets = [...activeTargets];
+    document.querySelectorAll('.hitbox').forEach(el => el.classList.remove('state-correct', 'state-wrong', 'highlight-current'));
+    updateScoreDisplay();
+    nextQuestion();
+}
+
+async function startNewGame() {
+    // 1. Fermer la modal de fin
+    document.getElementById('end-modal').style.display = 'none';
+
+    // 2. Si l'utilisateur est connecté, on vide sa progression dans Firebase
+    if (currentUserUid) {
+        await remove(ref(db, `users/${currentUserUid}/games/nature/session`));
+    }
+
+    // 3. On relance le quiz sans recharger la page (pour garder les filtres actuels)
+    resetQuiz();
+}
+
+async function handleGameOver() {
+    const total = activeTargets.length || 1;
+    const finalPercent = Math.round((score / total) * 100);
+    document.getElementById('final-score').textContent = finalPercent;
+
+    if (currentUserUid) {
+        const statsRef = ref(db, `users/${currentUserUid}/games/nature/stats`);
+        const snap = await get(statsRef);
+        let games = 1, avg = finalPercent;
+        if (snap.exists()) {
+            const d = snap.val();
+            games = (d.gamesPlayed || 0) + 1;
+            avg = Math.round(((d.averageScore || 0) * (games - 1) + finalPercent) / games);
+        }
+        await update(statsRef, { gamesPlayed: games, averageScore: avg, lastPlayed: new Date().toISOString() });
+        document.getElementById('global-average').textContent = avg;
+        // NOTE: On ne remove PAS la session ici pour garder les couleurs sur la carte.
+    }
+    document.getElementById('end-modal').style.display = 'flex';
+}
+
+// Utilitaires
+function getDeterminate(type) {
+    const vowels = ['a', 'e', 'i', 'o', 'u', 'y'];
+    if (vowels.includes(type.charAt(0).toLowerCase())) return "de l'" + type;
+    return ['mer', 'chaîne de montagnes', 'montagne'].includes(type.toLowerCase()) ? "de la " + type : "du " + type;
+}
+
+// 6. INITIALISATION & AUTH
+onAuthStateChanged(auth, async (user) => {
+    currentUserUid = localStorage.getItem('active_uid') || (user ? user.uid : null);
+    if (currentUserUid) {
+        await restoreSession();
+    } else {
+        applyFilters(); 
+    }
+    if (remainingTargets.length > 0 && !current) nextQuestion();
+});
+
+// Exposer au Window
+window.toggleFilterMenu = () => {
+    const m = document.getElementById('type-selector');
+    m.style.display = m.style.display === "none" ? "block" : "none";
+};
+window.toggleAllCheckboxes = () => {
+    const cbs = document.querySelectorAll('.type-filter');
+    const all = Array.from(cbs).every(cb => cb.checked);
+    cbs.forEach(cb => cb.checked = !all);
+    document.getElementById('bulk-toggle').textContent = !all ? "Tout décocher" : "Tout cocher";
+};
+window.applyFilters = applyFilters;
+window.checkAnswer = checkAnswer;
+window.startNewGame = startNewGame;
+
+// Zoom & Pan Logic (simplifié pour l'espace)
+const container = document.getElementById("zoomContainer");
+const svg = document.getElementById("map");
+let scale = 1, panX = 0, panY = 0;
+container.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -0.15 : 0.15;
+    scale = Math.min(Math.max(scale + delta, 0.5), 15);
+    svg.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+}, { passive: false });
 
 document.getElementById('answer').addEventListener('keypress', (e) => { if (e.key === 'Enter') checkAnswer(); });
-applyFilters();
 </script>
 </body>
 </html>
