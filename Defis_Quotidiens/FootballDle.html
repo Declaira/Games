@@ -317,28 +317,6 @@
             background-size: cover;
         }
 
-        /* Modal Fin de jeu */
-        #message-box {
-            margin-top: 20px;
-            padding: 20px 30px;
-            border-radius: 8px;
-            display: none;
-            text-align: center;
-            font-weight: bold;
-            font-size: 18px;
-            border: 2px solid;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-        }
-        .win { 
-            background-color: rgba(83, 141, 78, 0.2);
-            border-color: #538d4e;
-            color: #b7e4c7;
-        }
-        .lose { 
-            background-color: rgba(181, 159, 59, 0.2);
-            border-color: #b59f3b;
-            color: #e0d078;
-        }
 
         .legend {
             display: flex;
@@ -456,18 +434,29 @@
     </style>
 </head>
 <body>
-
+  <script src="../header.js"></script>
+<script>
+  injectHeader({
+    title: "FootballDle",
+    homeLink: "../accueil.html",
+    customBackground: "transparent",
+    showHome: true,
+    logoUrl: "images_onepiece/titre_foot.png"
+  });
+</script>
+  </script>
     
 <div class="search-container">
-    <img src="images_onepiece/titre_foot.png" alt="FootballDle" id="titreImage" style="max-width: 300px; height: auto;">
 
     <div class="search-row">
         <div class="search-box">
             <input type="text" id="searchInput" placeholder="Chercher un joueur..." autocomplete="off">
             <div id="suggestions" class="suggestions"></div>
+            
         </div>
 
         <div class="championnat-dropdown">
+            <button class="championnat-btn" id="giveUpBtn">Abandonner</button>
             <button class="championnat-btn" id="championnatBtn">Filtre</button>
             <div class="championnat-menu" id="championnatFilters">
                 <div style="padding: 1px; margin-bottom: 1px;">
@@ -481,11 +470,9 @@
             </div>
         </div>
     </div>
-</div>
-            </div>
-        </div>
-        </div>
     <div id="message-box"></div>
+</div>
+    
 
     <div class="game-board" id="board" style="display:none;">
         <div class="header-row">
@@ -510,7 +497,7 @@
 
         </div>
 
-    <script>
+    <script type='module'>
         // Données injectées par Python
 
         const players = [
@@ -39472,6 +39459,74 @@
             const code = countryFlags[countryName] || 'un';
             return `https://flagcdn.com/${code}.svg`;
         }
+
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+        import { getDatabase, ref, set, get, update, remove } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyB29fMpTwBgsqkjijkNoQJ2kGChSeQDX_w",
+            authDomain: "quiz-ea203.firebaseapp.com",
+            databaseURL: "https://quiz-ea203-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "quiz-ea203",
+            storageBucket: "quiz-ea203.firebasestorage.app",
+            messagingSenderId: "605137421110",
+            appId: "1:605137421110:web:289e0876fe06108deaa997"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+
+        let currentUserUid = null;
+        let targetPlayer = null; 
+        let gameOver = false;
+
+        // Sauvegarde les réglages (Slider + Championnats)
+        async function saveSettings() {
+            if (!currentUserUid) return; // Stop si pas connecté
+            const settings = {
+                minVal: parseInt(document.getElementById('marketValueSlider').value),
+                championships: getSelectedChampionnats()
+            };
+            await set(ref(db, `users/${currentUserUid}/games/football/settings`), settings);
+        }
+
+        // Restaure la session en cours
+        async function restoreSession() {
+            if (!currentUserUid) return;
+
+            // 1. Restaurer les réglages
+            const setSnap = await get(ref(db, `users/${currentUserUid}/games/football/settings`));
+            if (setSnap.exists()) {
+                const s = setSnap.val();
+                document.getElementById('marketValueSlider').value = s.minVal;
+                document.getElementById('marketValueText').value = s.minVal;
+                championnats.forEach(c => {
+                    championatCheckboxes[c].checked = s.championships.includes(c);
+                });
+            }
+
+            // 2. Restaurer le joueur cible et les essais
+            const sessSnap = await get(ref(db, `users/${currentUserUid}/games/football/session`));
+            if (sessSnap.exists()) {
+                const data = sessSnap.val();
+                // On retrouve le joueur complet dans notre base locale 'players' via son nom (ou ID)
+                targetPlayer = players.find(p => p.nom === data.targetName);
+                
+                if (data.guesses) {
+                    // On refait les lignes pour chaque joueur déjà deviné
+                    data.guesses.forEach(playerName => {
+                    const p = players.find(pl => pl.nom === playerName);
+                    if (p) {
+                        makeGuess(p, false); // <--- Le "false" est crucial ici
+                    }
+                });
+                }
+            } else {
+                targetPlayer = selectTargetPlayer();
+            }
+        }
         // Gestion de la recherche et filtres des championnats
         const championnatFiltersDiv = document.getElementById('championnatFilters');
         const championnatBtn = document.getElementById('championnatBtn');
@@ -39530,14 +39585,11 @@
             resetGame();
         });
         championnatFiltersDiv.appendChild(applyBtn);
-        let targetPlayer = selectTargetPlayer(); 
-        console.log("Solution : ", targetPlayer.nom);
 
         const searchInput = document.getElementById('searchInput');
         const suggestionsBox = document.getElementById('suggestions');
         const board = document.getElementById('board');
         const messageBox = document.getElementById('message-box');
-        let gameOver = false;
 
         // Fonction pour normaliser les chaines (enlever accents)
         function normalize(str) {
@@ -39589,27 +39641,49 @@
         }
 
         // Fonction pour réinitialiser le jeu
-        function resetGame() {
-            const selectedChamps = getSelectedChampionnats();
-            let availablePlayers = players;
-            if (selectedChamps.length > 0) {
-                availablePlayers = players.filter(p => selectedChamps.includes(p.championnat));
+        async function resetGame() {
+            if (currentUserUid) {
+                await remove(ref(db, `users/${currentUserUid}/games/football/session`));
+                saveSettings(); // On ne sauvegarde les filtres que pour les connectés
             }
-            targetPlayer = selectTargetPlayer(); 
-            console.log("Solution (pour test) : ", targetPlayer.nom);
             
+            // On enregistre les nouveaux réglages si besoin
+            saveSettings();
+
+            targetPlayer = selectTargetPlayer();
+
+            // 2. Réinitialisation de l'état du jeu
             gameOver = false;
+            
+            // 3. Réaffichage des éléments de recherche cachés
+            const searchRow = document.querySelector('.search-row');
+            if (searchRow) {
+                searchRow.style.display = 'flex'; // Fait réapparaître la barre, filtre et abandon
+            }
+
+            // 4. Nettoyage des inputs et boutons
             searchInput.disabled = false;
             searchInput.value = '';
             suggestionsBox.innerHTML = '';
+            
+            // Gestion du bouton Abandonner (pour qu'il revienne)
+            if (giveUpBtn) {
+                giveUpBtn.style.display = 'inline-block';
+            }
+
+            // 5. Nettoyage de la Message Box
             messageBox.innerHTML = '';
             messageBox.style.display = 'none';
+            messageBox.className = ''; // Enlève les classes .win ou .wrong
             
-            // Nettoyer le tableau des essais
-            const guesses = document.querySelectorAll('.guess-row');
-            guesses.forEach(guess => guess.remove());
+            // 6. Nettoyer le tableau des essais (lignes de joueurs devinés)
+            const guessesRows = document.querySelectorAll('.guess-row');
+            guessesRows.forEach(guess => guess.remove());
             
-            championnatFiltersDiv.classList.remove('open');
+            // 7. Fermer le menu des filtres s'il était ouvert
+            if (typeof championnatFiltersDiv !== 'undefined') {
+                championnatFiltersDiv.classList.remove('open');
+            }
         }
 
         // Ouvrir/fermer le menu des championnats
@@ -39714,7 +39788,31 @@ searchInput.addEventListener('input', (e) => {
     });
 });
 
-// Garder le reste de votre logique (keydown) tel quel
+// Remplacez ou ajoutez ce bloc pour la gestion du clavier
+searchInput.addEventListener('keydown', (e) => {
+    const items = suggestionsBox.querySelectorAll('.suggestion-item');
+    
+    if (items.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+        e.preventDefault(); // Empêche le curseur de bouger dans l'input
+        selectedSuggestionIndex = (selectedSuggestionIndex + 1) % items.length;
+        updateSuggestionHighlight();
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        selectedSuggestionIndex = (selectedSuggestionIndex - 1 + items.length) % items.length;
+        updateSuggestionHighlight();
+    } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (selectedSuggestionIndex > -1 && items[selectedSuggestionIndex]) {
+            // On simule un clic sur l'élément sélectionné
+            items[selectedSuggestionIndex].click();
+        }
+    } else if (e.key === 'Escape') {
+        suggestionsBox.innerHTML = '';
+        selectedSuggestionIndex = -1;
+    }
+});
         function updateSuggestionHighlight() {
             const items = document.querySelectorAll('.suggestion-item');
             items.forEach((item, index) => {
@@ -39727,7 +39825,7 @@ searchInput.addEventListener('input', (e) => {
             });
         }
 
-        function makeGuess(player) {
+        function makeGuess(player, shouldSave = true) {
             document.getElementById('board').style.display = 'flex';
             document.getElementById('legend').style.display = 'flex';
             suggestionsBox.innerHTML = '';
@@ -39883,35 +39981,121 @@ searchInput.addEventListener('input', (e) => {
             const header = document.querySelector('.header-row');
             header.parentNode.insertBefore(row, header.nextSibling);
 
-            checkWin(player);
-        }
+            if (shouldSave && currentUserUid && !gameOver) {
+                    const attemptsRef = ref(db, `users/${currentUserUid}/games/football/session/guesses`);
+                    get(attemptsRef).then((snapshot) => {
+                        let currentGuesses = snapshot.exists() ? snapshot.val() : [];
+                        currentGuesses.push(player.nom);
+                        update(ref(db, `users/${currentUserUid}/games/football/session`), {
+                            guesses: currentGuesses,
+                            targetName: targetPlayer.nom
+                        }).catch(err => console.error("Erreur save guess:", err));
+                    });
+                }
 
+                checkWin(player);
+            }
+        
+
+        // --- Éléments à récupérer ---
+        const giveUpBtn = document.getElementById('giveUpBtn');
+
+        // --- Logique du bouton Abandonner ---
+        giveUpBtn.addEventListener('click', () => {
+            if (gameOver) return;
+            showEndScreen(false); // false = Défaite/Abandon
+        });
+
+        // --- Modification de checkWin ---
         function checkWin(player) {
             if (player.nom === targetPlayer.nom) {
-                gameOver = true;
-                const replayBtn = document.createElement('button');
-                replayBtn.textContent = 'Rejouer';
-                replayBtn.style.marginLeft = '15px';
-                replayBtn.style.padding = '10px 20px';
-                replayBtn.style.backgroundColor = '#538d4e';
-                replayBtn.style.border = '1px solid #538d4e';
-                replayBtn.style.color = 'white';
-                replayBtn.style.borderRadius = '4px';
-                replayBtn.style.cursor = 'pointer';
-                replayBtn.addEventListener('click', resetGame);
-                
-                messageBox.innerHTML = 'BRAVO ! Vous avez trouvé ' + targetPlayer.nom + ' ';
-                messageBox.appendChild(replayBtn);
-                messageBox.className = "win";
-                messageBox.style.display = "block";
-                searchInput.disabled = true;
+                showEndScreen(true); // true = Victoire
             }
         }
 
-        // Fermer les suggestions si on clique ailleurs
-        document.addEventListener('click', (e) => {
-            if (e.target !== searchInput) {
-                suggestionsBox.innerHTML = '';
+        // --- Nouvelle fonction unifiée pour l'écran de fin ---
+        async function showEndScreen(isWin) {
+            gameOver = true;
+            
+            // 1. Calcul du nombre d'essais
+            const attempts = document.querySelectorAll('.guess-row').length;
+
+            // 2. Initialisation des stats par défaut
+            let d = { gamesPlayed: 0, wins: 0, losses: 0, totalAttemptsOnWin: 0, avgAttempts: 0 };
+
+            // 3. Bloc Firebase (Uniquement si connecté)
+            if (currentUserUid) {
+                try {
+                    const statsRef = ref(db, `users/${currentUserUid}/games/football/stats`);
+                    const snap = await get(statsRef);
+                    if (snap.exists()) d = snap.val();
+
+                    d.gamesPlayed++;
+                    if (isWin) {
+                        d.wins++;
+                        d.totalAttemptsOnWin += attempts;
+                        d.avgAttempts = parseFloat((d.totalAttemptsOnWin / d.wins).toFixed(2));
+                    } else {
+                        d.losses++;
+                    }
+                    await set(statsRef, d);
+                } catch (e) {
+                    console.error("Erreur stats Firebase:", e);
+                }
+            }
+
+            // 4. Cache de l'interface de recherche
+            const searchRow = document.querySelector('.search-row');
+            if (searchRow) searchRow.style.display = 'none';
+
+            // 5. Création du bouton REJOUER (C'est ici que replayBtn est défini)
+            const mainColor = isWin ? "#538d4e" : "#c0392b"; 
+            const replayBtn = document.createElement('button'); // DÉCLARATION CRUCIALE
+            replayBtn.textContent = isWin ? 'Rejouer' : 'Essayer encore';
+            replayBtn.className = "championnat-btn";
+            replayBtn.style.cssText = `display:block; margin: 20px auto 0; padding: 12px 25px; background-color: ${mainColor}; border: none; color: white; border-radius: 4px; cursor: pointer; font-weight: bold;`;
+            replayBtn.addEventListener('click', resetGame);
+
+            // 6. Préparation des textes
+            const attemptWord = attempts <= 1 ? "essai" : "essais";
+            const statusText = isWin ? `BRAVO ! Vous avez trouvé en ${attempts} ${attemptWord} :` : "DOMMAGE ! C'était :";
+            const avgText = (currentUserUid && isWin) ? `<p style="font-size: 0.9em; color: #ddd; margin-top:5px;">Moyenne : ${d.avgAttempts} essais</p>` : "";
+
+            // 7. Affichage dans la MessageBox
+            const messageBox = document.getElementById('message-box');
+            messageBox.innerHTML = `
+                <div style="text-align: center; padding: 20px;">
+                    <p style="font-size: 1.3em; margin-bottom: 5px; color: white;">${statusText}</p>
+                    ${avgText}
+                    <img src="${targetPlayer.photo_URL}" alt="${targetPlayer.nom}" 
+                        style="width: 180px; height: 180px; border-radius: 50%; border: 5px solid ${mainColor}; object-fit: cover; margin: 15px 0; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+                    <h2 style="margin: 5px 0; color: white; font-size: 1.8em;">${targetPlayer.nom}</h2>
+                </div>
+            `;
+            
+            // 8. Ajout du bouton à la boîte (Il faut que replayBtn soit défini au-dessus)
+            messageBox.appendChild(replayBtn);
+            
+            messageBox.className = isWin ? "win" : "lose"; 
+            messageBox.style.display = "block";
+        }       
+                // Fermer les suggestions si on clique ailleurs
+                document.addEventListener('click', (e) => {
+                    if (e.target !== searchInput) {
+                        suggestionsBox.innerHTML = '';
+                    }
+                });
+
+        onAuthStateChanged(auth, async (user) => {
+            // On récupère l'UID si possible, sinon null
+            currentUserUid = localStorage.getItem('active_uid') || (user ? user.uid : null);
+            
+            if (currentUserUid) {
+                // Utilisateur connecté : on restaure sa progression
+                await restoreSession();
+            } else {
+                // Mode Invité : on génère juste un joueur cible normalement
+                targetPlayer = selectTargetPlayer();
             }
         });
 
