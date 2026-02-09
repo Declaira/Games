@@ -14283,11 +14283,12 @@ function initGame() {
     
     // Reset UI
     if(endScreen) endScreen.style.display = 'none';
-    if(searchSection) searchSection.style.display = 'flex'; // On garde le flex ici
+    if(searchSection) searchSection.style.display = 'flex';
     input.disabled = false;
     input.value = "";
     if(suggestions) suggestions.style.display = 'none';
 
+    // Filtrage selon difficulté
     filteredData = data.filter(c => {
         if (currentDifficulty === 'normal') {
             return c.height !== "Inconnue" && c.origin !== "Inconnue";
@@ -14297,12 +14298,11 @@ function initGame() {
 
     if(filteredData.length === 0) filteredData = data;
 
-    // --- LOGIQUE DE MÉMOIRE ---
-    // On ne choisit un nouveau perso QUE si targetCharacter n'existe pas déjà
+    // Si on vient de toggleDifficulty, targetCharacter est null, donc on en prend un nouveau
     if (!targetCharacter) {
         targetCharacter = filteredData[Math.floor(Math.random() * filteredData.length)];
-        saveSession(); // On enregistre immédiatement ce nouveau perso
-    } else {
+        console.log("Personnage cible :", targetCharacter.name); // Pour les tests, à retirer en prod
+        if (currentUserUid) saveSession();
     }
 }
 async function saveSession() {
@@ -14317,10 +14317,24 @@ async function saveSession() {
 }
 // Gardez cette version
 function toggleDifficulty() {
-    currentDifficulty = currentDifficulty === 'normal' ? 'hard' : 'normal';
+    // 1. Bascule de l'état
+    currentDifficulty = (currentDifficulty === 'normal') ? 'difficile' : 'normal';
+    
+    // 2. Mise à jour visuelle du bouton
     updateModeBtn();
+    
+    // 3. RÉINITIALISATION COMPLÈTE
+    targetCharacter = null; // Force le choix d'un nouveau perso dans initGame
+    attempts = [];          // Vide les essais locaux
+    
+    // 4. Nettoyage de la mémoire Firebase
+    if (currentUserUid) {
+        const sessionRef = ref(db, `users/${currentUserUid}/games/onepiece/session`);
+        remove(sessionRef); 
+    }
+    
+    // 5. Relance le jeu
     initGame();
-    if (typeof saveSettings === "function") saveSettings();
 }
 function updateModeBtn() {
     if (!modeBtn) return; // Sécurité
@@ -14338,7 +14352,8 @@ function applyArrow(element, direction) {
     // Le style CSS s'occupera de l'affichage (background-image, etc.)
 }
 // --- 6. GAMEPLAY ---
-function submitGuess(char) {
+// AJOUT de 'shouldSave = true' ici pour corriger ton erreur
+function submitGuess(char, shouldSave = true) {
     if(gameOver) return;
     
     // Nettoyage UI
@@ -14350,7 +14365,6 @@ function submitGuess(char) {
     tableBody.insertBefore(row, tableBody.firstChild);
 
     // --- PRÉPARATION DES DONNÉES ---
-    // On pré-calcule les infos de l'arc pour l'affichage et la comparaison
     const charArc = getArcInfo(char.firstChapter);
     const targetArc = getArcInfo(targetCharacter.firstChapter);
 
@@ -14360,7 +14374,7 @@ function submitGuess(char) {
         { type: 'affiliation', val: char.affiliation, target: targetCharacter.affiliation },
         { type: 'text', val: char.dftype || "Aucun", target: targetCharacter.dftype || "Aucun" },
         { type: 'origin', val: char.origin, target: targetCharacter.origin },
-        { type: 'arc', val: charArc.name, index: charArc.index, targetIndex: targetArc.index }, // Logique Arc
+        { type: 'arc', val: charArc.name, index: charArc.index, targetIndex: targetArc.index },
         { type: 'num', val: char.height, target: targetCharacter.height },
         { type: 'bounty', val: char.bounty, target: targetCharacter.bounty }
     ];
@@ -14373,107 +14387,79 @@ function submitGuess(char) {
         td.appendChild(contentDiv);
         row.appendChild(td);
 
-        // Animation progressive
         setTimeout(() => {
             td.style.transition = "transform 0.4s";
-            td.style.transform = "rotateX(-90deg)"; // Effet de flip
+            td.style.transform = "rotateX(-90deg)"; 
 
             setTimeout(() => {
-                let color = 'var(--wrong)'; // Rouge par défaut
+                let color = 'var(--wrong)'; 
                 let isCorrect = false;
-                let isNear = false; // Pour l'orange
+                let isNear = false;
 
-                // === LOGIQUE DE COMPARAISON ===
-
-                // 1. ORIGINE (Logique Mer)
                 if (c.type === 'origin') {
-                    if (c.val === c.target) {
-                        isCorrect = true;
-                    } else {
-                        // Si pas exact, on vérifie si c'est la même mer
+                    if (c.val === c.target) isCorrect = true;
+                    else {
                         const ocean1 = getOceanFromOrigin(c.val);
                         const ocean2 = getOceanFromOrigin(c.target);
-                        if (ocean1 !== "Inconnu" && ocean1 === ocean2) {
-                            isNear = true;
-                        }
+                        if (ocean1 !== "Inconnu" && ocean1 === ocean2) isNear = true;
                     }
                 }
-                // 2. AFFILIATION (Logique Groupes)
                 else if (c.type === 'affiliation') {
-                    if (c.val === c.target) {
-                        isCorrect = true;
-                    } else {
-                        // Si pas exact, on vérifie le groupe parent (ex: CP9 vs CP0)
+                    if (c.val === c.target) isCorrect = true;
+                    else {
                         const group1 = getAffiliationClass(c.val);
                         const group2 = getAffiliationClass(c.target);
-                        if (group1 !== "Inconnu" && group1 === group2) {
-                            isNear = true;
-                        }
+                        if (group1 !== "Inconnu" && group1 === group2) isNear = true;
                     }
                 }
-                // 3. ARC (Logique Chronologique)
                 else if (c.type === 'arc') {
-                    if (c.index === c.targetIndex) {
-                        isCorrect = true;
-                    } else {
-                        // Flèches pour Avant / Après
-                        const arrow = c.index < c.targetIndex ? 'up' : 'down'; // Up = Plus tard, Down = Plus tôt
-                        applyArrow(td, arrow);
-                    }
+                    if (c.index === c.targetIndex) isCorrect = true;
+                    else applyArrow(td, c.index < c.targetIndex ? 'up' : 'down');
                 }
-                // 4. NUMÉRIQUE (Taille & Prime)
                 else if (c.type === 'num' || c.type === 'bounty') {
                     const v1 = parseFloat(c.val) || 0;
                     const v2 = parseFloat(c.target) || 0;
-                    if (v1 === v2) {
-                        isCorrect = true;
-                    } else {
-                        const arrow = v1 < v2 ? 'up' : 'down';
-                        applyArrow(td, arrow);
-                    }
+                    if (v1 === v2) isCorrect = true;
+                    else applyArrow(td, v1 < v2 ? 'up' : 'down');
                 }
-                // 5. TEXTE SIMPLE (Genre, Fruit, Image)
                 else {
                     if (c.val === c.target) isCorrect = true;
                 }
 
-                // === ATTRIBUTION COULEUR ===
                 if (c.type !== 'img') {
                     if (isCorrect) color = 'var(--correct)';
-                    else if (isNear) color = 'var(--near)'; // Orange
+                    else if (isNear) color = 'var(--near)';
                     td.style.backgroundColor = color;
                 }
 
-                // === AFFICHAGE CONTENU ===
                 if (c.type === 'img') {
                     contentDiv.innerHTML = `<img src="${c.val}" class="cell-img">`;
                     td.style.backgroundColor = 'transparent';
                 } 
                 else if (c.type === 'bounty') {
-                    // Formatage de la prime (ex: 1.5M)
                     const bVal = parseFloat(c.val);
                     const formatted = bVal >= 1000000 ? (bVal/1000000) + "M" : bVal.toLocaleString();
                     contentDiv.innerHTML = `<span>${formatted} <img src="images_onepiece/berries.png" class="berry-icon" style="filter: brightness(0) invert(1);"></span>`;
-
                 } 
                 else {
                     contentDiv.innerHTML = `<span>${c.val}</span>`;
                 }
 
-                td.style.transform = "rotateX(0deg)"; // Retour du flip
+                td.style.transform = "rotateX(0deg)";
             }, 200);
-        }, i * 150); // Délai en cascade
+        }, i * 150);
     });
 
     // Victoire ?
     if (char.name === targetCharacter.name) {
-        gameOver = true;
-        handleEnd(true);
-        // Supprimer la session car la partie est finie
-        remove(ref(db, `users/${currentUserUid}/games/onepiece/session`));
-    } else {
-        if (shouldSave) saveSession();
-    }
+            gameOver = true;
+            handleEnd(true);
+            if (currentUserUid) {
+                remove(ref(db, `users/${currentUserUid}/games/onepiece/session`));
+            }
+        } else {
+            if (shouldSave && currentUserUid) saveSession();
+        }
 }
 
 function handleEnd(isWin) {
@@ -14737,7 +14723,19 @@ bgUploadInput.addEventListener('change', function(event) {
         reader.readAsDataURL(file);
     }
 });
-document.getElementById('replayBtn').addEventListener('click', initGame);
+document.getElementById('replayBtn').addEventListener('click', () => {
+    // 1. On réinitialise le personnage cible pour forcer un nouveau tirage
+    targetCharacter = null; 
+    
+    // 2. On supprime l'ancienne session dans Firebase pour ne pas recharger le perso gagné
+    if (currentUserUid) {
+        const sessionRef = ref(db, `users/${currentUserUid}/games/onepiece/session`);
+        remove(sessionRef);
+    }
+    
+    // 3. On relance le jeu
+    initGame();
+});
 // --- AUTH LISTENER ---
 onAuthStateChanged(auth, async (user) => {
     currentUserUid = localStorage.getItem('active_uid') || (user ? user.uid : null);
