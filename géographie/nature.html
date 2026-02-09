@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>🧭 Quiz Géographie</title>
-<link rel="icon" href="../logo/logo.png" type="image/x-icon">
+<link rel="icon" href="../logo.png" type="image/x-icon">
 <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@600&display=swap" rel="stylesheet">
 <style>
 body { 
@@ -407,18 +407,33 @@ async function checkAnswer() {
 }
 
 // 5. GESTION DES FILTRES
-function applyFilters() {
+async function applyFilters() { // 1. On ajoute async ici
     const selectedTypes = Array.from(document.querySelectorAll('.type-filter:checked')).map(cb => cb.value);
     if (selectedTypes.length === 0) return alert("Choisis au moins un type !");
     
     activeTargets = targets.filter(t => selectedTypes.includes(t.type));
+    
+    // Cache ou montre les éléments sur le SVG selon le filtre
     targets.forEach(t => {
         const el = document.getElementById(t.id);
         if (el) el.style.display = selectedTypes.includes(t.type) ? "block" : "none";
     });
 
+    // 2. Sauvegarde des filtres dans Firebase
     saveFilters(selectedTypes);
+
+    // --- NOUVEAU : VIDE LA MÉMOIRE DES RÉPONSES ---
+    if (currentUserUid) {
+        try {
+            // On supprime la session précédente pour que les points rouges/verts disparaissent
+            await remove(ref(db, `users/${currentUserUid}/games/nature/session`));
+        } catch (e) { console.error("Erreur reset session Firebase:", e); }
+    }
+    // ----------------------------------------------
+
     document.getElementById('type-selector').style.display = "none";
+    
+    // 3. Réinitialise le jeu (score à 0 et nettoyage visuel de la carte)
     resetQuiz();
 }
 
