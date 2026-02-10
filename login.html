@@ -85,13 +85,6 @@
     </div>
 
     <script type="module">
-        onAuthStateChanged(auth, (user) => {
-            if (!user) {
-                signInAnonymously(auth).then(() => loadAllProfiles());
-            } else {
-                loadAllProfiles();
-            }
-        });
         // Fonction pour retourner à la page précédente ou à l'accueil par défaut
         const redirectBack = () => {
             const fallback = "accueil.html"; // Page par défaut si historique vide
@@ -120,7 +113,7 @@
             }
         };
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
         import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
         const firebaseConfig = {
@@ -161,6 +154,15 @@
             };
             if(e.target.files[0]) reader.readAsDataURL(e.target.files[0]);
         };
+
+        
+       onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                signInAnonymously(auth).then(() => loadAllProfiles());
+            } else {
+                loadAllProfiles();
+            }
+        });
 
         // --- CHARGER TOUS LES COMPTES DEPUIS FIREBASE ---
         async function loadAllProfiles() {
