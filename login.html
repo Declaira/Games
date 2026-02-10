@@ -85,6 +85,13 @@
     </div>
 
     <script type="module">
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                signInAnonymously(auth).then(() => loadAllProfiles());
+            } else {
+                loadAllProfiles();
+            }
+        });
         // Fonction pour retourner à la page précédente ou à l'accueil par défaut
         const redirectBack = () => {
             const fallback = "accueil.html"; // Page par défaut si historique vide
@@ -220,6 +227,11 @@
             if(!pseudo) return alert("Pseudo requis !");
 
             try {
+                // 1. SE CONNECTER D'ABORD
+                const userCred = await signInAnonymously(auth);
+                const uid = userCred.user.uid;
+
+                // 2. MAINTENANT ON PEUT LIRE (car on est connecté)
                 const snapshot = await get(ref(db, 'users'));
                 if (snapshot.exists()) {
                     const data = snapshot.val();
@@ -227,19 +239,18 @@
                     if (exists) return alert("⚠️ Ce pseudo est déjà pris !");
                 }
 
-                const userCred = await signInAnonymously(auth);
-                const uid = userCred.user.uid;
-
+                // 3. ENREGISTRER
                 await set(ref(db, `users/${uid}`), { 
                     username: pseudo, 
                     avatar: selectedAvatar 
                 });
 
-                // LIGNE ESSENTIELLE : On définit l'UID actif pour le header
                 localStorage.setItem('active_uid', uid);
-
                 redirectBack();
-            } catch (e) { alert("Erreur : " + e.message); }
+            } catch (e) { 
+                alert("Erreur : " + e.message); 
+                console.error(e);
+            }
         };
 
         // --- INIT ---
