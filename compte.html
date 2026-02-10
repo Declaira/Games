@@ -53,17 +53,45 @@
         let base64Image = null;
 
         onAuthStateChanged(auth, async (user) => {
-            if (!user) { window.location.href = 'login.html'; return; }
+            if (!user) { 
+                // Si aucun utilisateur n'est connecté, redirection vers la page de login
+                window.location.href = 'login.html'; 
+                return; 
+            }
+
             userUID = user.uid;
-            
-            const snap = await get(ref(db, `users/${user.uid}`));
-            if (snap.exists()) {
-                const data = snap.val();
-                document.getElementById('new-pseudo').value = data.username;
-                document.getElementById('current-pic').src = data.avatar.startsWith('data') ? data.avatar : 'https://api.dicebear.com/7.x/bottts/svg?seed=' + data.username;
-                base64Image = data.avatar;
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('content').classList.remove('hidden');
+            console.log("Utilisateur connecté avec l'UID :", userUID);
+
+            try {
+                // Tentative de récupération des données dans la branche users/UID
+                const snap = await get(ref(db, `users/${userUID}`));
+
+                if (snap.exists()) {
+                    const data = snap.val();
+                    
+                    // Remplissage du champ pseudo
+                    document.getElementById('new-pseudo').value = data.username || "";
+                    
+                    // Gestion de l'avatar (Base64 ou DiceBear par défaut)
+                    if (data.avatar && data.avatar.startsWith('data')) {
+                        document.getElementById('current-pic').src = data.avatar;
+                        base64Image = data.avatar;
+                    } else {
+                        document.getElementById('current-pic').src = 'https://api.dicebear.com/7.x/bottts/svg?seed=' + (data.username || userUID);
+                    }
+                    
+                    // Affichage de l'interface une fois les données chargées
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('content').classList.remove('hidden');
+                } else {
+                    console.warn("Aucune donnée trouvée dans la base pour cet UID.");
+                    document.getElementById('loading').innerText = "Profil inexistant dans la base de données.";
+                }
+            } catch (error) {
+                console.error("Erreur lors de la récupération des données :", error);
+                if (error.message.includes("Permission denied")) {
+                    alert("Erreur de permissions : vérifie tes règles Firebase Realtime Database.");
+                }
             }
         });
 
