@@ -44,7 +44,15 @@
         import { getAuth, onAuthStateChanged, deleteUser } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
         import { getDatabase, ref, get, update, remove } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
-        const firebaseConfig = { /* Ta config ici */ };
+        const firebaseConfig = {
+            apiKey: "AIzaSyB29fMpTwBgsqkjijkNoQJ2kGChSeQDX_w",
+            authDomain: "quiz-ea203.firebaseapp.com",
+            databaseURL: "https://quiz-ea203-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "quiz-ea203",
+            storageBucket: "quiz-ea203.firebasestorage.app",
+            messagingSenderId: "605137421110",
+            appId: "1:605137421110:web:289e0876fe06108deaa997"
+        };
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getDatabase(app);
