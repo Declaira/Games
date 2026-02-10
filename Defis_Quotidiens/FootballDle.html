@@ -39481,6 +39481,7 @@
         let currentUserUid = null;
         let targetPlayer = null; 
         let gameOver = false;
+        let championatCheckboxes = {};
 
         // Sauvegarde les réglages (Slider + Championnats)
         async function saveSettings() {
@@ -39505,43 +39506,51 @@ async function restoreSession() {
                 
                 // On met à jour les checkboxes des championnats
                 championnats.forEach(c => {
+                    // On vérifie d'abord si la checkbox existe pour ce championnat
                     if (championatCheckboxes[c]) {
                         championatCheckboxes[c].checked = s.championships.includes(c);
                     }
                 });
-                
-                // Mettre à jour l'état de la checkbox "Tout sélectionner"
-                const allChecked = championnats.every(c => championatCheckboxes[c].checked);
+
+                // CORRECTION DE L'ERREUR : 
+                // On filtre uniquement les championnats qui ont une checkbox valide
+                const allChecked = championnats.every(c => {
+                    return championatCheckboxes[c] ? championatCheckboxes[c].checked : false;
+                });
+
                 const selectAllCheckbox = document.getElementById('selectAllChampionnats');
-                if (selectAllCheckbox) selectAllCheckbox.checked = allChecked;
-            }
+                if (selectAllCheckbox) {
+                    selectAllCheckbox.checked = allChecked;
+                }
+                }
 
             // 2. Restaurer le joueur cible et les essais
             const sessSnap = await get(ref(db, `users/${currentUserUid}/games/football/session`));
-            
+    
             if (sessSnap.exists()) {
                 const data = sessSnap.val();
-                
-                // On retrouve le joueur cible via son nom
                 targetPlayer = players.find(p => p.nom === data.targetName);
                 
                 if (data.guesses && data.guesses.length > 0) {
-                    // --- AJOUT CRUCIAL : Rendre le jeu visible ---
-                    document.getElementById('board').style.display = 'flex';
-                    document.getElementById('legend').style.display = 'flex';
+                    // FORCE l'affichage du plateau avant d'ajouter les cellules
+                    const board = document.getElementById('board');
+                    const legend = document.getElementById('legend');
+                    if(board) board.style.display = 'flex';
+                    if(legend) legend.style.display = 'flex';
 
-                    // On reconstruit visuellement chaque ligne d'essai
+                    // On vide le tableau actuel au cas où (pour éviter les doublons au refresh)
+                    const existingRows = document.querySelectorAll('.guess-row');
+                    existingRows.forEach(r => r.remove());
+
+                    // Reconstruire les essais
                     data.guesses.forEach(playerName => {
                         const p = players.find(pl => pl.nom === playerName);
                         if (p) {
-                            // Le "false" est vital pour ne pas créer une boucle de sauvegarde infinie
+                            // On passe false pour ne pas ré-enregistrer ce qu'on vient de lire
                             makeGuess(p, false); 
                         }
                     });
                 }
-            } else {
-                // Si aucune session n'existe, on choisit un nouveau joueur normalement
-                targetPlayer = selectTargetPlayer();
             }
         }
         // Gestion de la recherche et filtres des championnats
@@ -39843,6 +39852,10 @@ searchInput.addEventListener('keydown', (e) => {
         }
 
         function makeGuess(player, shouldSave = true) {
+            if (!targetPlayer) {
+                console.error("Le joueur cible n'est pas encore chargé.");
+                return;
+            }
             document.getElementById('board').style.display = 'flex';
             document.getElementById('legend').style.display = 'flex';
             suggestionsBox.innerHTML = '';
@@ -40115,17 +40128,21 @@ searchInput.addEventListener('keydown', (e) => {
                 });
 
         onAuthStateChanged(auth, async (user) => {
-            // On récupère l'UID si possible, sinon null
-            currentUserUid = localStorage.getItem('active_uid') || (user ? user.uid : null);
-            
-            if (currentUserUid) {
-                // Utilisateur connecté : on restaure sa progression
-                await restoreSession();
-            } else {
-                // Mode Invité : on génère juste un joueur cible normalement
-                targetPlayer = selectTargetPlayer();
-            }
-        });
+          // On essaye de récupérer l'UID
+          currentUserUid = user ? user.uid : (localStorage.getItem('active_uid') || null);
+          
+          if (currentUserUid) {
+              // On attend d'abord de restaurer la session
+              await restoreSession();
+              
+              // Si après restauration targetPlayer est toujours vide, on en choisit un
+              if (!targetPlayer) {
+                  targetPlayer = selectTargetPlayer();
+              }
+          } else {
+              targetPlayer = selectTargetPlayer();
+          }
+      });
 
     </script>
 </body>
