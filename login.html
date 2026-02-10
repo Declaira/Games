@@ -157,13 +157,14 @@
 
         
        onAuthStateChanged(auth, (user) => {
-            if (!user) {
-                signInAnonymously(auth).then(() => loadAllProfiles());
+            if (user) {
+                console.log("Connecté avec l'UID :", user.uid);
+                loadAllProfiles(); // Maintenant qu'on est connecté, on peut charger les profils
             } else {
-                loadAllProfiles();
+                // Optionnel : Connexion anonyme automatique pour permettre la lecture des comptes
+                signInAnonymously(auth);
             }
         });
-
         // --- CHARGER TOUS LES COMPTES DEPUIS FIREBASE ---
         async function loadAllProfiles() {
             const container = document.getElementById('accounts-suggestions');
