@@ -172,26 +172,27 @@
     }
 
     // --- LOGIQUE DE RECHERCHE ---
-    document.getElementById('search-account').oninput = (e) => {
-        const query = e.target.value.toLowerCase().trim();
-        const container = document.getElementById('accounts-suggestions');
+document.getElementById('search-account').oninput = (e) => {
+    const query = e.target.value.toLowerCase().trim();
+    const container = document.getElementById('accounts-suggestions');
+    
+    if (query.length >= 3) {
+        const filtered = Object.fromEntries(
+            Object.entries(allUsers).filter(([uid, data]) => {
+                // CORRECTION ICI : On vérifie que data et data.username existent
+                return data && data.username && data.username.toLowerCase().includes(query);
+            })
+        );
         
-        if (query.length >= 3) {
-            const filtered = Object.fromEntries(
-                Object.entries(allUsers).filter(([uid, data]) => 
-                    data.username && data.username.toLowerCase().includes(query)
-                )
-            );
-            
-            if (Object.keys(filtered).length > 0) {
-                renderProfiles(filtered);
-            } else {
-                container.innerHTML = "Aucun profil correspondant.";
-            }
+        if (Object.keys(filtered).length > 0) {
+            renderProfiles(filtered);
         } else {
-            container.innerHTML = ""; 
+            container.innerHTML = "Aucun profil correspondant.";
         }
-    };
+    } else {
+        container.innerHTML = ""; 
+    }
+};
 
     function renderProfiles(usersToDisplay) {
         const container = document.getElementById('accounts-suggestions');
