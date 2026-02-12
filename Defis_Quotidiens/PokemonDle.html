@@ -13346,8 +13346,7 @@ async function restoreSession() {
             startNewGame();
             return;
         }
-        
-        console.log("Session restaurée. Cible :", targetPokemon.nom);
+      
 
         if (data.guesses) {
             data.guesses.forEach(name => {
@@ -13405,7 +13404,6 @@ async function startNewGame() {
 
     // Sélection
     targetPokemon = selectRandomPokemon();
-    console.log("Nouveau Pokémon :", targetPokemon.nom);
 
     // Nettoyage Session Firebase
     if (currentUserUid) {
@@ -13664,10 +13662,8 @@ document.getElementById('bgUpload').onchange = (e) => {
 onAuthStateChanged(auth, async (user) => {
     currentUserUid = localStorage.getItem('active_uid') || (user ? user.uid : null);
     if(currentUserUid) {
-        console.log("Utilisateur connecté :", currentUserUid);
         await restoreSession();
     } else {
-        console.log("Mode invité");
         startNewGame();
     }
 });

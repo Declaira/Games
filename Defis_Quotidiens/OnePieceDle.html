@@ -307,12 +307,67 @@
 
     @keyframes fadeIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* MOBILE */
-    @media (max-width: 768px) {
-        .actions-wrapper { width: 100%; justify-content: space-between; }
-        .action-btn { flex: 1; font-size: 1rem; padding: 0 10px; }
-        .table-wrapper { margin-top: 10px; }
+/* MOBILE */
+@media (max-width: 768px) {
+    #search-section {
+        flex-direction: column !important; /* On passe l'input et les boutons l'un sous l'autre */
+        align-items: center;
+        gap: 15px; /* Un peu plus d'espace vertical entre l'input et les boutons */
     }
+
+    .search-input-wrapper {
+        width: 100%; /* L'input prend toute la largeur */
+    }
+
+    .actions-wrapper {
+        width: 100%; /* Le conteneur de boutons prend toute la largeur */
+        justify-content: center; /* Centre les boutons */
+        gap: 10px;
+    }
+
+    .action-btn {
+        flex: 1; /* Les boutons se partagent l'espace équitablement */
+        font-size: 1rem;
+        padding: 0 5px;
+        min-width: 100px; /* Évite qu'ils ne deviennent trop petits */
+    }
+
+    /* Ajustement de la taille de police pour l'input sur mobile */
+    input#guessInput {
+        font-size: 1.2rem;
+    }
+
+    table { 
+        /* On réduit l'espacement pour gagner de la place */
+        border-spacing: 2px; 
+        min-width: 100%; /* Le tableau prend toute la largeur dispo */
+    }
+
+    th {
+        font-size: 0.8rem; /* Titres plus petits */
+        padding-bottom: 5px;
+    }
+
+    td {
+        /* On réduit la taille des cases pour qu'elles tiennent sur l'écran */
+        width: 55px; 
+        height: 55px; 
+        font-size: 0.65rem; /* Police miniature pour les infos */
+    }
+
+    .img-square, .cell-img {
+        border-radius: 3px;
+    }
+
+    .suggestion-name {
+        font-size: 1.1rem;
+    }
+
+    /* On réduit la taille des icônes Berry et flèches */
+    .berry-icon {
+        width: 10px;
+    }
+}
     </style>
 </head>
 <body>
@@ -14291,7 +14346,7 @@ function initGame() {
     // Filtrage selon difficulté
     filteredData = data.filter(c => {
         if (currentDifficulty === 'normal') {
-            return c.height !== "Inconnue" && c.origin !== "Inconnue";
+            return c.height !== "Inconnue"; // && c.origin !== "Inconnue";
         }
         return true; 
     });
@@ -14301,7 +14356,6 @@ function initGame() {
     // Si on vient de toggleDifficulty, targetCharacter est null, donc on en prend un nouveau
     if (!targetCharacter) {
         targetCharacter = filteredData[Math.floor(Math.random() * filteredData.length)];
-        console.log("Personnage cible :", targetCharacter.name); // Pour les tests, à retirer en prod
         if (currentUserUid) saveSession();
     }
 }

@@ -39853,7 +39853,6 @@ searchInput.addEventListener('keydown', (e) => {
 
         function makeGuess(player, shouldSave = true) {
             if (!targetPlayer) {
-                console.error("Le joueur cible n'est pas encore chargé.");
                 return;
             }
             document.getElementById('board').style.display = 'flex';
