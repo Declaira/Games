@@ -69,7 +69,13 @@ body {
   font-size: 16px;
 }
 
-.quiz-section input { text-align: center; background: white; }
+.quiz-section input { 
+    text-align: center; 
+    background: white; 
+    border: 2px solid #ffca28;
+    outline: none;
+}
+.quiz-section input:focus { border-color: #ff6f00; }
 
 button {
   background-color: #ff6f00;
@@ -85,53 +91,57 @@ button:active { transform: scale(0.98); }
 
 /* --- MENU DES CONTINENTS --- */
 #continent-selector {
-  /* Positionnement juste sous le bouton */
   position: absolute; 
-  top: 100%; /* Se place juste en dessous du bouton 'Afficher les continents' */
+  top: 100%;
   left: 50%;
   transform: translateX(-50%); 
-  margin-top: 5px; /* Petit espace contrôlé de 5px seulement */
+  margin-top: 5px;
   z-index: 2000;
-
-  /* Style visuel */
-  width: 90%;
+  width: 95%; /* Légèrement plus large pour accommoder les 2 colonnes */
   max-width: 300px;
-  padding: 12px; 
-  text-align: left;
+  padding: 8px; /* Réduit (était à 12px/15px) */
   background: white; 
   border-radius: 10px; 
   border: 1px solid rgba(0,0,0,0.1); 
-  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-  
-  display: none; /* Sera géré par le JS */
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+  display: none;
   flex-direction: column;
-  gap: 2px; /* Réduit l'espace entre les labels à l'intérieur */
 }
 
-/* Alignement parfait des Checkbox et du texte */
+/* Grille interne */
+.filter-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr; 
+  gap: 2px 8px; /* Réduit l'espace vertical à 2px (était 8px) */
+  margin: 5px 0;
+}
+
+/* Alignement des labels */
 #continent-selector label {
   display: flex;
   align-items: center;
-  justify-content: flex-start; /* Aligne au début (gauche) */
-  gap: 7px;
-  font-size: 14px;
+  gap: 5px; /* Réduit l'espace entre la box et le texte */
+  font-size: 13px; /* Légèrement plus petit */
   color: #2c3e50;
   cursor: pointer;
-  padding: 4px 6px;
-  border-radius: 4px;
-  width: 100%;
+  padding: 2px 4px; /* Réduit (était 4px 6px) */
+  white-space: nowrap; /* Évite que le texte passe à la ligne */
 }
 
-#continent-selector label:hover {
-  background: rgba(0, 0, 0, 0.05); /* Petit effet de survol sur la ligne */
-}
-
-/* Force la checkbox à garder sa taille sans s'écraser */
+/* CRUCIAL : Supprimer les styles d'inputs globaux pour les checkboxes */
 #continent-selector input[type="checkbox"] {
-  width: 18px !important;
-  height: 18px !important;
-  margin: 0;
-  cursor: pointer;
+  width: 16px !important; /* Taille fixe */
+  height: 16px !important;
+  margin: 0 !important; /* Supprime le margin: 4px 0 des inputs globaux */
+  padding: 0 !important;
+  border: none !important;
+  flex-shrink: 0; /* Empêche l'écrasement */
+}
+
+#continent-selector button {
+  padding: 6px; /* Boutons plus fins */
+  font-size: 13px;
+  margin: 2px 0;
 }
 
 #toggle-continents {
@@ -175,7 +185,11 @@ path.correct {
 path.incorrect {
   fill: red !important;
 }
-
+path.partial-correct {
+    fill: url(#partialGradient) !important;
+    stroke: #333;
+    stroke-width: 0.8px;
+}
 /* --- MEDIA QUERY : DESKTOP --- */
 @media (min-width: 768px) {
   .container { 
@@ -231,7 +245,6 @@ path.incorrect {
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 5px;
 }
 
 #toggle-continents {
@@ -295,7 +308,7 @@ path.incorrect {
           <label><input class="continent-checkbox" type="checkbox" value="South America" checked> Am. du Sud</label>
           <label><input class="continent-checkbox" type="checkbox" value="Oceania" checked> Océanie</label>
         </div>
-        <div style="margin-top:10px; font-size:12px; color:#555; text-align:center;">
+        <div style="margin-top:5px; font-size:12px; color:#555; text-align:center;">
           Pays sélectionnés : <span id="preview-count">196</span>
         </div>
         <button onclick="applyContinentFilter()" style="background-color: #2c3e50; margin-top:5px;">Appliquer</button>
@@ -882,7 +895,18 @@ path.incorrect {
        </div>
 
 <script type="module">
-        const svg = document.getElementById("map");
+      const svg = document.getElementById("map");
+      // Création du motif de hachures Vert/Rouge
+      const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+      defs.innerHTML = `
+        <linearGradient id="partialGradient" x1="0" y1="0" x2="20" y2="20" gradientUnits="userSpaceOnUse" spreadMethod="repeat">
+          <stop offset="0%" stop-color="#2ecc71" />
+          <stop offset="50%" stop-color="#2ecc71" />
+          <stop offset="50%" stop-color="#e74c3c" />
+          <stop offset="100%" stop-color="#e74c3c" />
+        </linearGradient>
+      `;
+      svg.appendChild(defs);
       const container = document.getElementById("zoomContainer");
     
       let scale = 1;
@@ -946,9 +970,9 @@ const countries = [
   { id: "AF", name: "Afghanistan", capital: "Kaboul", flag: "https://flagcdn.com/af.svg" },
   { id: "AL", name: "Albanie", capital: "Tirana", flag: "https://flagcdn.com/al.svg" },
   { id: "DZ", name: "Algérie", capital: "Alger", flag: "https://flagcdn.com/dz.svg" },
-  { id: "AD", name: "Andorre", capital: "Andorre-la-Vieille", flag: "https://flagcdn.com/ad.svg" },
+  { id: "AD", name: "Andorre", capital: ["Andorre-la-Vieille", "Andorre la Vieille"], flag: "https://flagcdn.com/ad.svg" },
   { id: "AO", name: "Angola", capital: "Luanda", flag: "https://flagcdn.com/ao.svg" },
-  { id: "AG", name: "Antigua-et-Barbuda", capital: "Saint John's", flag: "https://flagcdn.com/ag.svg" },
+  { id: "AG", name: ["Antigua-et-Barbuda", "Antigua et Barbuda"], capital: "Saint John's", flag: "https://flagcdn.com/ag.svg" },
   { id: "AR", name: "Argentine", capital: "Buenos Aires", flag: "https://flagcdn.com/ar.svg" },
   { id: "AM", name: "Arménie", capital: "Erevan", flag: "https://flagcdn.com/am.svg" },
   { id: "AU", name: "Australie", capital: "Canberra", flag: "https://flagcdn.com/au.svg" },
@@ -964,27 +988,27 @@ const countries = [
   { id: "BJ", name: "Bénin", capital: "Porto-Novo", flag: "https://flagcdn.com/bj.svg" },
   { id: "BT", name: "Bhoutan", capital: "Thimphou", flag: "https://flagcdn.com/bt.svg" },
   { id: "BO", name: "Bolivie", capital: "Sucre", flag: "https://flagcdn.com/bo.svg" },
-  { id: "BA", name: "Bosnie-Herzégovine", capital: "Sarajevo", flag: "https://flagcdn.com/ba.svg" },
+  { id: "BA", name: ["Bosnie-Herzégovine", "Bosnie et Herzégovine"], capital: "Sarajevo", flag: "https://flagcdn.com/ba.svg" },
   { id: "BW", name: "Botswana", capital: "Gaborone", flag: "https://flagcdn.com/bw.svg" },
   { id: "BR", name: "Brésil", capital: "Brasilia", flag: "https://flagcdn.com/br.svg" },
   { id: "BN", name: "Brunei", capital: "Bandar Seri Begawan", flag: "https://flagcdn.com/bn.svg" },
   { id: "BG", name: "Bulgarie", capital: "Sofia", flag: "https://flagcdn.com/bg.svg" },
   { id: "BF", name: "Burkina Faso", capital: "Ouagadougou", flag: "https://flagcdn.com/bf.svg" },
   { id: "BI", name: "Burundi", capital: "Gitega", flag: "https://flagcdn.com/bi.svg" },
-  { id: "CV", name: "Cap-vert", capital: "Praia", flag: "https://flagcdn.com/cv.svg" },
+  { id: "CV", name: ["Cap-vert", "Cap Vert"], capital: "Praia", flag: "https://flagcdn.com/cv.svg" },
   { id: "KH", name: "Cambodge", capital: "Phnom Penh", flag: "https://flagcdn.com/kh.svg" },
   { id: "CM", name: "Cameroun", capital: "Yaoundé", flag: "https://flagcdn.com/cm.svg" },
   { id: "CA", name: "Canada", capital: "Ottawa", flag: "https://flagcdn.com/ca.svg" },
-  { id: "CF", name: "Centrafrique", capital: "Bangui", flag: "https://flagcdn.com/cf.svg" },
+  { id: "CF", name: ["Centrafrique", "République centrafricaine"], capital: "Bangui", flag: "https://flagcdn.com/cf.svg" },
   { id: "TD", name: "Tchad", capital: "N'Djamena", flag: "https://flagcdn.com/td.svg" },
   { id: "CL", name: "Chili", capital: "Santiago", flag: "https://flagcdn.com/cl.svg" },
   { id: "CN", name: "Chine", capital: "Pékin", flag: "https://flagcdn.com/cn.svg" },
   { id: "CO", name: "Colombie", capital: "Bogota", flag: "https://flagcdn.com/co.svg" },
   { id: "KM", name: "Comores", capital: "Moroni", flag: "https://flagcdn.com/km.svg" },
   { id: "CG", name: "Congo", capital: "Brazzaville", flag: "https://flagcdn.com/cg.svg" },
-  { id: "CD", name: "République démocratique du Congo", capital: "Kinshasa", flag: "https://flagcdn.com/cd.svg" },
+  { id: "CD", name: ["République démocratique du Congo", "RD Congo", "RDC"], capital: "Kinshasa", flag: "https://flagcdn.com/cd.svg" },
   { id: "CR", name: "Costa Rica", capital: "San José", flag: "https://flagcdn.com/cr.svg" },
-  { id: "CI", name: "Côte d'Ivoire", capital: "Yamoussoukro", flag: "https://flagcdn.com/ci.svg"},
+  { id: "CI", name: ["Côte d'Ivoire", "Cote d'Ivoire"], capital: "Yamoussoukro", flag: "https://flagcdn.com/ci.svg"},
   { id: "HR", name: "Croatie", capital: "Zagreb", flag: "https://flagcdn.com/hr.svg" },
   { id: "CU", name: "Cuba", capital: "La Havane", flag: "https://flagcdn.com/cu.svg" },
   { id: "CY", name: "Chypre", capital: "Nicosie", flag: "https://flagcdn.com/cy.svg" },
@@ -1000,7 +1024,7 @@ const countries = [
   { id: "ER", name: "Érythrée", capital: "Asmara", flag: "https://flagcdn.com/er.svg" },
   { id: "EE", name: "Estonie", capital: "Tallinn", flag: "https://flagcdn.com/ee.svg" },
   { id: "SZ", name: "Eswatini", capital: "Mbabane", flag: "https://flagcdn.com/sz.svg" },
-  { id: "ET", name: "Éthiopie", capital: "Addis-Abeba", flag: "https://flagcdn.com/et.svg" },
+  { id: "ET", name: "Éthiopie", capital: ["Addis-Abeba", "Addis Abeba"], flag: "https://flagcdn.com/et.svg" },
   { id: "FJ", name: "Fidji", capital: "Suva", flag: "https://flagcdn.com/fj.svg" },
   { id: "FI", name: "Finlande", capital: "Helsinki", flag: "https://flagcdn.com/fi.svg" },
   { id: "FR", name: "France", capital: "Paris", flag: "https://flagcdn.com/fr.svg" },
@@ -1013,18 +1037,18 @@ const countries = [
   { id: "GD", name: "Grenade", capital: "Saint George's", flag: "https://flagcdn.com/gd.svg" },
   { id: "GT", name: "Guatemala", capital: "Guatemala", flag: "https://flagcdn.com/gt.svg" },
   { id: "GN", name: "Guinée", capital: "Conakry", flag: "https://flagcdn.com/gn.svg" },
-  { id: "GW", name: "Guinée-Bissau", capital: "Bissau", flag: "https://flagcdn.com/gw.svg" },
+  { id: "GW", name: ["Guinée-Bissau", "Guinée Bissau"], capital: "Bissau", flag: "https://flagcdn.com/gw.svg" },
   { id: "GY", name: "Guyana", capital: "Georgetown", flag: "https://flagcdn.com/gy.svg" },
-  { id: "HT", name: "Haïti", capital: "Port-au-Prince", flag: "https://flagcdn.com/ht.svg" },
+  { id: "HT", name: ["Haïti", "Haiti"], capital: ["Port-au-Prince", "Port au Prince"], flag: "https://flagcdn.com/ht.svg" },
   { id: "HN", name: "Honduras", capital: "Tegucigalpa", flag: "https://flagcdn.com/hn.svg" },
   { id: "HU", name: "Hongrie", capital: "Budapest", flag: "https://flagcdn.com/hu.svg" },
   { id: "IS", name: "Islande", capital: "Reykjavik", flag: "https://flagcdn.com/is.svg" },
   { id: "IN", name: "Inde", capital: "New Delhi", flag: "https://flagcdn.com/in.svg" },
-  { id: "ID", name: "Indonésie", capital: "Jakarta/Nusantara", flag: "https://flagcdn.com/id.svg" },
+  { id: "ID", name: "Indonésie", capital: ["Jakarta", "Nusantara"], flag: "https://flagcdn.com/id.svg" },
   { id: "IR", name: "Iran", capital: "Téhéran", flag: "https://flagcdn.com/ir.svg" },
   { id: "IQ", name: "Irak", capital: "Bagdad", flag: "https://flagcdn.com/iq.svg" },
   { id: "IE", name: "Irlande", capital: "Dublin", flag: "https://flagcdn.com/ie.svg" },
-  { id: "IL", name: "Israël", capital: "Jérusalem", flag: "https://flagcdn.com/il.svg" },
+  { id: "IL", name: "Israël", capital: ["Jérusalem", "Tel Aviv"], flag: "https://flagcdn.com/il.svg" },
   { id: "IT", name: "Italie", capital: "Rome", flag: "https://flagcdn.com/it.svg" },
   { id: "JM", name: "Jamaïque", capital: "Kingston", flag: "https://flagcdn.com/jm.svg" },
   { id: "JP", name: "Japon", capital: "Tokyo", flag: "https://flagcdn.com/jp.svg" },
@@ -1056,7 +1080,7 @@ const countries = [
   { id: "FM", name: "Micronésie", capital: "Palikir", flag: "https://flagcdn.com/fm.svg" },
   { id: "MD", name: "Moldavie", capital: "Chisinau", flag: "https://flagcdn.com/md.svg" },
   { id: "MC", name: "Monaco", capital: "Monaco", flag: "https://flagcdn.com/mc.svg" },
-  { id: "MN", name: "Mongolie", capital: "Oulan-bator", flag: "https://flagcdn.com/mn.svg" },
+  { id: "MN", name: "Mongolie", capital: ["Oulan-bator", "Oulan bator"], flag: "https://flagcdn.com/mn.svg" },
   { id: "ME", name: "Monténégro", capital: "Podgorica", flag: "https://flagcdn.com/me.svg" },
   { id: "MA", name: "Maroc", capital: "Rabat", flag: "https://flagcdn.com/ma.svg" },
   { id: "MZ", name: "Mozambique", capital: "Maputo", flag: "https://flagcdn.com/mz.svg" },
@@ -1065,7 +1089,7 @@ const countries = [
   { id: "NR", name: "Nauru", capital: "Yaren", flag: "https://flagcdn.com/nr.svg" },
   { id: "NP", name: "Népal", capital: "Katmandou", flag: "https://flagcdn.com/np.svg" },
   { id: "NL", name: "Pays-bas", capital: "Amsterdam", flag: "https://flagcdn.com/nl.svg" },
-  { id: "NZ", name: "Nouvelle-Zélande", capital: "Wellington", flag: "https://flagcdn.com/nz.svg" },
+  { id: "NZ", name: ["Nouvelle-Zélande", "Nouvelle Zélande"], capital: "Wellington", flag: "https://flagcdn.com/nz.svg" },
   { id: "NI", name: "Nicaragua", capital: "Managua", flag: "https://flagcdn.com/ni.svg" },
   { id: "NE", name: "Niger", capital: "Niamey", flag: "https://flagcdn.com/ne.svg" },
   { id: "NG", name: "Nigeria", capital: "Abuja", flag: "https://flagcdn.com/ng.svg" },
@@ -1075,9 +1099,9 @@ const countries = [
   { id: "OM", name: "Oman", capital: "Mascate", flag: "https://flagcdn.com/om.svg" },
   { id: "PK", name: "Pakistan", capital: "Islamabad", flag: "https://flagcdn.com/pk.svg" },
   { id: "PW", name: "Palaos", capital: "Ngerulmud", flag: "https://flagcdn.com/pw.svg" },
-  { id: "PS", name: "Palestine", capital: "Jérusalem-est", flag: "https://flagcdn.com/ps.svg" },
+  { id: "PS", name: ["Palestine"], capital: ["Jérusalem-est", "Jérusalem Est"], flag: "https://flagcdn.com/ps.svg" },
   { id: "PA", name: "Panama", capital: "Panama", flag: "https://flagcdn.com/pa.svg" },
-  { id: "PG", name: "Papouasie-Nouvelle-Guinée", capital: "Port Moresby", flag: "https://flagcdn.com/pg.svg" },
+  { id: "PG", name: ["Papouasie-Nouvelle-Guinée", "Papouasie Nouvelle Guinée"], capital: "Port Moresby", flag: "https://flagcdn.com/pg.svg" },
   { id: "PY", name: "Paraguay", capital: "Asuncion", flag: "https://flagcdn.com/py.svg" },
   { id: "PE", name: "Pérou", capital: "Lima", flag: "https://flagcdn.com/pe.svg" },
   { id: "PH", name: "Philippines", capital: "Manille", flag: "https://flagcdn.com/ph.svg" },
@@ -1087,12 +1111,12 @@ const countries = [
   { id: "RO", name: "Roumanie", capital: "Bucarest", flag: "https://flagcdn.com/ro.svg" },
   { id: "RU", name: "Russie", capital: "Moscou", flag: "https://flagcdn.com/ru.svg" },
   { id: "RW", name: "Rwanda", capital: "Kigali", flag: "https://flagcdn.com/rw.svg" },
-  { id: "KN", name: "Saint-Christophe-et-Niévés", capital: "Basseterre", flag: "https://flagcdn.com/kn.svg" },
+  { id: "KN", name: ["Saint-Christophe-et-Niévés", "Saint Christophe et Niévés"], capital: "Basseterre", flag: "https://flagcdn.com/kn.svg" },
   { id: "LC", name: "Sainte-Lucie", capital: "Castries", flag: "https://flagcdn.com/lc.svg" },
-  { id: "VC", name: "Saint-Vincent-et-les-Grenadines", capital: "Kingstown", flag: "https://flagcdn.com/vc.svg" },
+  { id: "VC", name: ["Saint-Vincent-et-les-Grenadines", "Saint Vincent et les Grenadines"], capital: "Kingstown", flag: "https://flagcdn.com/vc.svg" },
   { id: "WS", name: "Samoa", capital: "Apia", flag: "https://flagcdn.com/ws.svg" },
-  { id: "SM", name: "Saint-Marin", capital: "Saint-Marin", flag: "https://flagcdn.com/sm.svg" },
-  { id: "ST", name: "Sao Tomé-et-Principe", capital: "Sao Tomé", flag: "https://flagcdn.com/st.svg" },
+  { id: "SM", name: ["Saint-Marin", "Saint Marin"], capital: ["Saint-Marin", "Saint Marin"], flag: "https://flagcdn.com/sm.svg" },
+  { id: "ST", name: ["Sao Tomé-et-Principe", "Sao Tome et Principe"], capital: "Sao Tomé", flag: "https://flagcdn.com/st.svg" },
   { id: "SA", name: "Arabie saoudite", capital: "Riyad", flag: "https://flagcdn.com/sa.svg" },
   { id: "SN", name: "Sénégal", capital: "Dakar", flag: "https://flagcdn.com/sn.svg" },
   { id: "RS", name: "Serbie", capital: "Belgrade", flag: "https://flagcdn.com/rs.svg" },
@@ -1117,19 +1141,19 @@ const countries = [
   { id: "TW", name: "Taïwan", capital: "Taipei", flag: "https://flagcdn.com/tw.svg" },
   { id: "TZ", name: "Tanzanie", capital: "Dodoma", flag: "https://flagcdn.com/tz.svg" },
   { id: "TH", name: "Thaïlande", capital: "Bangkok", flag: "https://flagcdn.com/th.svg" },
-  { id: "TL", name: "Timor-oriental", capital: "Dili", flag: "https://flagcdn.com/tl.svg" },
+  { id: "TL", name: ["Timor-oriental", "Timor Oriental"], capital: "Dili", flag: "https://flagcdn.com/tl.svg" },
   { id: "TG", name: "Togo", capital: "Lomé", flag: "https://flagcdn.com/tg.svg" },
   { id: "TO", name: "Tonga", capital: "Nuku'alofa", flag: "https://flagcdn.com/to.svg" },
-  { id: "TT", name: "Trinité-et-Tobago", capital: "Port d'Espagne", flag: "https://flagcdn.com/tt.svg" },
+  { id: "TT", name: ["Trinité-et-Tobago", "Trinite et Tobago"], capital: "Port d'Espagne", flag: "https://flagcdn.com/tt.svg" },
   { id: "TN", name: "Tunisie", capital: "Tunis", flag: "https://flagcdn.com/tn.svg" },
   { id: "TR", name: "Turquie", capital: "Ankara", flag: "https://flagcdn.com/tr.svg" },
   { id: "TM", name: "Turkménistan", capital: "Achgabat", flag: "https://flagcdn.com/tm.svg" },
   { id: "TV", name: "Tuvalu", capital: "Funafuti", flag: "https://flagcdn.com/tv.svg" },
   { id: "UG", name: "Ouganda", capital: "Kampala", flag: "https://flagcdn.com/ug.svg" },
   { id: "UA", name: "Ukraine", capital: "Kiev", flag: "https://flagcdn.com/ua.svg" },
-  { id: "AE", name: "EAU", capital: "Abu Dhabi", flag: "https://flagcdn.com/ae.svg" },
-  { id: "GB", name: "Royaume-uni", capital: "Londres", flag: "https://flagcdn.com/gb.svg" },
-  { id: "US", name: "États-Unis", capital: "Washington", flag: "https://flagcdn.com/us.svg" },
+  { id: "AE", name: ["Émirats arabes unis", "EAU"], capital: "Abu Dhabi", flag: "https://flagcdn.com/ae.svg" },
+  { id: "GB", name: ["Royaume-Uni", "Royaume Uni"], capital: "Londres", flag: "https://flagcdn.com/gb.svg" },
+  { id: "US", name: ["États-Unis", "États Unis","USA"], capital: "Washington", flag: "https://flagcdn.com/us.svg" },
   { id: "UY", name: "Uruguay", capital: "Montevideo", flag: "https://flagcdn.com/uy.svg" },
   { id: "UZ", name: "Ouzbékistan", capital: "Tachkent", flag: "https://flagcdn.com/uz.svg" },
   { id: "VU", name: "Vanuatu", capital: "Port Vila", flag: "https://flagcdn.com/vu.svg" },
@@ -1205,37 +1229,100 @@ function getRandomCountry() {
 
 async function checkCountryAnswer() {
     if (!current) return;
-    const cInput = document.getElementById("country").value;
-    const capInput = document.getElementById("capital").value;
+
+    // 1. Récupération sécurisée des inputs
+    const cInput = document.getElementById("country")?.value || "";
+    const capInput = document.getElementById("capital")?.value || "";
     const path = document.getElementById(current.id);
-    const normalize = (s) => s.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
-    const isCorrect = normalize(cInput) === normalize(current.name) && normalize(capInput) === normalize(current.capital);
+    // 2. Fonction de normalisation (sécurisée contre les erreurs de type)
+    const normalize = (s) => {
+        if (!s || typeof s !== 'string') return ""; 
+        return s.trim()
+                .toLowerCase()
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "") // Supprime les accents
+                .replace(/-/g, " ");             // Remplace tirets par espaces
+    };
 
-    if (isCorrect) {
-        score++;
+    // 3. Préparation des listes de réponses (Noms et Capitales)
+    const expectedNames = Array.isArray(current.name) ? current.name : [current.name];
+    const expectedCapitals = Array.isArray(current.capital) ? current.capital : [current.capital];
+    
+    // 4. Vérification individuelle
+    const isNameCorrect = expectedNames.some(n => normalize(cInput) === normalize(n));
+    const isCapCorrect = expectedCapitals.some(c => normalize(capInput) === normalize(c));
+
+    // 5. Logique de score et application des styles
+    let status = 'wrong'; // Valeur par défaut pour Firebase
+    
+    // Nettoyage des anciennes classes au cas où
+    path?.classList.remove("correct", "incorrect", "partial-correct", "highlight");
+
+    if (isNameCorrect && isCapCorrect) {
+        // TOUT JUSTE : 1 point
+        score += 1;
+        status = 'correct';
         path?.classList.add("correct");
         document.getElementById("result").textContent = "✅ Bonne réponse !";
-    } else {
-        path?.classList.add("incorrect");
-        document.getElementById("result").textContent = `❌ C'était ${current.name} (${current.capital})`;
-    }
-    path?.classList.remove("highlight");
-    document.getElementById("score").textContent = score;
+    } 
+    else if (isNameCorrect || isCapCorrect) {
+        // UN SEUL DES DEUX : 0.5 point
+        score += 0.5;
+        status = 'partial';
+        path?.classList.add("partial-correct");
 
-    if (currentUserUid) {
-        await update(ref(db, `users/${currentUserUid}/games/monde/session`), { [current.id]: isCorrect ? 'correct' : 'wrong' });
+        const displayName = expectedNames[0];
+        const displayCap = expectedCapitals[0];
+
+        if (isNameCorrect) {
+            // Le pays est bon, on affiche la capitale manquante
+            document.getElementById("result").textContent = `Presque ! La capitale était : ${displayCap}`;
+        } else {
+            // La capitale est bonne, on affiche le pays manquant
+            document.getElementById("result").textContent = `Presque ! Le pays était : ${displayName}`;
+        }
     }
-    setTimeout(getRandomCountry, 1500);
+    else {
+        // TOUT FAUX : 0 point
+        status = 'wrong';
+        path?.classList.add("incorrect");
+        const displayName = expectedNames[0];
+        const displayCap = expectedCapitals[0];
+        document.getElementById("result").textContent = `❌ Faux. C'était ${displayName} (${displayCap})`;
+    }
+
+    // 6. Mise à jour de l'affichage du score (propre)
+    // On utilise Number.isInteger pour ne pas afficher ".0" inutilement
+    document.getElementById("score").textContent = Number.isInteger(score) ? score : score.toFixed(1);
+
+    // 7. Enregistrement Firebase
+    if (currentUserUid) {
+        try {
+            await update(ref(db, `users/${currentUserUid}/games/monde/session`), { 
+                [current.id]: status 
+            });
+        } catch (e) {
+            console.error("Erreur Firebase:", e);
+        }
+    }
+
+    // 8. Prochain pays
+    setTimeout(getRandomCountry, 2000); // 2 secondes pour laisser le temps de lire la correction
 }
 
 function resetQuiz() {
     score = 0;
     remainingCountries = [...activeCountries];
-    document.querySelectorAll('svg path').forEach(p => p.classList.remove('correct', 'incorrect', 'highlight'));
+    // On retire absolument toutes les classes de statut sur tous les pays
+    document.querySelectorAll('svg path').forEach(p => {
+        p.classList.remove('correct', 'incorrect', 'partial-correct', 'highlight');
+    });
     document.getElementById("score").textContent = "0";
+    document.getElementById("result").textContent = "Carte réinitialisée";
     getRandomCountry();
 }
+window.resetQuiz = resetQuiz; // Pour l'accès depuis le bouton HTML
 
 // --- EXPOSITION DES FONCTIONS (Fix ReferenceError) ---
 
@@ -1398,25 +1485,46 @@ onAuthStateChanged(auth, async (user) => {
     score = 0;
 
     if (currentUserUid) {
-        const snap = await get(ref(db, `users/${currentUserUid}/games/monde/session`));
-        if (snap.exists()) {
-            const data = snap.val();
-            Object.keys(data).forEach(id => {
-                const isCorrect = data[id] === 'correct';
-                const el = document.getElementById(id);
-                if (el) {
-                    el.classList.add(isCorrect ? 'correct' : 'incorrect');
-                    if (isCorrect) score++;
-                }
-                // Retirer des pays restants seulement s'ils étaient dans le filtre actif
-                remainingCountries = remainingCountries.filter(c => c.id !== id);
-            });
+        try {
+            const snap = await get(ref(db, `users/${currentUserUid}/games/monde/session`));
+            if (snap.exists()) {
+                const data = snap.val();
+                Object.keys(data).forEach(id => {
+                    const status = data[id];
+                    const el = document.getElementById(id);
+                    
+                    if (el) {
+                        // Nettoyage au cas où
+                        el.classList.remove('correct', 'incorrect', 'partial-correct');
+                        
+                        // Application des classes selon le statut sauvegardé
+                        if (status === 'correct') {
+                            el.classList.add('correct');
+                            score += 1;
+                        } else if (status === 'partial') {
+                            el.classList.add('partial-correct'); // Applique tes hachures
+                            score += 0.5;
+                        } else if (status === 'wrong') {
+                            el.classList.add('incorrect');
+                        }
+                    }
+                    // Retirer des pays restants pour ne pas retomber dessus
+                    remainingCountries = remainingCountries.filter(c => c.id !== id);
+                });
+            }
+        } catch (e) {
+            console.error("Erreur lors de la restauration de la session:", e);
         }
-        document.getElementById("score").textContent = score;
+        // Mise à jour de l'affichage du score après restauration
+        document.getElementById("score").textContent = Number.isInteger(score) ? score : score.toFixed(1);
     }
     
-    // 4. Lancer le premier pays
-    if (!current) getRandomCountry();
+    // 4. Lancer le premier pays (si la liste n'est pas vide)
+    if (!current && remainingCountries.length > 0) {
+        getRandomCountry();
+    } else if (remainingCountries.length === 0 && activeCountries.length > 0) {
+        handleGameOver();
+    }
 });
 // Gestion case "Tous"
 document.getElementById('continent-all').addEventListener('change', (e) => {

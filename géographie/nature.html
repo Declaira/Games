@@ -7,123 +7,163 @@
 <link rel="icon" href="../logo.png" type="image/x-icon">
 <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@600&display=swap" rel="stylesheet">
 <style>
-body { 
-  font-family: 'Quicksand', sans-serif; 
-  background: linear-gradient(to bottom right, #fff3cd, #ffe5b4, #ffd1d1); 
-  margin: 0; 
-  padding: 0; 
-  overflow: hidden; 
+/* --- RESET GLOBAL --- */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
-.container { 
-  display: flex; 
-  flex-direction: column; 
-  height: 100vh; 
-  padding: 10px                    
+body {
+    font-family: 'Quicksand', sans-serif;
+    background: linear-gradient(to bottom right, #fff3cd, #ffe5b4, #ffd1d1);
+    height: 100vh;
+    overflow: hidden;
 }
 
-/* --- SECTION QUIZ --- */
-.quiz-section { 
-  width: 100%; 
-  margin-top: 50px;
-  padding: 5px;         /* Réduit le padding haut/bas */
-  z-index: 10; 
-  flex: 0 0 auto;
-  display: flex;             
-  flex-direction: column;    
-  align-items: center;       
-  text-align: center;
-  gap: 2px;                  /* Contrôle précis de l'espace entre les éléments */
+/* --- CONTENEUR PRINCIPAL --- */
+.container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100%;
 }
 
-#type-selector { 
-  margin-top: 100px;
-  text-align: left;  
-  padding: 12px; 
-  border-radius: 10px; 
-  background: rgba(255, 255, 255, 0.95); 
-  border: 1px solid rgba(0,0,0,0.1); 
-  position: absolute; 
-  width: 90%;
-  max-width: 300px;
-  z-index: 20;
+/* --- SECTION QUIZ (HAUT) --- */
+.quiz-section {
+    margin-top: 50px;
+    width: 100%;
+    flex: 0 0 auto;
+    padding: 5px 10px;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
 }
-
-.filter-list { display: flex; flex-direction: column; gap: 2px; margin: 8px 0; font-size: 14px; }
-.filter-list label { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 2px 4px; border-radius: 4px; }
 
 #instruction {
-  margin: 5px 0;
-  padding: 10px;
-  font-size: 1.2rem;
-}
-#answer, button { 
-  width: 90%;               
-  max-width: 250px; /* Limite de largeur identique pour les deux */
-  margin: 4px 0;
+    font-weight: bold;
+    font-size: 18px;
+    color: #2c3e50;
+    margin: 5px 0;
 }
 
-#answer { 
-  padding: 10px;
-  font-size: 16px; 
-  border-radius: 8px; 
-  border: 2px solid #ffca28; 
-  outline: none; 
-  text-align: center; 
-  background: white;      
+/* --- INPUTS ET BOUTONS (LARGEUR UNIFIÉE) --- */
+.quiz-section input, 
+.quiz-section button {
+    width: 90%;
+    max-width: 320px;
+    padding: 10px;
+    margin: 4px 0;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 16px;
 }
 
-#answer:focus { border-color: #ff6f00; }
+.quiz-section input { 
+    text-align: center; 
+    background: white; 
+    border: 2px solid #ffca28;
+    outline: none;
+}
+.quiz-section input:focus { border-color: #ff6f00; }
 
-button { 
-  background-color: #ff6f00; 
-  color: white; 
-  border: none; 
-  padding: 12px 20px; 
-  border-radius: 6px; 
-  cursor: pointer; 
-  font-weight: 600; 
-  transition: all 0.2s ease;
+button {
+    background-color: #ff6f00;
+    color: white;
+    border: none !important;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s ease;
 }
 
-button:hover { 
-  background-color: #e65c00; 
-  transform: scale(1.02);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-}
-
+button:hover { background-color: #e65c00; transform: scale(1.02); }
 button:active { transform: scale(0.98); }
 
-#bulk-toggle { 
-  background-color: #7f8c8d; 
-  font-size: 11px; 
-  padding: 5px; 
-  width: auto; 
+/* --- MENU DES FILTRES (TYPE-SELECTOR) --- */
+#type-selector {
+    position: absolute; 
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%); 
+    margin-top: 5px;
+    z-index: 2000;
+    width: 95%;
+    max-width: 300px;
+    padding: 10px;
+    background: white; 
+    border-radius: 10px; 
+    border: 1px solid rgba(0,0,0,0.1); 
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    display: none;
+    flex-direction: column;
 }
 
-#bulk-toggle:hover {
-  background-color: #636e72;
-}
-/* --- CARTE --- */
-.zoom-wrapper { 
-  flex: 1; 
-  width: 100%;
-  overflow: hidden; 
-  cursor: grab; 
-  position: relative; 
-  /* AJOUT : Aligne le contenu (le SVG) tout en haut du wrapper */
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start; 
-  align-items: center;
+.filter-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr; 
+    gap: 2px 8px;
+    margin: 8px 0;
+    text-align: left;
 }
 
-#map { 
-  transform-origin: top center; /* MODIFIÉ : Le zoom se fera à partir du haut */
-  transition: transform 0.1s ease-out; 
-  width: 100%;
-  height: auto; /* Laisse la hauteur s'adapter pour coller au haut */
-  display: block;
+.filter-list label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 13px;
+    color: #2c3e50;
+    cursor: pointer;
+    padding: 2px 4px;
+    white-space: nowrap;
+}
+
+#type-selector input[type="checkbox"] {
+    width: 16px !important;
+    height: 16px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    flex-shrink: 0;
+}
+
+#type-selector button {
+    padding: 8px;
+    font-size: 13px;
+    margin: 4px 0;
+    width: 100%;
+}
+
+#bulk-toggle {
+    background-color: #95a5a6 !important;
+}
+
+#toggle-filters {
+  font-size: 12px !important;
+  padding: 6px 12px !important;
+  width: auto !important; /* Pas toute la largeur */
+  border-radius: 8px;
+  font-weight: 600;
+  margin: 4px 0;
+}
+/* --- SECTION CARTE (BAS) --- */
+.zoom-wrapper {
+    flex: 1;
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    cursor: grab;
+}
+
+#map {
+    width: 100%;
+    height: auto;
+    display: block;
+    transform-origin: top center;
+    transition: transform 0.1s ease-out;
 }
 
 /* --- ÉTATS HITBOX --- */
@@ -134,75 +174,95 @@ button:active { transform: scale(0.98); }
 .type-ocean, .type-mer { stroke-width: 1; }
 .type-desert { stroke-width: 2; stroke-dasharray: 2,4; }
 
-.highlight-current { stroke: orange !important; fill: rgba(255, 140, 0, 0.3) !important; stroke-width: 3; filter: drop-shadow(0 0 10px orange); z-index: 100; }
-.state-correct { stroke: green !important; fill: rgba(39, 174, 96, 0.3) !important; stroke-width: 3; }
-.state-wrong { stroke: red !important; fill: rgba(192, 57, 43, 0.3) !important; stroke-width: 3; }
-
-.type-fleuve.state-correct, .type-montagne.state-correct, .type-fleuve.state-wrong, .type-montagne.state-wrong, .type-fleuve.highlight-current, .type-montagne.highlight-current { fill: none !important; }
+.highlight-current { stroke: orange !important; fill: rgba(255, 140, 0, 0.3) !important; stroke-width: 4; filter: drop-shadow(0 0 8px orange); }
+.state-correct { stroke: green !important; fill: rgba(39, 174, 96, 0.3) !important; }
+.state-wrong { stroke: red !important; fill: rgba(192, 57, 43, 0.3) !important; }
 
 /* --- MEDIA QUERY : DESKTOP --- */
 @media (min-width: 768px) {
-  .container { 
-    flex-direction: row; 
-    gap: 0;
+    .container { flex-direction: row; }
+    
+    .quiz-section {
+        width: 320px;
+        height: 100vh;
+        justify-content: flex-start;
+        padding-top: 40px;
+        position: relative;
+        overflow: visible; /* Important pour que le menu ne soit pas coupé */
+    }
+
+    #type-selector {
+        /* On remet les valeurs du mobile pour qu'il soit sous le bouton */
+        top: 100%; 
+        left: 50%;
+        transform: translateX(-50%);
+        margin-top: 5px;
+        padding: 15px;
+        /* On s'assure qu'il reste par dessus la carte */
+        position: absolute; 
+        z-index: 3000;
+    }
+    #toggle-filters {
+    background-color: #ff6f00 !important; /* Devient orange comme le modèle */
+    color: white;
+    padding: 10px 20px !important;
+    border-radius: 25px !important; /* Très arrondi sur desktop */
+    font-size: 14px !important;
+    font-weight: bold;
+    transition: transform 0.2s;
   }
 
-  .quiz-section { 
-    width: 320px; 
+  #toggle-filters:hover {
+    background-color: #e65c00 !important; 
+    transform: scale(1.05);
+  }
+
+  .zoom-wrapper {
     height: 100vh;
-    padding-top: 40px;
-    justify-content: flex-start;
-    gap: 10px;               /* On redonne un peu d'air sur grand écran */
-  }
-
-  #answer, button {
-    width: 100%;
-    margin: 5px 0;
+    align-items: flex-start;
+    padding: 10px;
   }
 }
-
-  #type-selector {
-    top: 20px;
-    left: 330px; 
-  }
-
-  .zoom-wrapper { 
-    height: 100vh; 
-  }
-
-</style>
+    </style>
 </head>
 <body>
-  <script src="../header.js"></script>
-<script>
-  injectHeader({
-    title: "Carte géographique",
-    homeLink: "../accueil.html",
-    showHome: true
-  });
-</script>
-  </script>
-<div class="container">
-  <div class="quiz-section">
-    <button id="toggle-filters" onclick="toggleFilterMenu()">Afficher les filtres</button>
-    <div id="type-selector" style="display: none;">
-      <button id="bulk-toggle" onclick="toggleAllCheckboxes()">Tout décocher</button>
-      <div class="filter-list">
-        <label><input class="type-filter" type="checkbox" value="fleuve" checked> 🌊 Fleuves</label>
-        <label><input class="type-filter" type="checkbox" value="chaîne de montagnes" checked> 🏔️ Montagnes</label>
-        <label><input class="type-filter" type="checkbox" value="volcan" checked> 🌋 Volcans</label>
-        <label><input class="type-filter" type="checkbox" value="océan" checked> 🌐 Océans</label>
-        <label><input class="type-filter" type="checkbox" value="mer" checked> 🌊 Mers</label>
-        <label><input class="type-filter" type="checkbox" value="désert" checked> 🏜️ Déserts</label>
-      </div>
-      <button onclick="applyFilters()" style="background-color: #2c3e50;">Appliquer</button>
-    </div>
-    <h2 id="instruction">Quelle est cette formation géographique ?</h2>
+    <script src="../header.js"></script>
+    <script>
+        injectHeader({
+            title: "Carte géographique",
+            homeLink: "../accueil.html",
+            showHome: true
+        });
+    </script>
+
+    <div class="container">
+        <div class="quiz-section">
+    <h2 id="instruction">Quelle est cette formation ?</h2>
+    
     <input type="text" id="answer" placeholder="Attente..." autocomplete="off">
+    
     <button onclick="checkAnswer()">Valider</button>
     <p id="result"></p>
-    <p>Score : <span id="score">0</span> / <span id="total-display">0</span></p>
-  </div>
+    
+    <p style="margin: 10px 0;">Score : <span id="score" style="font-weight: bold; color: #2c3e50;">0</span> / <span id="total-display">0</span></p>
+    
+    <div style="position: relative; width: 100%; display: flex; justify-content: center;">
+        <button id="toggle-filters" onclick="toggleFilterMenu()">Afficher les filtres</button>
+        
+        <div id="type-selector">
+            <button id="bulk-toggle" onclick="toggleAllCheckboxes()">Tout décocher</button>
+            <div class="filter-list">
+                <label><input class="type-filter" type="checkbox" value="fleuve" checked> 🌊 Fleuves</label>
+                <label><input class="type-filter" type="checkbox" value="chaîne de montagnes" checked> 🏔️ Montagnes</label>
+                <label><input class="type-filter" type="checkbox" value="volcan" checked> 🌋 Volcans</label>
+                <label><input class="type-filter" type="checkbox" value="océan" checked> 🌐 Océans</label>
+                <label><input class="type-filter" type="checkbox" value="mer" checked> 🌊 Mers</label>
+                <label><input class="type-filter" type="checkbox" value="désert" checked> 🏜️ Déserts</label>
+            </div>
+            <button onclick="applyFilters()" style="background-color: #2c3e50;">Appliquer</button>
+        </div>
+    </div>
+</div>
 
   <div class="zoom-wrapper" id="zoomContainer">
     <svg id="map" viewBox="0 0 2000 850">
@@ -500,7 +560,14 @@ onAuthStateChanged(auth, async (user) => {
 // Exposer au Window
 window.toggleFilterMenu = () => {
     const m = document.getElementById('type-selector');
-    m.style.display = m.style.display === "none" ? "block" : "none";
+    // On récupère le style réellement affiché par le navigateur
+    const currentDisplay = window.getComputedStyle(m).display;
+    
+    if (currentDisplay === "none") {
+        m.style.display = "flex"; // Utilise flex car ton CSS définit flex-direction: column
+    } else {
+        m.style.display = "none";
+    }
 };
 window.toggleAllCheckboxes = () => {
     const cbs = document.querySelectorAll('.type-filter');

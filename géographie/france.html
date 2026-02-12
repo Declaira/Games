@@ -81,13 +81,6 @@ svg {
   }
 }
 
-input, button {
-  display: block;
-  width: 100%;
-  margin-bottom: 15px;
-}
-
-
 
 input, button {
   display: block;
@@ -99,7 +92,13 @@ input, button {
   box-shadow: 1px 1px 5px rgba(0,0,0,0.1);
   font-size: 16px;
 }
-
+input { 
+    text-align: center; 
+    background: white; 
+    border: 2px solid #ffca28;
+    outline: none;
+}
+input:focus { border-color: #ff6f00; }
 button {
   background-color: #ff6f00;
   color: white;
@@ -149,12 +148,7 @@ body {
   max-width: 300px;
   text-align: center;
 }
-button {
-  display: inline-block;
-  width: auto;
-  padding: 10px 20px;
-  margin: 10px auto;
-}
+
 </style>
 </head>
 <body>
