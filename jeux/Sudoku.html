@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
   <title>🔢 Sudoku</title>
-  <link rel="icon" href="../logo.png" type="image/x-icon">
+  <link rel="icon" href="../logo/logo.png" type="image/x-icon">
   <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@600&display=swap" rel="stylesheet">
   <style>
     body {
@@ -31,8 +31,9 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: space-between; /* Distribue l'espace */
+      justify-content: flex-start; /* Changé de space-between à flex-start */
       padding: 5px;
+      gap: 5px; /* Force un petit espace constant entre les blocs */
       box-sizing: border-box;
       flex-grow: 1;
       overflow: hidden;
@@ -41,11 +42,11 @@
     .controls {
       display: flex;
       align-items: center;
-      gap: 5px;
-      margin-bottom: 5px;
+      gap: 8px;
+      margin-bottom: 2px; /* Réduit */
       width: 100%;
       justify-content: center;
-      flex-wrap: wrap;
+      flex-wrap: nowrap; /* Empêche le passage à la ligne des boutons du haut */
     }
 
     select, button {
@@ -76,8 +77,8 @@
       grid-template-columns: repeat(9, 1fr);
       width: 95vw;
       height: 95vw;
-      max-width: 65vh; /* Empêche de manger tout l'espace vertical */
-      max-height: 65vh;
+      max-width: 55vh; /* Réduit de 65 à 55 */
+      max-height: 55vh; /* Réduit de 65 à 55 */
       background: rgba(255, 255, 255, 0.3);
       border: 2px solid #ffb347;
       border-radius: 8px;
@@ -127,7 +128,7 @@
     }
 
     .num-pad button {
-      height: 42px;
+      height: 38px; /* Réduit pour gagner de la place */
       font-size: 1.1rem;
       background: #ff9a00;
       box-shadow: 0 3px 0 #e68a00;
@@ -207,198 +208,355 @@
     </div>
   </div>
 
-<script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+import { getDatabase, ref, set, get, update, remove } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+// --- CONFIGURATION FIREBASE ---
+const firebaseConfig = {
+    apiKey: "AIzaSyB29fMpTwBgsqkjijkNoQJ2kGChSeQDX_w",
+    authDomain: "quiz-ea203.firebaseapp.com",
+    databaseURL: "https://quiz-ea203-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "quiz-ea203",
+    storageBucket: "quiz-ea203.firebasestorage.app",
+    messagingSenderId: "605137421110",
+    appId: "1:605137421110:web:289e0876fe06108deaa997"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
+
+// --- VARIABLES D'ÉTAT ---
 let solution = [], puzzle = [], state = [], notes = [];
 let selectedCell = null;
 let isNoteMode = false;
 let timerInterval, seconds = 0;
+let currentUserUid = null;
 
 const gridEl = document.getElementById('sudoku');
 const noteBtn = document.getElementById('noteBtn');
+const difficultySelect = document.getElementById('difficulty');
 
-function initGame() {
-  generateSudoku();
-  renderGrid();
-  startTimer();
+// --- LOGIQUE DE PERSISTANCE ---
+
+async function saveSession() {
+    if (!currentUserUid) return;
+    // Conversion des Sets de notes en tableaux pour le stockage JSON
+    const serializableNotes = notes.map(row => row.map(s => Array.from(s)));
+    try {
+        await set(ref(db, `users/${currentUserUid}/games/sudoku/session`), {
+            puzzle, solution, state, seconds,
+            difficulty: difficultySelect.value,
+            notes: serializableNotes,
+            timestamp: new Date().toISOString()
+        });
+    } catch (e) { console.error("Erreur sauvegarde session:", e); }
+}
+
+async function restoreSession() {
+    if (!currentUserUid) return false;
+    try {
+        const snap = await get(ref(db, `users/${currentUserUid}/games/sudoku/session`));
+        if (snap.exists()) {
+            const data = snap.val();
+            puzzle = data.puzzle;
+            solution = data.solution;
+            state = data.state;
+            seconds = data.seconds;
+            difficultySelect.value = data.difficulty;
+            // Reconstruction des Sets pour les notes
+            notes = data.notes.map(row => row.map(arr => new Set(arr)));
+            
+            renderGrid();
+            startTimer(true); // Reprise du chrono
+            return true;
+        }
+    } catch (e) { console.error("Erreur restauration session:", e); }
+    return false;
+}
+
+async function updateStats(finalTime, diffValue) {
+    if (!currentUserUid) return;
+    const diffLabel = difficultySelect.options[difficultySelect.selectedIndex].text;
+    const statsRef = ref(db, `users/${currentUserUid}/games/sudoku/stats/${diffValue}`);
+    
+    try {
+        const snap = await get(statsRef);
+        let games = 1;
+        let avg = finalTime;
+        let best = finalTime; // Par défaut, le premier temps est le meilleur
+        
+        if (snap.exists()) {
+            const d = snap.val();
+            games = (d.gamesPlayed || 0) + 1;
+            avg = Math.round(((d.averageTime || 0) * (games - 1) + finalTime) / games);
+            
+            // Comparaison pour le Record Personnel
+            // Si bestTime n'existe pas ou si le nouveau temps est plus court
+            best = d.bestTime ? Math.min(d.bestTime, finalTime) : finalTime;
+        }
+        
+        await update(statsRef, {
+            gamesPlayed: games,
+            averageTime: avg,
+            bestTime: best,
+            difficultyLabel: diffLabel,
+        });
+    } catch (e) { console.error("Erreur stats:", e); }
+}
+
+// --- LOGIQUE DU JEU ---
+
+async function initGame() {
+    generateSudoku();
+    renderGrid();
+    startTimer();
+    // Quand on force un nouveau jeu, on supprime l'ancienne session
+    if (currentUserUid) await remove(ref(db, `users/${currentUserUid}/games/sudoku/session`));
 }
 
 function generateSudoku() {
-  solution = Array.from({length:9}, () => Array(9).fill(0));
-  fillGrid(solution);
-  const emptyCells = parseInt(document.getElementById('difficulty').value);
-  puzzle = solution.map(row => [...row]);
-  let count = 0;
-  while (count < emptyCells) {
-    let r = Math.floor(Math.random()*9), c = Math.floor(Math.random()*9);
-    if (puzzle[r][c] !== 0) { puzzle[r][c] = 0; count++; }
-  }
-  state = puzzle.map(row => [...row]);
-  notes = Array.from({length:9}, () => Array.from({length:9}, () => new Set()));
+    solution = Array.from({length:9}, () => Array(9).fill(0));
+    fillGrid(solution);
+    const emptyCells = parseInt(difficultySelect.value);
+    puzzle = solution.map(row => [...row]);
+    let count = 0;
+    while (count < emptyCells) {
+        let r = Math.floor(Math.random()*9), c = Math.floor(Math.random()*9);
+        if (puzzle[r][c] !== 0) { puzzle[r][c] = 0; count++; }
+    }
+    state = puzzle.map(row => [...row]);
+    notes = Array.from({length:9}, () => Array.from({length:9}, () => new Set()));
 }
 
 function fillGrid(grid) {
-  for (let i = 0; i < 81; i++) {
-    let r = Math.floor(i/9), c = i%9;
-    if (grid[r][c] === 0) {
-      let nums = [1,2,3,4,5,6,7,8,9].sort(() => Math.random() - 0.5);
-      for (let n of nums) {
-        if (isValid(grid, r, c, n)) {
-          grid[r][c] = n;
-          if (fillGrid(grid)) return true;
-          grid[r][c] = 0;
+    for (let i = 0; i < 81; i++) {
+        let r = Math.floor(i/9), c = i%9;
+        if (grid[r][c] === 0) {
+            let nums = [1,2,3,4,5,6,7,8,9].sort(() => Math.random() - 0.5);
+            for (let n of nums) {
+                if (isValid(grid, r, c, n)) {
+                    grid[r][c] = n;
+                    if (fillGrid(grid)) return true;
+                    grid[r][c] = 0;
+                }
+            }
+            return false;
         }
-      }
-      return false;
     }
-  }
-  return true;
+    return true;
 }
 
 function isValid(grid, r, c, n) {
-  for (let i = 0; i < 9; i++) if (grid[r][i] === n || grid[i][c] === n) return false;
-  let br = Math.floor(r/3)*3, bc = Math.floor(c/3)*3;
-  for (let i=0; i<3; i++) for (let j=0; j<3; j++) if (grid[br+i][bc+j] === n) return false;
-  return true;
+    for (let i = 0; i < 9; i++) if (grid[r][i] === n || grid[i][c] === n) return false;
+    let br = Math.floor(r/3)*3, bc = Math.floor(c/3)*3;
+    for (let i=0; i<3; i++) for (let j=0; j<3; j++) if (grid[br+i][bc+j] === n) return false;
+    return true;
 }
 
 function renderGrid() {
-  gridEl.innerHTML = '';
-  for (let r=0; r<9; r++) for (let c=0; c<9; c++) {
-    const cell = document.createElement('div');
-    cell.className = 'cell';
-    if (puzzle[r][c] !== 0) cell.classList.add('prefilled');
-    cell.dataset.r = r; cell.dataset.c = c;
-    
-    const input = document.createElement('input');
-    input.value = state[r][c] || '';
-    
-    const notesDiv = document.createElement('div');
-    notesDiv.className = 'pencil-notes';
-    
-    cell.append(notesDiv, input);
-    gridEl.appendChild(cell);
-    
-    // Support tactile amélioré
-    cell.addEventListener('click', () => select(cell));
-    
-    updateCellNotes(r, c, cell);
-    if (state[r][c] !== 0 && state[r][c] !== solution[r][c]) cell.classList.add('error');
-  }
-  updateNumPad();
+    gridEl.innerHTML = '';
+    for (let r=0; r<9; r++) {
+        for (let c=0; c<9; c++) {
+            const cell = document.createElement('div');
+            cell.className = 'cell';
+            if (puzzle[r][c] !== 0) cell.classList.add('prefilled');
+            cell.dataset.r = r; cell.dataset.c = c;
+            
+            const input = document.createElement('input');
+            input.value = state[r][c] || '';
+            
+            const notesDiv = document.createElement('div');
+            notesDiv.className = 'pencil-notes';
+            
+            cell.append(notesDiv, input);
+            gridEl.appendChild(cell);
+            
+            cell.addEventListener('click', () => select(cell));
+            
+            updateCellNotes(r, c, cell);
+            if (state[r][c] !== 0 && state[r][c] !== solution[r][c]) cell.classList.add('error');
+        }
+    }
+    updateNumPad();
 }
 
 function select(cell) {
-  if(!cell) return;
-  document.querySelectorAll('.cell').forEach(c => c.classList.remove('selected', 'highlight-same'));
-  selectedCell = cell;
-  cell.classList.add('selected');
-  const val = state[cell.dataset.r][cell.dataset.c];
-  if (val) {
-    document.querySelectorAll('.cell').forEach(c => {
-      const r = c.dataset.r, col = c.dataset.c;
-      if (state[r][col] == val) c.classList.add('highlight-same');
-    });
-  }
+    if(!cell) return;
+    document.querySelectorAll('.cell').forEach(c => c.classList.remove('selected', 'highlight-same'));
+    selectedCell = cell;
+    cell.classList.add('selected');
+    const val = state[cell.dataset.r][cell.dataset.c];
+    if (val) {
+        document.querySelectorAll('.cell').forEach(c => {
+            const r = c.dataset.r, col = c.dataset.c;
+            if (state[r][col] == val) c.classList.add('highlight-same');
+        });
+    }
 }
 
 function updateCellNotes(r, c, cell) {
-  const notesDiv = cell.querySelector('.pencil-notes');
-  notesDiv.innerHTML = '';
-  if (state[r][c] === 0) {
-    for (let i=1; i<=9; i++) {
-      const span = document.createElement('span');
-      span.textContent = notes[r][c].has(i) ? i : '';
-      notesDiv.appendChild(span);
+    const notesDiv = cell.querySelector('.pencil-notes');
+    notesDiv.innerHTML = '';
+    if (state[r][c] === 0) {
+        for (let i=1; i<=9; i++) {
+            const span = document.createElement('span');
+            span.textContent = notes[r][c].has(i) ? i : '';
+            notesDiv.appendChild(span);
+        }
     }
-  }
 }
 
-function handleInput(n) {
-  if (!selectedCell) return;
-  const r = parseInt(selectedCell.dataset.r), c = parseInt(selectedCell.dataset.c);
-  if (puzzle[r][c] !== 0) return;
+async function handleInput(n) {
+    if (!selectedCell) return;
+    const r = parseInt(selectedCell.dataset.r), c = parseInt(selectedCell.dataset.c);
+    if (puzzle[r][c] !== 0) return;
 
-  if (n !== 0) {
-    const btn = document.querySelector(`.num-pad button[data-num="${n}"]`);
-    if (btn && btn.classList.contains('completed')) return;
-  }
+    if (n !== 0) {
+        const btn = document.querySelector(`.num-pad button[data-num="${n}"]`);
+        if (btn && btn.classList.contains('completed')) return;
+    }
 
-  if (isNoteMode && n !== 0) {
-    if (notes[r][c].has(n)) notes[r][c].delete(n);
-    else notes[r][c].add(n);
-    state[r][c] = 0;
-  } else {
-    state[r][c] = n;
-    notes[r][c].clear();
-  }
-  
-  renderGrid();
-  const newCell = document.querySelector(`[data-r="${r}"][data-c="${c}"]`);
-  if(newCell) select(newCell);
-  
-  updateNumPad();
-  checkWin();
+    if (isNoteMode && n !== 0) {
+        if (notes[r][c].has(n)) notes[r][c].delete(n);
+        else notes[r][c].add(n);
+        state[r][c] = 0;
+    } else {
+        state[r][c] = n;
+        notes[r][c].clear();
+    }
+    
+    renderGrid();
+    const newCell = document.querySelector(`[data-r="${r}"][data-c="${c}"]`);
+    if(newCell) select(newCell);
+    
+    updateNumPad();
+    saveSession(); // Sauvegarde automatique à chaque coup
+    checkWin();
 }
-
-// Navigation clavier conservée
-document.addEventListener('keydown', (e) => {
-  if (!selectedCell) return;
-  const r = parseInt(selectedCell.dataset.r), c = parseInt(selectedCell.dataset.c);
-  if (e.key >= '1' && e.key <= '9') handleInput(parseInt(e.key));
-  else if (['Backspace', 'Delete', '0'].includes(e.key)) handleInput(0);
-  else if (e.key.startsWith('Arrow')) {
-    let nr = r, nc = c;
-    if (e.key === 'ArrowUp') nr = Math.max(0, r - 1);
-    if (e.key === 'ArrowDown') nr = Math.min(8, r + 1);
-    if (e.key === 'ArrowLeft') nc = Math.max(0, c - 1);
-    if (e.key === 'ArrowRight') nc = Math.min(8, c + 1);
-    select(document.querySelector(`[data-r="${nr}"][data-c="${nc}"]`));
-  }
-});
 
 function updateNumPad() {
-  const counts = {};
-  for (let i = 1; i <= 9; i++) counts[i] = 0;
-  document.querySelectorAll('.cell').forEach(cell => {
-    const val = state[cell.dataset.r][cell.dataset.c];
-    if (val !== 0 && !cell.classList.contains('error')) counts[val]++;
-  });
-  document.querySelectorAll('.num-pad button[data-num]').forEach(btn => {
-    const n = parseInt(btn.dataset.num);
-    if (n !== 0 && counts[n] >= 9) btn.classList.add('completed');
-    else btn.classList.remove('completed');
-  });
+    const counts = {};
+    for (let i = 1; i <= 9; i++) counts[i] = 0;
+    document.querySelectorAll('.cell').forEach(cell => {
+        const val = state[cell.dataset.r][cell.dataset.c];
+        if (val !== 0 && !cell.classList.contains('error')) counts[val]++;
+    });
+    document.querySelectorAll('.num-pad button[data-num]').forEach(btn => {
+        const n = parseInt(btn.dataset.num);
+        if (n !== 0 && counts[n] >= 9) btn.classList.add('completed');
+        else btn.classList.remove('completed');
+    });
 }
 
-function updateNoteUI() {
-  noteBtn.classList.toggle('active', isNoteMode);
-  noteBtn.textContent = isNoteMode ? "✎ Note: ON" : "✎ Note: OFF";
+function startTimer(resume = false) {
+    clearInterval(timerInterval);
+    if (!resume) seconds = 0;
+    const display = () => {
+        const m = Math.floor(seconds/60).toString().padStart(2,'0'), s = (seconds%60).toString().padStart(2,'0');
+        document.getElementById('timer').textContent = `${m}:${s}`;
+    };
+    display();
+    timerInterval = setInterval(() => {
+        seconds++;
+        display();
+    }, 1000);
 }
 
-noteBtn.onclick = () => { isNoteMode = !isNoteMode; updateNoteUI(); };
-document.querySelectorAll('.num-pad button[data-num]').forEach(btn => {
-  btn.onclick = () => handleInput(parseInt(btn.dataset.num));
+async function checkWin() {
+    let errors = document.querySelectorAll('.cell.error').length;
+    let full = state.flat().every(v => v !== 0);
+    
+    if (full && errors === 0) {
+        clearInterval(timerInterval);
+        const finalTimeStr = document.getElementById('timer').textContent;
+        const isNewRecord = await updateStats(seconds, difficultySelect.value);
+        
+        if (currentUserUid) await remove(ref(db, `users/${currentUserUid}/games/sudoku/session`));
+
+        // Affichage Modal
+        document.getElementById('finalTimeDisplay').textContent = finalTimeStr;
+        const recordSec = document.getElementById('recordSection');
+        recordSec.innerHTML = isNewRecord ? '<div class="record-badge">🏆 NOUVEAU RECORD !</div>' : '';
+        document.getElementById('endModal').style.display = 'flex';
+    }
+}
+
+// Pour fermer la modal et relancer
+window.closeModal = () => {
+    document.getElementById('endModal').style.display = 'none';
+    initGame();
+};
+
+// --- INITIALISATION & ÉVÉNEMENTS ---
+
+// --- INITIALISATION & ÉVÉNEMENTS ---
+
+// --- INITIALISATION & ÉVÉNEMENTS ---
+
+onAuthStateChanged(auth, async (user) => {
+    // Récupération de l'UID
+    currentUserUid = (user ? user.uid : null) || localStorage.getItem('active_uid');
+    
+    if (currentUserUid) {
+        const restored = await restoreSession();
+        if (!restored) initGame();
+    } else {
+        initGame();
+    }
 });
 
-function startTimer() {
-  clearInterval(timerInterval);
-  seconds = 0;
-  timerInterval = setInterval(() => {
-    seconds++;
-    const m = Math.floor(seconds/60).toString().padStart(2,'0'), s = (seconds%60).toString().padStart(2,'0');
-    document.getElementById('timer').textContent = `${m}:${s}`;
-  }, 1000);
-}
-
-function checkWin() {
-  let errors = document.querySelectorAll('.cell.error').length;
-  let full = state.flat().every(v => v !== 0);
-  if (full && errors === 0) { clearInterval(timerInterval); alert("Bravo !"); }
-}
+// Liaison des boutons
+noteBtn.onclick = () => {
+    isNoteMode = !isNoteMode;
+    noteBtn.classList.toggle('active', isNoteMode);
+    noteBtn.textContent = isNoteMode ? "✎ Note: ON" : "✎ Note: OFF";
+};
 
 document.getElementById('newBtn').onclick = initGame;
-initGame();
+
+document.querySelectorAll('.num-pad button[data-num]').forEach(btn => {
+    btn.onclick = () => handleInput(parseInt(btn.dataset.num));
+});
+
+document.addEventListener('keydown', (e) => {
+    if (!selectedCell) return;
+    const r = parseInt(selectedCell.dataset.r), c = parseInt(selectedCell.dataset.c);
+    if (e.key >= '1' && e.key <= '9') handleInput(parseInt(e.key));
+    else if (['Backspace', 'Delete', '0'].includes(e.key)) handleInput(0);
+    else if (e.key.startsWith('Arrow')) {
+        let nr = r, nc = c;
+        if (e.key === 'ArrowUp') nr = Math.max(0, r - 1);
+        if (e.key === 'ArrowDown') nr = Math.min(8, r + 1);
+        if (e.key === 'ArrowLeft') nc = Math.max(0, c - 1);
+        if (e.key === 'ArrowRight') nc = Math.min(8, c + 1);
+        const target = document.querySelector(`[data-r="${nr}"][data-c="${nc}"]`);
+        if (target) select(target);
+    }
+});
+
+document.getElementById('newBtn').onclick = initGame;
+
+document.querySelectorAll('.num-pad button[data-num]').forEach(btn => {
+    btn.onclick = () => handleInput(parseInt(btn.dataset.num));
+});
+
+document.addEventListener('keydown', (e) => {
+    if (!selectedCell) return;
+    const r = parseInt(selectedCell.dataset.r), c = parseInt(selectedCell.dataset.c);
+    if (e.key >= '1' && e.key <= '9') handleInput(parseInt(e.key));
+    else if (['Backspace', 'Delete', '0'].includes(e.key)) handleInput(0);
+    else if (e.key.startsWith('Arrow')) {
+        let nr = r, nc = c;
+        if (e.key === 'ArrowUp') nr = Math.max(0, r - 1);
+        if (e.key === 'ArrowDown') nr = Math.min(8, r + 1);
+        if (e.key === 'ArrowLeft') nc = Math.max(0, c - 1);
+        if (e.key === 'ArrowRight') nc = Math.min(8, c + 1);
+        select(document.querySelector(`[data-r="${nr}"][data-c="${nc}"]`));
+    }
+});
 </script>
 </body>
-
 </html>

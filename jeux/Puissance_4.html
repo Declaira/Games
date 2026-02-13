@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>🟡 Puissance 4  🔴</title>
-    <link rel="icon" href="./logo.png" type="image/x-icon">
+    <link rel="icon" href="../logo/logo.png" type="image/x-icon">
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@600;700&display=swap" rel="stylesheet">
     <style>
         /* --- STYLES CSS --- */
@@ -83,582 +83,661 @@
     <script src="../header.js"></script>
     <script>
         if(typeof injectHeader === 'function') {
-            injectHeader({ title: "🟡 Puissance 4  🔴", homeLink: "../accueil.html", showHome: true });
+            injectHeader({ title: "🟡 Puissance 4 🔴", homeLink: "../accueil.html", showHome: true });
         }
     </script>
 
     <div class="container">
         <div id="screen-menu" class="box">
-            <h1>Bienvenue</h1>
-            <p>Entrez un pseudo (optionnel)</p>
-            <input type="text" id="username-input" placeholder="Pseudo..." maxlength="12">
-            <br>
-            <div style="margin-top: 15px;">
-                <button class="btn-solo" onclick="prepareSolo()">👤 Solo (vs IA)</button>
-                <button class="btn-multi" onclick="startMulti()">🌍 En Ligne (Duo)</button>
+            <h1>Puissance 4</h1>
+            <div id="lobby-controls">
+                <p><b>Mode En Ligne</b></p>
+                <input type="text" id="roomInput" placeholder="Code Salon (ex: ABCD)" maxlength="6" style="text-transform: uppercase;">
+                <br>
+                <button class="btn-multi" onclick="joinRoom()">Rejoindre / Créer</button>
+                
+                <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
+                
+                <p><b>Mode Solo</b></p>
+                <button class="btn-solo" onclick="prepareSolo()">Jouer contre l'IA</button>
             </div>
         </div>
 
         <div id="screen-solo-setup" class="box hidden">
             <h2>Configuration Solo</h2>
-            
-            <p style="margin-bottom: 5px;">1. Niveau de l'IA</p>
+            <p>1. Niveau de l'IA</p>
             <div>
-                <button id="btn-diff-normal" class="btn-diff-normal" onclick="selectDifficulty('normal')">🙂 Normal</button>
-                <button id="btn-diff-hard" class="btn-diff-hard" onclick="selectDifficulty('hard')">😈 Impossible</button>
+                <button id="btn-diff-easy" class="btn-diff-normal" onclick="selectDifficulty('easy')">🙂 Facile</button>
+                <button id="btn-diff-hard" class="btn-diff-hard" onclick="selectDifficulty('hard')">😈 Difficile</button>
             </div>
 
             <div id="color-selection-area" class="hidden" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;">
-                <p style="margin-bottom: 5px;">2. Votre couleur</p>
-                <button class="btn-choice color-red" onclick="startSolo('red')">Rouge</button>
-                <button class="btn-choice color-yellow" onclick="startSolo('yellow')">Jaune</button>
+                <p>2. Votre couleur</p>
+                <button class="btn-choice color-red" onclick="startAiGame('red')">Rouge</button>
+                <button class="btn-choice color-yellow" onclick="startAiGame('yellow')">Jaune</button>
             </div>
             
-            <button class="btn-menu" onclick="goToMenu()" style="margin-top:20px;">Annuler</button>
+            <button class="btn-menu" onclick="location.reload()" style="margin-top:20px;">Annuler</button>
         </div>
 
         <div id="screen-game" class="hidden">
             <div class="box" style="padding-bottom: 15px;">
-                <div class="status-text" id="status-display">Chargement...</div>
-                <div class="turn-indicator" id="turn-display">Initialisation</div>
+                <div class="status-text" id="status-display">Salon : -</div>
+                <div class="turn-indicator" id="turn-display">Attente...</div>
                 
                 <div id="setup-color-multi" class="hidden" style="margin-top:15px; border-top: 2px solid #eee; padding-top:15px;">
-                    <p style="margin:0 0 10px 0; font-weight:bold;">Vous êtes le Joueur 1 ! Choisissez la couleur :</p>
-                    <button class="btn-choice color-red" style="padding: 10px;" onclick="window.chooseColorMulti('red')">Rouge</button>
-                    <button class="btn-choice color-yellow" style="padding: 10px;" onclick="window.chooseColorMulti('yellow')">Jaune</button>
+                    <p style="margin:0 0 10px 0; font-weight:bold;">Choisissez la couleur de départ :</p>
+                    <button class="btn-choice color-red" onclick="window.chooseColorMulti('red')">Rouge</button>
+                    <button class="btn-choice color-yellow" onclick="window.chooseColorMulti('yellow')">Jaune</button>
                 </div>
             </div>
 
             <div id="board"></div>
             
             <div class="game-controls">
-                <button id="btn-restart-grid" class="btn-restart hidden" onclick="resetCurrentGrid()">🔄 Rejouer la grille</button>
-                <button class="btn-menu" onclick="goToMenu()">🏠 Menu Principal</button>
+                <button id="btn-restart" class="btn-restart hidden" onclick="resetCurrentGrid()">🔄 Rejouer</button>
+                <button class="btn-menu" onclick="leaveRoom()">🚪 Quitter la partie</button>
             </div>
         </div>
     </div>
 
     <div id="modal-multi-end" class="modal-overlay hidden">
         <div class="modal-content">
-            <h2 id="multi-end-title">Partie Terminée</h2>
-            <p id="multi-end-msg">...</p>
-            <div id="multi-loser-controls" class="hidden" style="margin-top: 20px;">
-                <p>Revanche ?</p>
-                <button class="btn-solo" onclick="sendRematch(true)">Je commence</button>
-                <button class="btn-multi" onclick="sendRematch(false)">L'adversaire commence</button>
+            <h2 id="multi-end-title">Terminé !</h2>
+            <p id="multi-end-msg"></p>
+            <p id="record-status" style="font-size: 0.9em; opacity: 0.8;"></p>
+            
+            <div id="loser-choice-area" class="hidden" style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px;">
+                <p style="font-weight: bold; margin-bottom: 10px;">Voulez-vous commencer la revanche ?</p>
+                <div style="display: flex; gap: 10px; justify-content: center;">
+                    <button onclick="resetWithChoice(true)" class="btn-restart" >Oui, je commence</button>
+                    <button onclick="resetWithChoice(false)" class="btn-restart" >Non, l'IA commence</button>
+                </div>
             </div>
-            <div id="multi-winner-wait" class="hidden" style="margin-top: 20px; color:#7f8c8d;">
-                ⏳ Attente du choix de l'adversaire...
-            </div>
-             <button class="btn-menu" onclick="goToMenu()" style="margin-top:20px;">Quitter</button>
+
+            <button id="btn-standard-reset" onclick="resetCurrentGrid()" class="btn-restart" style="margin-top: 15px;">Rejouer</button>
+            <button onclick="leaveRoom()" class="btn-menu">Quitter</button>
         </div>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-        import { getDatabase, ref, onValue, set, update, onDisconnect, remove, off } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+import { getDatabase, ref, set, onValue, update, runTransaction, onDisconnect, get, remove } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
-        // CONFIG FIREBASE
-        const firebaseConfig = {
-            apiKey: "AIzaSyB29fMpTwBgsqkjijkNoQJ2kGChSeQDX_w",
-            authDomain: "quiz-ea203.firebaseapp.com",
-            databaseURL: "https://quiz-ea203-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "quiz-ea203",
-            storageBucket: "quiz-ea203.firebasestorage.app",
-            messagingSenderId: "605137421110",
-            appId: "1:605137421110:web:289e0876fe06108deaa997"
-        };
-        const app = initializeApp(firebaseConfig);
-        const database = getDatabase(app);
-        const gameRef = ref(database, 'puissance4/state');
-        const playersRef = ref(database, 'puissance4/players');
+const firebaseConfig = {
+    apiKey: "AIzaSyB29fMpTwBgsqkjijkNoQJ2kGChSeQDX_w",
+    authDomain: "quiz-ea203.firebaseapp.com",
+    databaseURL: "https://quiz-ea203-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "quiz-ea203",
+    storageBucket: "quiz-ea203.firebasestorage.app",
+    messagingSenderId: "605137421110",
+    appId: "1:605137421110:web:289e0876fe06108deaa997"
+};
 
-        // VARIABLES GLOBALES
-        let currentMode = null;
-        let myName = "Joueur";
-        let myPlayerNum = null;
-        let firebaseListeners = []; 
-        let isAiThinking = false;
-        let aiDifficulty = 'normal'; // 'normal' ou 'hard'
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
 
-        let gameState = {
-            board: [],
+let currentUser = null;
+let currentRoom = null;
+let myName = "";
+let isAiGame = false;
+let aiLevel = "easy";
+let currentGameState = null;
+let currentUserColor = 'red';
+let lastWinner = null;
+let lastMove = null;
+
+// --- AUTH & INITIALISATION ---
+onAuthStateChanged(auth, (user) => {
+    // On utilise Firebase ou le fallback local
+    currentUser = user || { uid: localStorage.getItem('active_uid') || 'guest_' + Math.floor(Math.random()*1000) };
+    myName = user?.displayName || "Joueur_" + currentUser.uid.substring(0, 4);
+});
+
+// --- GESTION DES STATS ---
+async function recordResult(result, type) {
+    if (!currentUser?.uid || currentUser.uid.startsWith('guest')) return;
+    
+    const statsRef = ref(db, `users/${currentUser.uid}/games/p4/stats/${type}`);
+    const snap = await get(statsRef);
+    const data = snap.exists() ? snap.val() : { wins: 0, losses: 0, draws: 0 };
+
+    if (result === 'win') data.wins++;
+    else if (result === 'loss') data.losses++;
+    else data.draws++;
+
+    await set(statsRef, data);
+    
+    // Affichage dans la modal
+    const recordStatus = document.getElementById('record-status');
+    if (recordStatus) {
+        if (result === 'win') recordStatus.innerText = "📈 Victoire enregistrée ! (+1 Win)";
+        else if (result === 'loss') recordStatus.innerText = "📉 Défaite enregistrée...";
+        else recordStatus.innerText = "🤝 Match nul enregistré.";
+    }
+}
+
+// --- NAVIGATION INTERFACE ---
+function showGame(visible) {
+    const menu = document.getElementById('screen-menu');
+    const soloSetup = document.getElementById('screen-solo-setup');
+    const game = document.getElementById('screen-game');
+
+    if (visible) {
+        if(menu) menu.classList.add('hidden');
+        if(soloSetup) soloSetup.classList.add('hidden');
+        if(game) game.classList.remove('hidden');
+    } else {
+        if(menu) menu.classList.remove('hidden');
+        if(game) game.classList.add('hidden');
+    }
+}
+
+window.prepareSolo = () => {
+    document.getElementById('screen-menu').classList.add('hidden');
+    document.getElementById('screen-solo-setup').classList.remove('hidden');
+};
+
+window.selectDifficulty = (level) => {
+    aiLevel = level;
+    document.getElementById('btn-diff-easy').classList.remove('selected-diff');
+    document.getElementById('btn-diff-hard').classList.remove('selected-diff');
+    document.getElementById(`btn-diff-${level}`).classList.add('selected-diff');
+    document.getElementById('color-selection-area').classList.remove('hidden');
+};
+
+// --- LOGIQUE MULTIJOUEUR ---
+window.joinRoom = async () => {
+    const roomInput = document.getElementById('roomInput').value.trim().toUpperCase();
+    if (!roomInput) return alert("Code requis");
+    
+    currentRoom = roomInput;
+    isAiGame = false;
+    const roomRef = ref(db, `rooms/p4_${currentRoom}`);
+
+    await runTransaction(roomRef, (room) => {
+        if (!room) {
+            // Création de la salle
+            return {
+                board: Array(6).fill(0).map(() => Array(7).fill(0)),
+                turn: 1, // P1 (Rouge) commence
+                p1: { uid: currentUser.uid, name: myName },
+                p2: null,
+                status: 'waiting',
+                recorded: false
+            };
+        } else if (!room.p2 && room.p1.uid !== currentUser.uid) {
+            // Le joueur 2 rejoint
+            room.p2 = { uid: currentUser.uid, name: myName };
+            room.status = 'playing';
+            return room;
+        }
+        return; 
+    });
+
+    // Indiquer la salle comme interrompue si l'un des joueurs perd la connexion
+    onDisconnect(roomRef).update({ status: 'aborted' });
+
+    // Écoute des mises à jour
+    onValue(roomRef, (snap) => {
+        const data = snap.val();
+        if (data) updateUI(data);
+    });
+
+    showGame(true);
+};
+
+window.leaveRoom = async () => {
+    if (currentRoom && !isAiGame) {
+        const roomRef = ref(db, `rooms/p4_${currentRoom}`);
+        const snap = await get(roomRef);
+        if (snap.exists() && (snap.val().p1?.uid === currentUser.uid || snap.val().p2?.uid === currentUser.uid)) {
+            await remove(roomRef); // Supprime la salle de Firebase
+        }
+    }
+    location.reload(); 
+};
+
+// --- LOGIQUE SOLO IA ---
+function evaluateBoard(board, p) {
+    let score = 0;
+    const opp = p === 1 ? 2 : 1;
+
+    // Favoriser la colonne centrale (stratégie clé au Puissance 4)
+    for (let r = 0; r < 6; r++) {
+        if (board[r][3] === p) score += 4;
+        else if (board[r][3] === opp) score -= 3;
+    }
+    
+    const scoreWindow = (window) => {
+        let pCount = window.filter(x => x === p).length;
+        let oCount = window.filter(x => x === opp).length;
+        let empty = window.filter(x => x === 0).length;
+
+        if (pCount === 4) return 10000;
+        if (pCount === 3 && empty === 1) return 100;
+        if (pCount === 2 && empty === 2) return 10;
+        
+        if (oCount === 3 && empty === 1) return -900; // Bloquer l'adversaire est prioritaire
+        if (oCount === 2 && empty === 2) return -50;
+        return 0;
+    };
+
+    // Scan Horizontal
+    for (let r = 0; r < 6; r++) {
+        for (let c = 0; c < 4; c++) score += scoreWindow([board[r][c], board[r][c+1], board[r][c+2], board[r][c+3]]);
+    }
+    // Scan Vertical
+    for (let c = 0; c < 7; c++) {
+        for (let r = 0; r < 3; r++) score += scoreWindow([board[r][c], board[r+1][c], board[r+2][c], board[r+3][c]]);
+    }
+    // Diagonales
+    for (let r = 0; r < 3; r++) {
+        for (let c = 0; c < 4; c++) {
+            score += scoreWindow([board[r][c], board[r+1][c+1], board[r+2][c+2], board[r+3][c+3]]);
+            score += scoreWindow([board[r+3][c], board[r+2][c+1], board[r+1][c+2], board[r][c+3]]);
+        }
+    }
+    return score;
+}
+
+function minimax(board, depth, alpha, beta, maximizing, aiNum) {
+    const opp = aiNum === 1 ? 2 : 1;
+    
+    // Vérification immédiate de victoire/défaite pour stopper l'arbre
+    const validCols = [];
+    for (let c of [3, 2, 4, 1, 5, 0, 6]) { // Ordre optimisé : centre en premier
+        if (board[0][c] === 0) validCols.push(c);
+    }
+
+    // Conditions d'arrêt
+    if (depth === 0 || validCols.length === 0) return { score: evaluateBoard(board, aiNum) };
+
+    if (maximizing) {
+        let value = -Infinity;
+        let column = validCols[0];
+        for (let c of validCols) {
+            let r = getFirstEmptyRow(c, board);
+            board[r][c] = aiNum;
+            // Si ce coup gagne, on le prend immédiatement
+            if (checkWin(r, c, board)) {
+                board[r][c] = 0;
+                return { column: c, score: 100000 + depth };
+            }
+            let res = minimax(board, depth - 1, alpha, beta, false, aiNum);
+            board[r][c] = 0;
+            if (res.score > value) { value = res.score; column = c; }
+            alpha = Math.max(alpha, value);
+            if (alpha >= beta) break;
+        }
+        return { column, score: value };
+    } else {
+        let value = Infinity;
+        for (let c of validCols) {
+            let r = getFirstEmptyRow(c, board);
+            board[r][c] = opp;
+            if (checkWin(r, c, board)) {
+                board[r][c] = 0;
+                return { score: -100000 - depth };
+            }
+            let res = minimax(board, depth - 1, alpha, beta, true, aiNum);
+            board[r][c] = 0;
+            if (res.score < value) value = res.score;
+            beta = Math.min(beta, value);
+            if (alpha >= beta) break;
+        }
+        return { score: value };
+    }
+}
+
+window.startAiGame = (playerColor) => {
+    isAiGame = true;
+    currentUserColor = playerColor;
+    const aiColor = (playerColor === 'red' ? 'yellow' : 'red');
+    currentRoom = "SOLO_IA";
+    showGame(true);
+
+    // Déterminer qui commence le tour 1
+    let playerStarts;
+    if (lastWinner === null) playerStarts = Math.random() > 0.5;
+    else playerStarts = (lastWinner === 'ia'); 
+
+    currentGameState = {
+        board: Array(6).fill(0).map(() => Array(7).fill(0)),
+        turn: 1,
+        // On stocke la couleur de chaque joueur dans l'objet
+        p1: { 
+            uid: playerStarts ? currentUser.uid : 'ia', 
+            name: playerStarts ? myName : `IA (${aiLevel})`,
+            color: playerStarts ? playerColor : aiColor 
+        },
+        p2: { 
+            uid: !playerStarts ? currentUser.uid : 'ia', 
+            name: !playerStarts ? myName : `IA (${aiLevel})`,
+            color: !playerStarts ? playerColor : aiColor
+        },
+        status: 'playing',
+        recorded: false
+    };
+    
+    updateUI(currentGameState);
+    if (!playerStarts) setTimeout(() => makeAiMove(), 600);
+};
+
+async function playAiTurn(col) {
+    if (!isAiGame || currentGameState.status !== 'playing') return;
+
+    const myNum = currentGameState.p1.uid === currentUser.uid ? 1 : 2;
+    if (currentGameState.turn !== myNum) return;
+
+    let row = getFirstEmptyRow(col, currentGameState.board);
+    if (row === -1) return; // Colonne pleine
+
+    // 1. Coup du joueur
+    applyMove(row, col, myNum);
+
+    // 2. Coup de l'IA (s'il n'a pas gagné)
+    if (currentGameState.status === 'playing') {
+        setTimeout(() => makeAiMove(), 600);
+    }
+}
+
+function makeAiMove() {
+    if (currentGameState.status !== 'playing') return;
+    const aiNum = currentGameState.p1.uid === 'ia' ? 1 : 2;
+    
+    let aiCol;
+    if (aiLevel === 'hard') {
+        // Profondeur 7 : analyse très profonde
+        aiCol = minimax(currentGameState.board, 7, -Infinity, Infinity, true, aiNum).column;
+    } else {
+        aiCol = calculateBestMove(currentGameState.board, aiNum, 'easy');
+    }
+    
+    const aiRow = getFirstEmptyRow(aiCol, currentGameState.board);
+    if (aiRow !== -1) applyMove(aiRow, aiCol, aiNum);
+}
+
+function applyMove(row, col, playerNum) {
+    lastMove = { r: row, c: col };
+    currentGameState.board[row][col] = playerNum;
+    
+    if (checkWin(row, col, currentGameState.board)) {
+        currentGameState.status = 'finished';
+        // Détermine si le gagnant est l'utilisateur ou l'IA
+        currentGameState.winnerUid = playerNum === (currentGameState.p1.uid === currentUser.uid ? 1 : 2) ? currentUser.uid : 'ia';
+        
+        // --- LIGNE À AJOUTER ICI ---
+        lastWinner = currentGameState.winnerUid; 
+        // ---------------------------
+
+    } else if (currentGameState.board[0].every(c => c !== 0)) {
+        currentGameState.status = 'draw';
+        lastWinner = null; // Optionnel : match nul, on pourra repartir sur du hasard
+    } else {
+        currentGameState.turn = currentGameState.turn === 1 ? 2 : 1;
+    }
+    updateUI(currentGameState);
+}
+
+function calculateBestMove(board, aiNum, level) {
+    const playerNum = aiNum === 1 ? 2 : 1;
+    const validCols = [];
+    for (let c = 0; c < 7; c++) { 
+        if (board[0][c] === 0) validCols.push(c); 
+    }
+
+    // --- LOGIQUE COMMUNE (Même pour le mode Easy) ---
+    // 1. Est-ce que l'IA peut gagner sur ce coup ?
+    for (let c of validCols) {
+        let r = getFirstEmptyRow(c, board);
+        board[r][c] = aiNum;
+        if (checkWin(r, c, board)) {
+            board[r][c] = 0; // On remet à vide
+            return c; // On prend la victoire immédiatement
+        }
+        board[r][c] = 0;
+    }
+
+    // 2. Est-ce que l'IA doit bloquer un Puissance 4 adverse ?
+    for (let c of validCols) {
+        let r = getFirstEmptyRow(c, board);
+        board[r][c] = playerNum;
+        if (checkWin(r, c, board)) {
+            board[r][c] = 0;
+            return c; // On bloque l'adversaire
+        }
+        board[r][c] = 0;
+    }
+
+    if (level === 'hard') {
+        // Gagner
+        for (let c of validCols) {
+            let r = getFirstEmptyRow(c, board);
+            board[r][c] = aiNum;
+            if (checkWin(r, c, board)) { board[r][c] = 0; return c; }
+            board[r][c] = 0;
+        }
+        // Bloquer
+        for (let c of validCols) {
+            let r = getFirstEmptyRow(c, board);
+            board[r][c] = playerNum;
+            if (checkWin(r, c, board)) { board[r][c] = 0; return c; }
+            board[r][c] = 0;
+        }
+    }
+    // Random (Facile ou rien de spécial en Difficile)
+    return validCols[Math.floor(Math.random() * validCols.length)];
+}
+
+function getFirstEmptyRow(col, board) {
+    for (let r = 5; r >= 0; r--) {
+        if (board[r][col] === 0) return r;
+    }
+    return -1;
+}
+
+// --- JOUER UN JETON ---
+window.dropToken = async (col) => {
+    if (isAiGame) {
+        return playAiTurn(col);
+    }
+
+    const roomRef = ref(db, `rooms/p4_${currentRoom}`);
+    await runTransaction(roomRef, (game) => {
+        if (!game || game.status !== 'playing') return;
+        
+        const myNum = game.p1.uid === currentUser.uid ? 1 : 2;
+        if (game.turn !== myNum) return;
+
+        let row = getFirstEmptyRow(col, game.board);
+        if (row !== -1) {
+            game.board[row][col] = myNum;
+            lastMove = { r: row, c: col };
+            if (checkWin(row, col, game.board)) {
+                game.status = 'finished';
+                game.winnerUid = currentUser.uid;
+            } else if (game.board[0].every(c => c !== 0)) {
+                game.status = 'draw';
+            } else {
+                game.turn = game.turn === 1 ? 2 : 1;
+            }
+        }
+        return game;
+    });
+};
+
+// --- MISE À JOUR INTERFACE ---
+function updateUI(game) {
+    const boardEl = document.getElementById('board');
+    if (!boardEl) return;
+    boardEl.innerHTML = '';
+    
+    // Déterminer quelle couleur correspond au chiffre 1 et 2 sur le plateau
+    const colorP1 = isAiGame ? game.p1.color : 'red';
+    const colorP2 = isAiGame ? game.p2.color : 'yellow';
+
+    game.board.forEach((row, r) => {
+        row.forEach((cell, c) => {
+            const div = document.createElement('div');
+            div.className = 'cell';
+            
+            // On applique la couleur selon les données du match
+            if (cell === 1) div.classList.add(`color-${colorP1}`);
+            if (cell === 2) div.classList.add(`color-${colorP2}`);
+
+            if (lastMove && lastMove.r === r && lastMove.c === c) {
+                div.classList.add('anim-drop');
+            }
+            
+            div.onclick = () => window.dropToken(c);
+            boardEl.appendChild(div);
+        });
+    });
+
+    const statusEl = document.getElementById('status-display');
+    const turnEl = document.getElementById('turn-display');
+    const modal = document.getElementById('modal-multi-end');
+    const endMsg = document.getElementById('multi-end-msg');
+    const endTitle = document.getElementById('multi-end-title');
+
+    // Mises à jour textuelles
+    if (game.status === 'waiting') {
+        if(statusEl) statusEl.innerText = "⏳ En attente d'un adversaire...";
+        if(turnEl) turnEl.innerText = "Code: " + currentRoom;
+        if(modal) modal.classList.add('hidden');
+    } else if (game.status === 'playing') {
+        if(modal) modal.classList.add('hidden');
+        const isMyTurn = (game.turn === 1 && game.p1.uid === currentUser.uid) || 
+                         (game.turn === 2 && game.p2?.uid === currentUser.uid);
+        
+        if(statusEl) statusEl.innerText = isAiGame ? `Mode Solo (${aiLevel === 'hard' ? 'Difficile' : 'Facile'})` : `Salon : ${currentRoom}`;
+        if(turnEl) {
+            turnEl.innerText = isMyTurn ? "À VOUS DE JOUER !" : "Attente de l'adversaire...";
+            turnEl.style.background = isMyTurn ? "#dff9fb" : "#eee";
+        }
+    } else if (game.status === 'finished' || game.status === 'draw') {
+        const won = game.winnerUid === currentUser.uid;
+        const typeStats = isAiGame ? `ia_${aiLevel}` : 'online';
+        
+        if(turnEl) turnEl.innerText = game.status === 'draw' ? "Match nul !" : (won ? "🏆 VICTOIRE !" : "💀 DÉFAITE...");
+
+        if (modal) {
+            endTitle.innerText = game.status === 'draw' ? "Match Nul !" : (won ? "Victoire !" : "Défaite");
+            endMsg.innerText = game.status === 'draw' ? "Aucun vainqueur." : (won ? "Vous avez gagné cette manche." : "L'adversaire a été plus fort.");
+            modal.classList.remove('hidden');
+        }
+
+        // Enregistrement des Stats en fin de partie (vérifie qu'il ne s'exécute qu'une fois)
+        if (!game.recorded) {
+            recordResult(game.status === 'draw' ? 'draw' : (won ? 'win' : 'loss'), typeStats);
+            game.recorded = true;
+            if (!isAiGame) {
+                update(ref(db, `rooms/p4_${currentRoom}`), { recorded: true });
+            }
+        }
+    } else if (game.status === 'aborted') {
+        if(modal) {
+            endTitle.innerText = "Partie annulée";
+            endMsg.innerText = "L'adversaire a quitté la partie.";
+            document.getElementById('record-status').innerText = "";
+            modal.classList.remove('hidden');
+        }
+    }
+}
+
+// --- REJOUER UNE MANCHE ---
+window.resetWithChoice = (userStarts) => {
+    document.getElementById('modal-multi-end').classList.add('hidden');
+    lastMove = null;
+    const playerColor = currentUserColor; 
+    const aiColor = (playerColor === 'red' ? 'yellow' : 'red');
+
+    currentGameState = {
+        board: Array(6).fill(0).map(() => Array(7).fill(0)),
+        turn: 1,
+        p1: { 
+            uid: userStarts ? currentUser.uid : 'ia', 
+            name: userStarts ? myName : 'IA',
+            color: userStarts ? playerColor : aiColor 
+        },
+        p2: { 
+            uid: !userStarts ? currentUser.uid : 'ia', 
+            name: !userStarts ? myName : 'IA',
+            color: !userStarts ? playerColor : aiColor
+        },
+        status: 'playing',
+        recorded: false
+    };
+
+    updateUI(currentGameState);
+    if (!userStarts) setTimeout(() => makeAiMove(), 800);
+};
+window.resetCurrentGrid = async () => {
+    const modal = document.getElementById('modal-multi-end');
+    const loserArea = document.getElementById('loser-choice-area');
+    const standardBtn = document.getElementById('btn-standard-reset');
+    lastMove = null;
+    if (isAiGame) {
+        // En mode Solo, si le jeu est fini et qu'il n'y a pas eu de nul
+        // On s'assure que l'utilisateur a les boutons de choix sous les yeux
+        if (currentGameState.status === 'finished') {
+            const won = currentGameState.winnerUid === currentUser.uid;
+            
+            if (!won) {
+                // Si l'utilisateur a perdu, on ne ferme pas la modal, 
+                // on force l'affichage du choix "Qui commence ?"
+                if (loserArea) loserArea.classList.remove('hidden');
+                if (standardBtn) standardBtn.classList.add('hidden');
+                return; // On attend que l'utilisateur clique sur un des deux nouveaux boutons
+            }
+        }
+        
+        // Si c'était un match nul ou que l'utilisateur a gagné, 
+        // on reset normalement (l'IA commencera par défaut via la logique startAiGame)
+        modal.classList.add('hidden');
+        document.getElementById('record-status').innerText = "";
+        window.startAiGame(currentUserColor);
+
+    } else {
+        // --- LOGIQUE MULTIJOUEUR (FIREBASE) ---
+        modal.classList.add('hidden');
+        document.getElementById('record-status').innerText = "";
+        
+        const roomRef = ref(db, `rooms/p4_${currentRoom}`);
+        await update(roomRef, {
+            board: Array(6).fill(0).map(() => Array(7).fill(0)),
             turn: 1,
-            winner: null,
-            colors: null,
-            p1Name: "J1",
-            p2Name: "J2",
-            lastMove: null
-        };
+            status: 'playing',
+            recorded: false,
+            winnerUid: null
+        });
+    }
+};
 
-        // --- NAVIGATION ---
-        function showScreen(screenId) {
-            ['screen-menu', 'screen-solo-setup', 'screen-game'].forEach(id => {
-                document.getElementById(id).classList.add('hidden');
-            });
-            document.getElementById(screenId).classList.remove('hidden');
-            document.getElementById('modal-multi-end').classList.add('hidden');
+// --- LOGIQUE DE VICTOIRE ---
+function checkWin(r, c, board) {
+    const p = board[r][c];
+    if (p === 0) return false;
+    const directions = [[0,1],[1,0],[1,1],[1,-1]];
+    for (let [dr, dc] of directions) {
+        let count = 1;
+        for (let i=1; i<=3; i++) {
+            let nr=r+i*dr, nc=c+i*dc;
+            if(nr<0||nr>=6||nc<0||nc>=7||board[nr][nc]!==p) break;
+            count++;
         }
-
-        window.goToMenu = () => {
-            if (currentMode === 'multi') {
-                 firebaseListeners.forEach(l => off(l.ref, l.type, l.callback));
-                 firebaseListeners = [];
-                 if (myPlayerNum === 1 || myPlayerNum === 2) remove(ref(database, `puissance4/players/p${myPlayerNum}`));
-            }
-            currentMode = null;
-            myPlayerNum = null;
-            isAiThinking = false;
-            resetLocalGameState();
-            showScreen('screen-menu');
-        };
-
-        window.resetCurrentGrid = () => {
-            if(currentMode === 'solo') {
-                resetLocalGameState();
-                // En solo, le perdant commence
-                gameState.turn = (gameState.winner === 1) ? 2 : 1;
-                gameState.winner = null;
-                drawBoard();
-                updateUI();
-                // Si l'IA doit commencer
-                if(gameState.turn === 2) setTimeout(aiMove, 600);
-            } else if (currentMode === 'multi') {
-                if(gameState.winner) document.getElementById('modal-multi-end').classList.remove('hidden');
-            }
-        };
-
-        function resetLocalGameState() {
-            gameState.board = Array(6).fill(null).map(() => Array(7).fill(0));
-            gameState.winner = null;
-            gameState.lastMove = null;
-            document.getElementById('btn-restart-grid').classList.add('hidden');
+        for (let i=1; i<=3; i++) {
+            let nr=r-i*dr, nc=c-i*dc;
+            if(nr<0||nr>=6||nc<0||nc>=7||board[nr][nc]!==p) break;
+            count++;
         }
-
-        // --- MOTEUR DE JEU (Shared) ---
-        function placeTokenLocal(col, playerNum) {
-            let row = -1;
-            for (let r = 5; r >= 0; r--) {
-                if (gameState.board[r][col] === 0) { row = r; break; }
-            }
-            if (row === -1) return false;
-
-            gameState.board[row][col] = playerNum;
-            gameState.lastMove = {r: row, c: col}; 
-            drawBoard();
-            
-            if (checkWin(row, col, gameState.board)) {
-                gameState.winner = playerNum;
-            } else {
-                gameState.turn = (playerNum === 1) ? 2 : 1;
-            }
-            updateUI();
-            return true;
-        }
-
-        function drawBoard() {
-            const boardDiv = document.getElementById('board');
-            boardDiv.innerHTML = '';
-            for (let r = 0; r < 6; r++) {
-                for (let c = 0; c < 7; c++) {
-                    const cell = document.createElement('div');
-                    cell.className = 'cell';
-                    const pNum = gameState.board[r][c];
-                    if (pNum !== 0 && gameState.colors) {
-                        const colorName = gameState.colors[`p${pNum}`];
-                        cell.classList.add(`color-${colorName}`);
-                        if (gameState.lastMove && gameState.lastMove.r === r && gameState.lastMove.c === c) {
-                            cell.classList.add('anim-drop');
-                        }
-                    }
-                    cell.onclick = () => {
-                        if (currentMode === 'solo') handleSoloClick(c);
-                        if (currentMode === 'multi') handleMultiClick(c);
-                    };
-                    boardDiv.appendChild(cell);
-                }
-            }
-        }
-
-        // --- MODE SOLO & IA ---
-        window.prepareSolo = () => {
-            const input = document.getElementById('username-input').value.trim();
-            myName = input || "Joueur";
-            
-            // Reset boutons
-            document.getElementById('btn-diff-normal').classList.remove('selected-diff');
-            document.getElementById('btn-diff-hard').classList.remove('selected-diff');
-            document.getElementById('color-selection-area').classList.add('hidden');
-            
-            showScreen('screen-solo-setup');
-        };
-
-        window.selectDifficulty = (diff) => {
-            aiDifficulty = diff;
-            document.getElementById('btn-diff-normal').classList.toggle('selected-diff', diff === 'normal');
-            document.getElementById('btn-diff-hard').classList.toggle('selected-diff', diff === 'hard');
-            document.getElementById('color-selection-area').classList.remove('hidden');
-        };
-
-        window.startSolo = (chosenColor) => {
-            currentMode = 'solo';
-            myPlayerNum = 1;
-            resetLocalGameState();
-            gameState.p1Name = myName;
-            gameState.p2Name = (aiDifficulty === 'hard') ? "IA Invincible 🤖" : "IA Normale 🤖";
-            gameState.turn = 1;
-            const aiColor = (chosenColor === 'red') ? 'yellow' : 'red';
-            gameState.colors = { p1: chosenColor, p2: aiColor };
-            
-            showScreen('screen-game');
-            drawBoard();
-            updateUI();
-        };
-
-        function handleSoloClick(col) {
-            if (gameState.winner || isAiThinking || gameState.turn !== 1) return;
-            if(placeTokenLocal(col, 1)) {
-                if(!gameState.winner) {
-                    isAiThinking = true;
-                    // Petit délai pour que l'IA ne joue pas instantanément (plus naturel)
-                    setTimeout(aiMove, 500); 
-                }
-            }
-        }
-
-        // ============================================
-        // ============= CERVEAU DE L'IA ==============
-        // ============================================
-
-        function aiMove() {
-            // Copie profonde du plateau pour simulation
-            const boardCopy = gameState.board.map(row => [...row]);
-            
-            // Profondeur : 2 pour Normal (voit juste les erreurs directes), 6 pour Impossible
-            const depth = (aiDifficulty === 'hard') ? 6 : 2; 
-            
-            // Lancer Minimax
-            const bestCol = getBestMove(boardCopy, depth);
-            
-            placeTokenLocal(bestCol, 2);
-            isAiThinking = false;
-        }
-
-        function getBestMove(board, depth) {
-            let validMoves = getValidMoves(board);
-            let bestScore = -Infinity;
-            // Choix par défaut : le centre ou aléatoire
-            let move = validMoves.includes(3) ? 3 : validMoves[Math.floor(Math.random() * validMoves.length)];
-            
-            // Pour l'IA (Player 2), on veut MAXIMISER le score
-            for (let col of validMoves) {
-                let tempBoard = board.map(r => [...r]);
-                dropPiece(tempBoard, col, 2); // Simuler coup IA
-                let score = minimax(tempBoard, depth - 1, -Infinity, Infinity, false);
-                if (score > bestScore) {
-                    bestScore = score;
-                    move = col;
-                }
-            }
-            return move;
-        }
-
-        function minimax(board, depth, alpha, beta, isMaximizing) {
-            let result = checkWinState(board);
-            if (result === 2) return 100000 + depth; // IA Gagne (priorité à la victoire rapide)
-            if (result === 1) return -100000 - depth; // Humain Gagne
-            if (result === 'draw') return 0;
-            if (depth === 0) return evaluateBoard(board, 2);
-
-            let validMoves = getValidMoves(board);
-
-            if (isMaximizing) {
-                let maxEval = -Infinity;
-                for (let col of validMoves) {
-                    let tempBoard = board.map(r => [...r]);
-                    dropPiece(tempBoard, col, 2);
-                    let evalScore = minimax(tempBoard, depth - 1, alpha, beta, false);
-                    maxEval = Math.max(maxEval, evalScore);
-                    alpha = Math.max(alpha, evalScore);
-                    if (beta <= alpha) break;
-                }
-                return maxEval;
-            } else {
-                let minEval = Infinity;
-                for (let col of validMoves) {
-                    let tempBoard = board.map(r => [...r]);
-                    dropPiece(tempBoard, col, 1);
-                    let evalScore = minimax(tempBoard, depth - 1, alpha, beta, true);
-                    minEval = Math.min(minEval, evalScore);
-                    beta = Math.min(beta, evalScore);
-                    if (beta <= alpha) break;
-                }
-                return minEval;
-            }
-        }
-
-        // Fonction d'évaluation stratégique (Heuristique)
-        function evaluateBoard(board, piece) {
-            let score = 0;
-            const oppPiece = (piece === 1) ? 2 : 1;
-
-            // Favoriser la colonne centrale (stratégie clé au P4)
-            let centerArray = [];
-            for(let r=0; r<6; r++) centerArray.push(board[r][3]);
-            let centerCount = centerArray.filter(x => x === piece).length;
-            score += centerCount * 3;
-
-            // Scan Horizontal
-            for (let r=0; r<6; r++) {
-                for (let c=0; c<7-3; c++) {
-                    let window = [board[r][c], board[r][c+1], board[r][c+2], board[r][c+3]];
-                    score += scoreWindow(window, piece, oppPiece);
-                }
-            }
-            // Scan Vertical
-            for (let r=0; r<6-3; r++) {
-                for (let c=0; c<7; c++) {
-                    let window = [board[r][c], board[r+1][c], board[r+2][c], board[r+3][c]];
-                    score += scoreWindow(window, piece, oppPiece);
-                }
-            }
-            // Diagonale Positive
-            for (let r=0; r<6-3; r++) {
-                for (let c=0; c<7-3; c++) {
-                    let window = [board[r][c], board[r+1][c+1], board[r+2][c+2], board[r+3][c+3]];
-                    score += scoreWindow(window, piece, oppPiece);
-                }
-            }
-            // Diagonale Négative
-            for (let r=0; r<6-3; r++) {
-                for (let c=0; c<7; c++) {
-                    if (c-3 >= 0) {
-                        let window = [board[r][c], board[r+1][c-1], board[r+2][c-2], board[r+3][c-3]];
-                        score += scoreWindow(window, piece, oppPiece);
-                    }
-                }
-            }
-            return score;
-        }
-
-        function scoreWindow(window, piece, oppPiece) {
-            let score = 0;
-            let pieceCount = window.filter(x => x === piece).length;
-            let emptyCount = window.filter(x => x === 0).length;
-            let oppCount = window.filter(x => x === oppPiece).length;
-
-            // Offensive : essayer d'aligner
-            if (pieceCount === 4) score += 100;
-            else if (pieceCount === 3 && emptyCount === 1) score += 5;
-            else if (pieceCount === 2 && emptyCount === 2) score += 2;
-
-            // Défensive : bloquer l'adversaire (très important)
-            if (oppCount === 3 && emptyCount === 1) score -= 4; 
-
-            return score;
-        }
-
-        // --- Helpers IA ---
-        function getValidMoves(board) {
-            let moves = [];
-            // Ordre de recherche optimisé : Centre -> Extérieur (accélère l'élagage alpha-beta)
-            const columnOrder = [3, 2, 4, 1, 5, 0, 6]; 
-            for(let c of columnOrder) {
-                if(board[0][c] === 0) moves.push(c);
-            }
-            return moves;
-        }
-        function dropPiece(board, col, player) {
-            for (let r = 5; r >= 0; r--) {
-                if (board[r][col] === 0) { board[r][col] = player; return; }
-            }
-        }
-        function checkWinState(board) {
-            // Copie allégée de la fonction de victoire pour le Minimax
-            // Retourne le gagnant (1 ou 2), 'draw', ou null
-            for(let r=0; r<6; r++) {
-                for(let c=0; c<7; c++) {
-                     let p = board[r][c];
-                     if(p !== 0) {
-                         if(c+3<7 && p==board[r][c+1] && p==board[r][c+2] && p==board[r][c+3]) return p;
-                         if(r+3<6 && p==board[r+1][c] && p==board[r+2][c] && p==board[r+3][c]) return p;
-                         if(r+3<6 && c+3<7 && p==board[r+1][c+1] && p==board[r+2][c+2] && p==board[r+3][c+3]) return p;
-                         if(r-3>=0 && c+3<7 && p==board[r-1][c+1] && p==board[r-2][c+2] && p==board[r-3][c+3]) return p;
-                     }
-                }
-            }
-            if(board[0].every(cell => cell !== 0)) return 'draw';
-            return null;
-        }
-
-        // ================= MODE MULTI =================
-        window.startMulti = () => {
-            const input = document.getElementById('username-input').value.trim();
-            myName = input || null; 
-            currentMode = 'multi';
-            resetLocalGameState();
-            showScreen('screen-game');
-            initFirebaseMulti();
-        };
-
-        function initFirebaseMulti() {
-            document.getElementById('status-display').textContent = "Connexion...";
-            
-            const playerListener = onValue(playersRef, (snap) => {
-                const players = snap.val() || {};
-                if (!myPlayerNum) {
-                    if (!players.p1) {
-                        myPlayerNum = 1;
-                        set(ref(database, 'puissance4/players/p1'), { name: myName || "Joueur 1" });
-                        onDisconnect(ref(database, 'puissance4/players/p1')).remove();
-                        if (!players.p2) set(gameRef, { board: gameState.board, turn: 1, winner: null, colors: null, lastMove: null });
-                    } else if (!players.p2) {
-                        myPlayerNum = 2;
-                        set(ref(database, 'puissance4/players/p2'), { name: myName || "Joueur 2" });
-                        onDisconnect(ref(database, 'puissance4/players/p2')).remove();
-                    } else {
-                        myPlayerNum = 'spectator';
-                    }
-                }
-                if(players.p1) gameState.p1Name = players.p1.name;
-                if(players.p2) gameState.p2Name = players.p2.name;
-                updateUI();
-            });
-            firebaseListeners.push({ref: playersRef, type: 'value', callback: playerListener});
-
-            const gameStateListener = onValue(gameRef, (snap) => {
-                const data = snap.val();
-                if (data) {
-                    gameState.board = data.board;
-                    gameState.turn = data.turn;
-                    gameState.colors = data.colors;
-                    gameState.winner = data.winner;
-                    gameState.lastMove = data.lastMove; 
-                    drawBoard();
-                    updateUI();
-                }
-            });
-             firebaseListeners.push({ref: gameRef, type: 'value', callback: gameStateListener});
-        }
-
-        window.chooseColorMulti = (color) => {
-            if (myPlayerNum !== 1) return;
-            const defaults = { red: 'yellow', yellow: 'red' };
-            update(gameRef, { colors: { p1: color, p2: defaults[color] } });
-        };
-
-        function handleMultiClick(col) {
-             if (gameState.winner || !gameState.colors || gameState.turn !== myPlayerNum || myPlayerNum === 'spectator') return;
-             
-             let row = -1;
-             for (let r = 5; r >= 0; r--) { if (gameState.board[r][col] === 0) { row = r; break; } }
-             if (row === -1) return;
-
-             gameState.board[row][col] = myPlayerNum;
-             let winner = null;
-             if (checkWin(row, col, gameState.board)) winner = myPlayerNum;
-
-             update(gameRef, {
-                 board: gameState.board,
-                 turn: (myPlayerNum === 1) ? 2 : 1,
-                 winner: winner,
-                 lastMove: {r: row, c: col} 
-             });
-        }
-
-        window.sendRematch = (iStart) => {
-            const nextTurn = iStart ? myPlayerNum : (myPlayerNum === 1 ? 2 : 1);
-            set(gameRef, {
-                board: Array(6).fill(null).map(() => Array(7).fill(0)),
-                turn: nextTurn, winner: null, colors: gameState.colors, lastMove: null
-            });
-            document.getElementById('modal-multi-end').classList.add('hidden');
-        };
-
-        // ================= UI UPDATE =================
-        function updateUI() {
-            const status = document.getElementById('status-display');
-            const turn = document.getElementById('turn-display');
-            const setupMulti = document.getElementById('setup-color-multi');
-            const btnRestart = document.getElementById('btn-restart-grid');
-
-            if (currentMode === 'multi' && myPlayerNum === 1 && !gameState.colors) {
-                setupMulti.classList.remove('hidden');
-                status.innerHTML = "En attente...";
-                turn.classList.add('hidden');
-                return;
-            } else {
-                setupMulti.classList.add('hidden');
-                turn.classList.remove('hidden');
-            }
-
-            const p1Txt = `<span style="color:${gameState.colors?.p1 || '#7f8c8d'}">●</span> ${gameState.p1Name}`;
-            const p2Txt = `<span style="color:${gameState.colors?.p2 || '#7f8c8d'}">●</span> ${gameState.p2Name}`;
-
-            if(gameState.winner) {
-                let winnerName = (gameState.winner === 1) ? gameState.p1Name : gameState.p2Name;
-                status.innerHTML = `🎉 Victoire de ${winnerName} !`;
-                turn.textContent = "Partie terminée";
-                btnRestart.classList.remove('hidden');
-
-                if(currentMode === 'multi' && myPlayerNum !== 'spectator') {
-                    const modal = document.getElementById('modal-multi-end');
-                    modal.classList.remove('hidden');
-                    if (myPlayerNum === gameState.winner) {
-                        document.getElementById('multi-end-title').textContent = "Victoire ! 🏆";
-                        document.getElementById('multi-end-msg').textContent = "Bien joué !";
-                        document.getElementById('multi-loser-controls').classList.add('hidden');
-                        document.getElementById('multi-winner-wait').classList.remove('hidden');
-                    } else {
-                        document.getElementById('multi-end-title').textContent = "Défaite... ❌";
-                        document.getElementById('multi-end-msg').textContent = "C'est vous qui choisissez :";
-                        document.getElementById('multi-loser-controls').classList.remove('hidden');
-                        document.getElementById('multi-winner-wait').classList.add('hidden');
-                    }
-                }
-            } else {
-                document.getElementById('modal-multi-end').classList.add('hidden');
-                btnRestart.classList.add('hidden');
-
-                if(currentMode === 'multi' && !gameState.colors) {
-                     status.textContent = "Attente...";
-                } else {
-                    status.innerHTML = `${p1Txt} <small>VS</small> ${p2Txt}`;
-                    const currName = (gameState.turn === 1) ? gameState.p1Name : gameState.p2Name;
-                    const colorMap = {'red': '🔴', 'yellow': '🟡'};
-                    const dot = gameState.colors ? colorMap[gameState.colors[`p${gameState.turn}`]] : '';
-
-                    if (myPlayerNum && myPlayerNum !== 'spectator' && gameState.turn === myPlayerNum) {
-                        turn.innerHTML = `${dot} À <b>VOUS</b> de jouer !`;
-                        turn.style.background = "#dff9fb";
-                    } else {
-                        turn.innerHTML = `${dot} Tour de ${currName}`;
-                        turn.style.background = "#eee";
-                    }
-                }
-            }
-        }
-
-        function checkWin(r, c, board) {
-            const p = board[r][c];
-            const directions = [[0, 1], [1, 0], [1, 1], [1, -1]];
-            for (let [dr, dc] of directions) {
-                let count = 1;
-                for (let i = 1; i <= 3; i++) {
-                    let row = r + i*dr, col = c + i*dc;
-                    if(row<0 || row>=6 || col<0 || col>=7 || board[row][col] !== p) break;
-                    count++;
-                }
-                for (let i = 1; i <= 3; i++) {
-                    let row = r - i*dr, col = c - i*dc;
-                    if(row<0 || row>=6 || col<0 || col>=7 || board[row][col] !== p) break;
-                    count++;
-                }
-                if (count >= 4) return true;
-            }
-            return false;
-        }
-    </script>
+        if(count >= 4) return true;
+    }
+    return false;
+}
+</script>
 </body>
-
 </html>
