@@ -143,8 +143,39 @@
     }
 
     .num-pad button.erase { background: #d9534f; box-shadow: 0 3px 0 #c9302c; }
+    /* --- MODALE DE FIN --- */
+    .modal {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+      display: flex; align-items: center; justify-content: center; z-index: 1000;
+      opacity: 0; pointer-events: none; transition: opacity 0.3s;
+    }
+    .modal.active { opacity: 1; pointer-events: auto; }
 
-    /* Ajustement pour écrans très petits */
+    .modal-content {
+      background: white; padding: 25px; border-radius: 20px; text-align: center;
+      width: 85%; max-width: 320px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      transform: scale(0.8); transition: transform 0.3s;
+    }
+    .modal.active .modal-content { transform: scale(1); }
+
+    .modal-content h2 { color: #ff6f00; margin: 0 0 15px; }
+    .result-time { font-size: 2rem; font-weight: 800; color: #2c3e50; margin-bottom: 5px; }
+    .record-badge { 
+      display: inline-block; background: #ffeb3b; color: #827717; 
+      padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; 
+      font-weight: 700; margin-bottom: 20px; visibility: hidden;
+    }
+    .record-badge.visible { visibility: visible; animation: pulse 1s infinite; }
+
+    .modal-btns { display: flex; flex-direction: column; gap: 10px; }
+    .modal-btns button { padding: 12px; font-size: 1rem; }
+    .btn-quit { background: #607d8b; }
+
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
 /* Effets de survol (uniquement pour les appareils avec souris) */
     @media (hover: hover) {
       button:hover {
@@ -207,13 +238,23 @@
       <button data-num="0" class="erase">✖</button>
     </div>
   </div>
+    <div id="endModal" class="modal">
+    <div class="modal-content">
+      <h2 id="modalTitle">Bravo !</h2>
+      <div class="result-time" id="finalTime">00:00</div>
+      <div id="recordBadge" class="record-badge">🏆 NOUVEAU RECORD !</div>
+      <div class="modal-btns">
+        <button id="modalPlayAgain">Rejouer</button>
+        <button id="modalQuit" class="btn-quit">Quitter</button>
+      </div>
+    </div>
+  </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 import { getDatabase, ref, set, get, update, remove } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
-// --- CONFIGURATION FIREBASE ---
 const firebaseConfig = {
     apiKey: "AIzaSyB29fMpTwBgsqkjijkNoQJ2kGChSeQDX_w",
     authDomain: "quiz-ea203.firebaseapp.com",
@@ -229,11 +270,12 @@ const auth = getAuth(app);
 const db = getDatabase(app);
 
 // --- VARIABLES D'ÉTAT ---
-let solution = [], puzzle = [], state = [], notes = [];
+let solution = [], puzzle = [], state = []
 let selectedCell = null;
 let isNoteMode = false;
 let timerInterval, seconds = 0;
 let currentUserUid = null;
+let notes = Array.from({length:9}, () => Array.from({length:9}, () => new Set()));
 
 const gridEl = document.getElementById('sudoku');
 const noteBtn = document.getElementById('noteBtn');
@@ -242,17 +284,26 @@ const difficultySelect = document.getElementById('difficulty');
 // --- LOGIQUE DE PERSISTANCE ---
 
 async function saveSession() {
-    if (!currentUserUid) return;
-    // Conversion des Sets de notes en tableaux pour le stockage JSON
-    const serializableNotes = notes.map(row => row.map(s => Array.from(s)));
+    if (!currentUserUid || !notes.length) return; // Sécurité si notes n'est pas encore prêt
+    
+    // On s'assure que chaque Set est bien converti en Array
+    const serializableNotes = notes.map(row => 
+        row.map(cellSet => Array.from(cellSet || []))
+    );
+
     try {
         await set(ref(db, `users/${currentUserUid}/games/sudoku/session`), {
-            puzzle, solution, state, seconds,
+            puzzle: puzzle,
+            solution: solution,
+            state: state,
+            seconds: seconds,
             difficulty: difficultySelect.value,
             notes: serializableNotes,
             timestamp: new Date().toISOString()
         });
-    } catch (e) { console.error("Erreur sauvegarde session:", e); }
+    } catch (e) { 
+        console.error("Erreur sauvegarde session:", e); 
+    }
 }
 
 async function restoreSession() {
@@ -261,55 +312,57 @@ async function restoreSession() {
         const snap = await get(ref(db, `users/${currentUserUid}/games/sudoku/session`));
         if (snap.exists()) {
             const data = snap.val();
+            
+            // 1. Restauration des variables simples
             puzzle = data.puzzle;
             solution = data.solution;
             state = data.state;
-            seconds = data.seconds;
+            seconds = data.seconds || 0;
             difficultySelect.value = data.difficulty;
-            // Reconstruction des Sets pour les notes
-            notes = data.notes.map(row => row.map(arr => new Set(arr)));
             
+            // 2. RECONSTRUCTION MANUELLE de la grille des notes
+            // On crée d'abord une grille de Sets vides 9x9
+            let restoredNotes = Array.from({length: 9}, () => 
+                Array.from({length: 9}, () => new Set())
+            );
+
+            if (data.notes) {
+                // On parcourt les données reçues de Firebase
+                // On utilise Object.entries pour être sûr de lire les bons index (r)
+                Object.entries(data.notes).forEach(([r, rowData]) => {
+                    if (rowData) {
+                        Object.entries(rowData).forEach(([c, cellData]) => {
+                            // Si cellData contient des chiffres (le tableau converti en Set)
+                            if (Array.isArray(cellData) && cellData.length > 0) {
+                                cellData.forEach(num => {
+                                    if (restoredNotes[r] && restoredNotes[r][c]) {
+                                        restoredNotes[r][c].add(Number(num));
+                                    }
+                                });
+                            }
+                        });
+                    }
+                });
+            }
+            
+            // On assigne la grille reconstruite à la variable globale
+            notes = restoredNotes;
+            
+            // 3. Affichage
             renderGrid();
-            startTimer(true); // Reprise du chrono
+            startTimer(true);
             return true;
         }
-    } catch (e) { console.error("Erreur restauration session:", e); }
+    } catch (e) { 
+        console.error("Erreur restauration critique:", e); 
+    }
     return false;
-}
-
-async function updateStats(finalTime, diffValue) {
-    if (!currentUserUid) return;
-    const diffLabel = difficultySelect.options[difficultySelect.selectedIndex].text;
-    const statsRef = ref(db, `users/${currentUserUid}/games/sudoku/stats/${diffValue}`);
-    
-    try {
-        const snap = await get(statsRef);
-        let games = 1;
-        let avg = finalTime;
-        let best = finalTime; // Par défaut, le premier temps est le meilleur
-        
-        if (snap.exists()) {
-            const d = snap.val();
-            games = (d.gamesPlayed || 0) + 1;
-            avg = Math.round(((d.averageTime || 0) * (games - 1) + finalTime) / games);
-            
-            // Comparaison pour le Record Personnel
-            // Si bestTime n'existe pas ou si le nouveau temps est plus court
-            best = d.bestTime ? Math.min(d.bestTime, finalTime) : finalTime;
-        }
-        
-        await update(statsRef, {
-            gamesPlayed: games,
-            averageTime: avg,
-            bestTime: best,
-            difficultyLabel: diffLabel,
-        });
-    } catch (e) { console.error("Erreur stats:", e); }
 }
 
 // --- LOGIQUE DU JEU ---
 
 async function initGame() {
+    seconds = 0; // Reset du temps pour un nouveau jeu
     generateSudoku();
     renderGrid();
     startTimer();
@@ -328,6 +381,8 @@ function generateSudoku() {
         if (puzzle[r][c] !== 0) { puzzle[r][c] = 0; count++; }
     }
     state = puzzle.map(row => [...row]);
+    
+    // Initialisation propre des notes (9x9 Sets vides)
     notes = Array.from({length:9}, () => Array.from({length:9}, () => new Set()));
 }
 
@@ -358,28 +413,52 @@ function isValid(grid, r, c, n) {
 
 function renderGrid() {
     gridEl.innerHTML = '';
-    for (let r=0; r<9; r++) {
-        for (let c=0; c<9; c++) {
+    // On crée un fragment pour améliorer les performances
+    const fragment = document.createDocumentFragment();
+
+    for (let r = 0; r < 9; r++) {
+        for (let c = 0; c < 9; c++) {
             const cell = document.createElement('div');
             cell.className = 'cell';
             if (puzzle[r][c] !== 0) cell.classList.add('prefilled');
-            cell.dataset.r = r; cell.dataset.c = c;
+            cell.dataset.r = r; 
+            cell.dataset.c = c;
             
             const input = document.createElement('input');
             input.value = state[r][c] || '';
+            input.readOnly = true;
             
             const notesDiv = document.createElement('div');
             notesDiv.className = 'pencil-notes';
             
             cell.append(notesDiv, input);
-            gridEl.appendChild(cell);
+            fragment.appendChild(cell);
             
             cell.addEventListener('click', () => select(cell));
             
-            updateCellNotes(r, c, cell);
-            if (state[r][c] !== 0 && state[r][c] !== solution[r][c]) cell.classList.add('error');
+            // On gère les erreurs
+            if (state[r][c] !== 0 && state[r][c] !== solution[r][c]) {
+                cell.classList.add('error');
+            }
+
+            // Important: on remet la classe selected si c'était celle-là
+            if (selectedCell && selectedCell.dataset.r == r && selectedCell.dataset.c == c) {
+                cell.classList.add('selected');
+            }
         }
     }
+    gridEl.appendChild(fragment);
+
+    // CRUCIAL : On met à jour les notes après avoir ajouté toute la grille au DOM
+    requestAnimationFrame(() => {
+        for (let r = 0; r < 9; r++) {
+            for (let c = 0; c < 9; c++) {
+                const cell = gridEl.querySelector(`[data-r="${r}"][data-c="${c}"]`);
+                if (cell) updateCellNotes(r, c, cell);
+            }
+        }
+    });
+
     updateNumPad();
 }
 
@@ -391,18 +470,21 @@ function select(cell) {
     const val = state[cell.dataset.r][cell.dataset.c];
     if (val) {
         document.querySelectorAll('.cell').forEach(c => {
-            const r = c.dataset.r, col = c.dataset.c;
-            if (state[r][col] == val) c.classList.add('highlight-same');
+            if (state[c.dataset.r][c.dataset.c] == val) c.classList.add('highlight-same');
         });
     }
 }
 
 function updateCellNotes(r, c, cell) {
     const notesDiv = cell.querySelector('.pencil-notes');
+    if (!notesDiv) return;
     notesDiv.innerHTML = '';
-    if (state[r][c] === 0) {
-        for (let i=1; i<=9; i++) {
+    
+    // VERIFICATION : On s'assure que la ligne et la cellule existent dans l'objet notes
+    if (state[r] && state[r][c] === 0 && notes[r] && notes[r][c]) {
+        for (let i = 1; i <= 9; i++) {
             const span = document.createElement('span');
+            // On vérifie si i est dans le Set
             span.textContent = notes[r][c].has(i) ? i : '';
             notesDiv.appendChild(span);
         }
@@ -412,30 +494,32 @@ function updateCellNotes(r, c, cell) {
 async function handleInput(n) {
     if (!selectedCell) return;
     const r = parseInt(selectedCell.dataset.r), c = parseInt(selectedCell.dataset.c);
-    if (puzzle[r][c] !== 0) return;
+    
+    // Sécurité : Si notes[r] n'existe pas pour une raison quelconque, on le recrée
+    if (!notes[r]) notes[r] = Array.from({length:9}, () => new Set());
+    if (!notes[r][c]) notes[r][c] = new Set();
 
-    if (n !== 0) {
-        const btn = document.querySelector(`.num-pad button[data-num="${n}"]`);
-        if (btn && btn.classList.contains('completed')) return;
-    }
+    if (puzzle[r][c] !== 0) return;
 
     if (isNoteMode && n !== 0) {
         if (notes[r][c].has(n)) notes[r][c].delete(n);
         else notes[r][c].add(n);
-        state[r][c] = 0;
+        state[r][c] = 0; 
     } else {
         state[r][c] = n;
         notes[r][c].clear();
     }
     
     renderGrid();
+    // Replacer le focus sur la cellule après le render
     const newCell = document.querySelector(`[data-r="${r}"][data-c="${c}"]`);
     if(newCell) select(newCell);
     
     updateNumPad();
-    saveSession(); // Sauvegarde automatique à chaque coup
+    saveSession(); 
     checkWin();
 }
+
 
 function updateNumPad() {
     const counts = {};
@@ -453,89 +537,107 @@ function updateNumPad() {
 
 function startTimer(resume = false) {
     clearInterval(timerInterval);
-    if (!resume) seconds = 0;
+    if (!resume) {
+        seconds = 0; // On ne reset que si c'est une NOUVELLE partie
+    }
+    
     const display = () => {
-        const m = Math.floor(seconds/60).toString().padStart(2,'0'), s = (seconds%60).toString().padStart(2,'0');
+        const m = Math.floor(seconds/60).toString().padStart(2,'0');
+        const s = (seconds%60).toString().padStart(2,'0');
         document.getElementById('timer').textContent = `${m}:${s}`;
     };
+
     display();
     timerInterval = setInterval(() => {
         seconds++;
         display();
+        // Sauvegarde automatique du temps toutes les 30 secondes
+        if (seconds % 30 === 0) saveSession(); 
     }, 1000);
 }
 
+// --- FONCTION CHECKWIN AMÉLIORÉE ---
 async function checkWin() {
     let errors = document.querySelectorAll('.cell.error').length;
     let full = state.flat().every(v => v !== 0);
     
     if (full && errors === 0) {
         clearInterval(timerInterval);
-        const finalTimeStr = document.getElementById('timer').textContent;
-        const isNewRecord = await updateStats(seconds, difficultySelect.value);
+        const finalSeconds = seconds;
+        const difficulty = difficultySelect.value;
         
-        if (currentUserUid) await remove(ref(db, `users/${currentUserUid}/games/sudoku/session`));
+        // 1. Supprimer la session en cours
+        if (currentUserUid) {
+            await remove(ref(db, `users/${currentUserUid}/games/sudoku/session`));
+        }
 
-        // Affichage Modal
-        document.getElementById('finalTimeDisplay').textContent = finalTimeStr;
-        const recordSec = document.getElementById('recordSection');
-        recordSec.innerHTML = isNewRecord ? '<div class="record-badge">🏆 NOUVEAU RECORD !</div>' : '';
-        document.getElementById('endModal').style.display = 'flex';
+        // 2. Gérer le record
+        let isRecord = false;
+        if (currentUserUid) {
+            const recordPath = `users/${currentUserUid}/games/sudoku/records/${difficulty}`;
+            const snap = await get(ref(db, recordPath));
+            const oldRecord = snap.exists() ? snap.val() : Infinity;
+
+            if (finalSeconds < oldRecord) {
+                await set(ref(db, recordPath), finalSeconds);
+                isRecord = true;
+            }
+        }
+
+        // 3. Afficher la modale
+        showEndModal(finalSeconds, isRecord);
     }
 }
 
-// Pour fermer la modal et relancer
-window.closeModal = () => {
-    document.getElementById('endModal').style.display = 'none';
+function showEndModal(totalSeconds, isRecord) {
+    const m = Math.floor(totalSeconds/60).toString().padStart(2,'0');
+    const s = (totalSeconds%60).toString().padStart(2,'0');
+    
+    document.getElementById('finalTime').textContent = `${m}:${s}`;
+    const badge = document.getElementById('recordBadge');
+    if (isRecord) badge.classList.add('visible');
+    else badge.classList.remove('visible');
+
+    document.getElementById('endModal').classList.add('active');
+}
+
+// --- ÉVÉNEMENTS DE LA MODALE ---
+document.getElementById('modalPlayAgain').onclick = () => {
+    document.getElementById('endModal').classList.remove('active');
     initGame();
 };
 
-// --- INITIALISATION & ÉVÉNEMENTS ---
-
-// --- INITIALISATION & ÉVÉNEMENTS ---
-
+document.getElementById('modalQuit').onclick = () => {
+    window.location.href = "../accueil.html"; // Ou ton lien de retour
+};
 // --- INITIALISATION & ÉVÉNEMENTS ---
 
 onAuthStateChanged(auth, async (user) => {
-    // Récupération de l'UID
-    currentUserUid = (user ? user.uid : null) || localStorage.getItem('active_uid');
+    // 1. Récupérer l'UID (Firebase ou local)
+    currentUserUid = user ? user.uid : localStorage.getItem('active_uid');
     
     if (currentUserUid) {
+        // 2. Tenter de restaurer la session
         const restored = await restoreSession();
-        if (!restored) initGame();
+        
+        // 3. SI ET SEULEMENT SI rien n'a été trouvé, on lance un nouveau jeu
+        if (!restored) {
+            console.log("Aucune session trouvée, création d'une nouvelle grille.");
+            initGame();
+        } else {
+            console.log("Session restaurée avec succès !");
+        }
     } else {
+        // Si vraiment pas d'UID, on lance un jeu local
         initGame();
     }
 });
 
-// Liaison des boutons
 noteBtn.onclick = () => {
     isNoteMode = !isNoteMode;
     noteBtn.classList.toggle('active', isNoteMode);
     noteBtn.textContent = isNoteMode ? "✎ Note: ON" : "✎ Note: OFF";
 };
-
-document.getElementById('newBtn').onclick = initGame;
-
-document.querySelectorAll('.num-pad button[data-num]').forEach(btn => {
-    btn.onclick = () => handleInput(parseInt(btn.dataset.num));
-});
-
-document.addEventListener('keydown', (e) => {
-    if (!selectedCell) return;
-    const r = parseInt(selectedCell.dataset.r), c = parseInt(selectedCell.dataset.c);
-    if (e.key >= '1' && e.key <= '9') handleInput(parseInt(e.key));
-    else if (['Backspace', 'Delete', '0'].includes(e.key)) handleInput(0);
-    else if (e.key.startsWith('Arrow')) {
-        let nr = r, nc = c;
-        if (e.key === 'ArrowUp') nr = Math.max(0, r - 1);
-        if (e.key === 'ArrowDown') nr = Math.min(8, r + 1);
-        if (e.key === 'ArrowLeft') nc = Math.max(0, c - 1);
-        if (e.key === 'ArrowRight') nc = Math.min(8, c + 1);
-        const target = document.querySelector(`[data-r="${nr}"][data-c="${nc}"]`);
-        if (target) select(target);
-    }
-});
 
 document.getElementById('newBtn').onclick = initGame;
 
