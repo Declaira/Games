@@ -47,6 +47,25 @@
             border-radius: 10px; 
             border: 1px solid #64ffda33; 
         }
+        /* Message d'aide dans le dock vide */
+        #dock:empty::before {
+            content: "Tous les navires sont déployés !";
+            font-size: 0.9em;
+            color: #2ed573;
+            padding: 20px;
+            text-align: center;
+        }
+
+        #dock::before {
+            content: "💡 Cliquez sur un navire posé pour le retirer";
+            display: block;
+            width: 100%;
+            font-size: 0.8em;
+            color: #a8b2d1;
+            margin-bottom: 10px;
+            font-style: italic;
+            order: -1; /* Place le texte en haut du dock */
+        }
         .draggable-ship { 
             display: flex; 
             cursor: grab; 
@@ -112,7 +131,7 @@
     <div id="record-status" style="margin: 15px 0; font-weight: bold; color: #2ed573; font-size: 1.2em;"></div>
     <div>
         <button class="btn" onclick="resetGame()">REJOUER</button>
-        <button class="btn" onclick="location.reload()" style="background: #e74c3c; color: white;">QUITTER</button>
+        <button class="btn" onclick="location.reload();" style="background: #e74c3c; color: white;">QUITTER</button>
     </div>
 </div>
 
@@ -194,7 +213,8 @@
 
     // --- VARIABLES GLOBALES ---
     let currentUser = null;
-    let myName = "Amiral";
+    let isRestoring = false;
+    let myName = "MA FLOTTE";
     let isAiGame = false;
     let currentRoom = null;
     let myId = null; 
@@ -210,17 +230,85 @@
         turn: 'p1', winner: null, recorded: false 
     };
 
-    // --- AUTHENTIFICATION ---
-    onAuthStateChanged(auth, (user) => {
-        currentUser = user || { uid: localStorage.getItem('active_uid') || 'guest_' + Math.floor(Math.random()*1000) };
-        myName = user?.displayName || "MA FLOTTE";
+    // --- AUTHENTIFICATION & RESTAURATION ---
+    onAuthStateChanged(auth, async (user) => {
+        const savedUid = localStorage.getItem('active_uid');
+        const uidToFetch = savedUid || (user ? user.uid : null);
+
+        if (uidToFetch) {
+            currentUser = user || { uid: uidToFetch };
+            try {
+                const userRef = ref(database, 'users/' + uidToFetch);
+                const snapshot = await get(userRef);
+                
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    myName = data.username || "Joueur";
+
+                    // --- LOGIQUE DE REPRISE DE PARTIE ---
+                    if (data.activeGame && !isRestoring) {
+                        if (confirm("⚓ Une partie en cours a été trouvée. Voulez-vous la reprendre ?")) {
+                            resumeGame(data.activeGame);
+                        } else {
+                            // Si l'utilisateur refuse, on efface la sauvegarde
+                            remove(ref(database, `users/${uidToFetch}/activeGame`));
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error("❌ Erreur database:", e);
+            }
+        }
+
+        const myLabel = document.getElementById('my-label');
+        if (myLabel) myLabel.textContent = myName.toUpperCase();
     });
+
+    // --- FONCTION DE REPRISE ---
+    window.resumeGame = (data) => {
+    isRestoring = true;
+    isAiGame = data.isAiGame;
+    currentRoom = data.currentRoom;
+    myId = data.myId;
+    opponentId = data.opponentId;
+    myShipsCoords = data.myShipsCoords;
+    gameState = data.gameState;
+
+    document.getElementById('mode-selection').classList.add('hidden');
+    document.getElementById('game-info').classList.remove('hidden');
+    document.getElementById('game-area').classList.remove('hidden');
+    document.getElementById('setup-area').classList.add('hidden');
+
+    initBoard();
+    restoreVisuals();
+    
+    if (!isAiGame && currentRoom) {
+        // Logique Multi
+        const roomRef = ref(database, `rooms/bn_${currentRoom}`);
+        onValue(roomRef, (snapshot) => {
+            const roomData = snapshot.val();
+            if (roomData) {
+                gameState = roomData;
+                updateUI();
+            }
+        });
+    }
+    
+    updateUI();
+    isRestoring = false;
+
+    // --- CORRECTION : Relancer l'IA si c'est son tour ---
+    if (isAiGame && gameState.turn === 'p2' && !gameState.winner) {
+        console.log("🤖 L'IA reprend son tour...");
+        setTimeout(iaPlay, 1000); 
+    }
+};
 
     // --- GESTION DES STATISTIQUES ---
     async function recordResult(result, type) {
         if (!currentUser?.uid || currentUser.uid.startsWith('guest') || gameState.recorded) return;
         
-        gameState.recorded = true; // Sécurité locale
+        gameState.recorded = true; 
         const statsRef = ref(database, `users/${currentUser.uid}/games/bn/stats/${type}`);
         const snap = await get(statsRef);
         const data = snap.exists() ? snap.val() : { wins: 0, losses: 0, draws: 0 };
@@ -230,34 +318,30 @@
 
         await set(statsRef, data);
         
-        // Affichage dans la modal de victoire
         const recordStatus = document.getElementById('record-status');
         if (recordStatus) {
-            if (result === 'win') recordStatus.innerText = "📈 Victoire enregistrée ! (+1 Win)";
-            else if (result === 'loss') recordStatus.innerText = "📉 Défaite enregistrée...";
+            recordStatus.innerText = (result === 'win') ? "📈 Victoire enregistrée !" : "📉 Défaite enregistrée...";
         }
     }
 
-    // --- EXPOSITION DES FONCTIONS UI ---
+    // --- INTERFACE ---
     window.toggleRotation = () => {
         isVertical = !isVertical;
         document.querySelectorAll('.draggable-ship').forEach(s => s.classList.toggle('vertical', isVertical));
     };
 
-    // --- MODE SOLO ---
     window.prepareSolo = () => {
         isAiGame = true;
         myId = 'p1'; opponentId = 'p2';
+        currentRoom = null;
         document.getElementById('mode-selection').classList.add('hidden');
         document.getElementById('game-info').classList.remove('hidden');
         document.getElementById('game-area').classList.remove('hidden');
         document.getElementById('my-label').textContent = myName.toUpperCase();
         document.getElementById('opp-label').textContent = "IA ENNEMIE";
-        document.getElementById('game-info').textContent = "Placez vos navires stratégiquement.";
         initBoard();
     };
 
-    // --- MODE MULTIJOUEUR ---
     window.joinRoom = async () => {
         const roomInput = document.getElementById('roomInput').value.trim().toUpperCase();
         if (!roomInput) return alert("Veuillez entrer un code de salon.");
@@ -268,11 +352,9 @@
 
         document.getElementById('mode-selection').classList.add('hidden');
         document.getElementById('game-info').classList.remove('hidden');
-        document.getElementById('game-info').textContent = "Connexion au salon...";
 
         await runTransaction(roomRef, (room) => {
             if (!room) {
-                // Créer le salon (Je suis p1)
                 return {
                     p1: { uid: currentUser.uid, name: myName },
                     p2: null,
@@ -282,28 +364,22 @@
                     turn: 'p1', winner: null, recorded: false
                 };
             } else if (!room.p2 && room.p1.uid !== currentUser.uid) {
-                // Rejoindre (Je suis p2)
                 room.p2 = { uid: currentUser.uid, name: myName };
                 return room;
             }
-            return; // Salon plein ou déjà rejoint
+            return; 
         });
 
-        // Déterminer mon ID après la transaction
         const snap = await get(roomRef);
         const data = snap.val();
         if (data.p1.uid === currentUser.uid) { myId = 'p1'; opponentId = 'p2'; }
         else if (data.p2?.uid === currentUser.uid) { myId = 'p2'; opponentId = 'p1'; }
-        else { alert("Le salon est plein !"); location.reload(); return; }
+        else { alert("Salon plein !"); location.reload(); return; }
 
         onDisconnect(roomRef).update({ winner: 'aborted' });
-
         document.getElementById('game-area').classList.remove('hidden');
-        document.getElementById('my-label').textContent = myName.toUpperCase();
-        document.getElementById('game-info').textContent = "Placez vos navires !";
         initBoard();
 
-        // Écoute des changements de la salle
         onValue(roomRef, (snapshot) => {
             const roomData = snapshot.val();
             if (roomData) {
@@ -317,139 +393,84 @@
         });
     };
 
-    // --- INITIALISATION DU PLATEAU ---
     function initBoard() {
         const mG = document.getElementById('myGrid');
         const oG = document.getElementById('oppGrid');
+        mG.innerHTML = ''; oG.innerHTML = '';
         
-        // Nettoyage complet des grilles HTML
-        mG.innerHTML = ''; 
-        oG.innerHTML = '';
-        
-        // Reset visuel des indicateurs de destruction (panneau de droite)
-        const indicators = ['s5', 's4', 's3a', 's3b', 's2'];
-        indicators.forEach(id => {
-            const el = document.getElementById('ind-' + id);
-            if(el) el.classList.remove('sunk');
-        });
-
-        // Création des 100 cases pour chaque grille
         for(let i = 0; i < 100; i++) {
-            // --- 1. MA GRILLE (Placement et défense) ---
             const cM = document.createElement('div'); 
             cM.className = 'cell';
-            
-            // Gestion du Drag & Drop pour poser les bateaux
             cM.ondragover = e => { e.preventDefault(); cM.classList.add('over'); };
             cM.ondragleave = () => cM.classList.remove('over');
             cM.ondrop = () => dropShip(i);
-
-            // CLIC POUR RETIRER UN BATEAU :
-            // Permet de cliquer sur un bateau déjà posé pour le renvoyer dans le dock
-            cM.onclick = (e) => {
-                e.stopPropagation();
-                // On vérifie si un bateau est présent sur cette case
+            cM.onclick = () => {
                 const shipAtCoord = myShipsCoords.find(s => s.coords.includes(i));
-                
-                // On n'autorise le retrait que si la partie n'est pas encore lancée
-                // On vérifie gameState.p1Ready (pour le multi) et gameState.winner (pour l'IA/Fin de partie)
                 if (shipAtCoord && !gameState.p1Ready && !gameState.winner) {
                     window.removeShip(shipAtCoord.id);
                 }
             };
-
             mG.appendChild(cM);
             
-            // --- 2. GRILLE ADVERSE (Radar d'attaque) ---
             const cO = document.createElement('div'); 
             cO.className = 'cell';
-            
-            // Clic pour tirer
             cO.onclick = () => fire(i);
-            
             oG.appendChild(cO);
         }
         
-        // Si c'est une partie contre l'ordinateur, on génère sa flotte
-        if(isAiGame) {
+        if(isAiGame && !isRestoring) {
             gameState.p2Ships = generateIA();
         }
     }
-    // --- PLACEMENT DES BATEAUX ---
+
+    window.randomizeMyShips = () => {
+    // 1. On commence par réinitialiser le placement actuel
+    myShipsCoords = [];
+    const mCells = document.getElementById('myGrid').children;
+    for (let cell of mCells) {
+        cell.className = 'cell'; // On nettoie visuellement la grille
+    }
+
+    // 2. On utilise la logique de l'IA pour générer un placement valide
+    const newShips = generateIA();
+    
+    // 3. On applique ce placement à notre flotte
+    newShips.forEach(ship => {
+        myShipsCoords.push(ship);
+        ship.coords.forEach(c => {
+            mCells[c].classList.add('ship-' + ship.id);
+        });
+        
+        // 4. On cache les bateaux dans le dock
+        const dockShip = document.getElementById(ship.id);
+        if (dockShip) dockShip.classList.add('hidden');
+    });
+
+    // 5. On affiche le bouton "LANCER L'ASSAUT"
+    document.getElementById('readyBtn').classList.remove('hidden');
+};
+
     window.removeShip = (shipId) => {
-        // 1. Trouver l'index du bateau
         const shipIndex = myShipsCoords.findIndex(s => s.id === shipId);
         if (shipIndex === -1) return;
-
-        // 2. Récupérer les coordonnées et nettoyer visuellement la grille
         const coords = myShipsCoords[shipIndex].coords;
         const cells = document.getElementById('myGrid').children;
-        
-        coords.forEach(idx => {
-            // On retire TOUTES les classes qui commencent par 'ship-' sur ces cases
-            cells[idx].className = 'cell'; 
-        });
-
-        // 3. Supprimer du tableau de données AVANT de faire quoi que ce soit d'autre
+        coords.forEach(idx => cells[idx].className = 'cell');
         myShipsCoords.splice(shipIndex, 1);
-
-        // 4. Réafficher le bateau original dans le dock
         const shipElement = document.getElementById(shipId);
         if (shipElement) {
             shipElement.classList.remove('hidden');
-            shipElement.style.display = 'flex'; // Force l'affichage
+            document.getElementById('dock').appendChild(shipElement);
         }
-
-        // 5. Cacher le bouton de validation
         document.getElementById('readyBtn').classList.add('hidden');
     };
 
-    window.randomizeMyShips = () => {
-        myShipsCoords = [];
-        const cells = document.getElementById('myGrid').children;
-        for(let c of cells) c.className = 'cell'; // Reset visual
-        document.querySelectorAll('.draggable-ship').forEach(s => s.classList.add('hidden'));
-        
-        const shipsToPlace = [{id:'s5', size:5}, {id:'s4', size:4}, {id:'s3a', size:3}, {id:'s3b', size:3}, {id:'s2', size:2}];
-        shipsToPlace.forEach(ship => {
-            let placed = false;
-            while(!placed) {
-                let start = Math.floor(Math.random()*100), vert = Math.random() > 0.5, coords = [];
-                for(let i=0; i<ship.size; i++) {
-                    let next = vert ? start + (i*10) : start + i;
-                    if(next > 99 || (!vert && Math.floor(next/10) !== Math.floor(start/10))) break;
-                    coords.push(next);
-                }
-                if(coords.length === ship.size && !myShipsCoords.some(s => s.coords.some(c => coords.includes(c)))) {
-                    myShipsCoords.push({id: ship.id, coords: coords});
-                    coords.forEach(c => cells[c].classList.add('ship-' + ship.id));
-                    placed = true;
-                }
-            }
-        });
-        document.getElementById('readyBtn').classList.remove('hidden');
-    };
-
-   document.querySelectorAll('.draggable-ship').forEach(ship => {
-        // Garde en mémoire quel bateau est traîné
+    document.querySelectorAll('.draggable-ship').forEach(ship => {
         ship.ondragstart = () => draggedShip = ship;
-
-        // Ajout de la rotation à la molette
         ship.onwheel = (e) => {
-            e.preventDefault(); // Empêche le défilement de la page
-            
-            // On change l'état global de rotation
+            e.preventDefault();
             isVertical = !isVertical;
-            
-            // On applique visuellement à tous les bateaux du dock
-            document.querySelectorAll('.draggable-ship').forEach(s => {
-                s.classList.toggle('vertical', isVertical);
-            });
-            
-            // Optionnel : Petit effet visuel pour montrer que ça a changé
-            ship.style.transition = "0.2s";
-            ship.style.transform = "scale(1.1)";
-            setTimeout(() => ship.style.transform = "scale(1)", 200);
+            document.querySelectorAll('.draggable-ship').forEach(s => s.classList.toggle('vertical', isVertical));
         };
     });
 
@@ -463,7 +484,6 @@
             coords.push(next);
         }
         if(myShipsCoords.some(s => s.coords.some(c => coords.includes(c)))) return;
-        
         myShipsCoords.push({id, coords});
         draggedShip.classList.add('hidden');
         coords.forEach(c => document.getElementById('myGrid').children[c].classList.add('ship-'+id));
@@ -485,32 +505,25 @@
         return res;
     }
 
-    // --- CONFIRMATION ET LANCEMENT ---
     window.confirmPlacement = () => {
         document.getElementById('setup-area').classList.add('hidden');
-        
         if(isAiGame) {
             gameState.p1Ready = true; 
             gameState.p1Ships = myShipsCoords; 
             gameState.p2Ready = true;
             updateUI();
         } else {
-            document.getElementById('game-info').textContent = "Attente du joueur adverse...";
             const updates = {};
             updates[`${myId}Ready`] = true;
             updates[`${myId}Ships`] = myShipsCoords;
-            if (!gameState.p1Attacks) updates[`p1Attacks`] = [];
-            if (!gameState.p2Attacks) updates[`p2Attacks`] = [];
             update(ref(database, `rooms/bn_${currentRoom}`), updates);
         }
     };
 
-    // --- MECANIQUE DE TIR ---
     window.fire = async (idx) => {
         if (!gameState.p1Ready || !gameState.p2Ready || gameState.winner) return;
-        
         const myAttacksList = gameState[myId + 'Attacks'] || [];
-        if (gameState.turn !== myId || myAttacksList.includes(idx)) return; // Pas mon tour ou déjà tiré
+        if (gameState.turn !== myId || myAttacksList.includes(idx)) return;
 
         const isHit = gameState[opponentId + 'Ships'].some(s => s.coords.includes(idx));
         const newAttacks = [...myAttacksList, idx];
@@ -524,12 +537,10 @@
             checkSunk();
             updateUI();
         } else {
-            // Mise à jour Firebase pour le multijoueur
-            const roomRef = ref(database, `rooms/bn_${currentRoom}`);
             const updates = {};
             updates[`${myId}Attacks`] = newAttacks;
             if (!isHit) updates[`turn`] = opponentId;
-            await update(roomRef, updates);
+            await update(ref(database, `rooms/bn_${currentRoom}`), updates);
         }
     };
 
@@ -538,64 +549,41 @@
         let shot;
         const aiAttacks = gameState.p2Attacks || [];
         do { shot = Math.floor(Math.random()*100); } while(aiAttacks.includes(shot));
-        
         gameState.p2Attacks.push(shot);
         const isHit = gameState.p1Ships.some(s => s.coords.includes(shot));
-        
         checkSunk(); 
         updateUI();
-        
-        if(isHit && !gameState.winner) {
-            setTimeout(iaPlay, 800); // L'IA rejoue si elle touche
-        } else if (!gameState.winner) {
-            gameState.turn = 'p1';
-            updateUI();
-        }
+        if(isHit && !gameState.winner) setTimeout(iaPlay, 800);
+        else if (!gameState.winner) { gameState.turn = 'p1'; updateUI(); }
     }
 
-    // --- VERIFICATION DES DESTRUCTIONS ---
     function checkSunk() {
         if (gameState.winner) return;
-
         const check = (player, opponent) => {
             const oppShips = gameState[opponent+'Ships'];
             if(!oppShips) return;
-            
             let sunkCount = 0;
             const pAttacks = gameState[player+'Attacks'] || [];
-            
             oppShips.forEach(s => {
-                const isSunk = s.coords.every(c => pAttacks.includes(c));
-                if(isSunk) {
+                if(s.coords.every(c => pAttacks.includes(c))) {
                     sunkCount++;
-                    // Barrer le nom du bateau dans l'UI adverse si je suis le joueur
                     if(player === myId) {
                         const ind = document.getElementById('ind-'+s.id);
                         if(ind) ind.classList.add('sunk');
                     }
                 }
             });
-            
-            if(sunkCount === 5) {
-                gameState.winner = player;
-                handleWin(player);
-            }
+            if(sunkCount === 5) { gameState.winner = player; handleWin(player); }
         };
-        
-        check('p1', 'p2');
-        if(!gameState.winner) check('p2', 'p1');
+        check('p1', 'p2'); check('p2', 'p1');
     }
 
     function handleWin(winner) {
         showWinScreen(winner);
-        
-        // Gérer l'enregistrement DB
         if (!gameState.recorded) {
             const typeStats = isAiGame ? 'ia' : 'online';
             const result = winner === myId ? 'win' : 'loss';
             recordResult(result, typeStats);
-            gameState.recorded = true;
-            
             if (!isAiGame && winner === myId) {
                 update(ref(database, `rooms/bn_${currentRoom}`), { winner: winner, recorded: true });
             }
@@ -603,112 +591,88 @@
     }
 
     function showWinScreen(winner) {
-        const screen = document.getElementById('win-screen');
-        screen.style.display = 'flex';
+        document.getElementById('win-screen').style.display = 'flex';
         const msg = document.getElementById('win-msg');
-        const sub = document.getElementById('win-sub');
         
+        // SUPPRESSION DE LA SAUVEGARDE SUR FIREBASE
+        if (currentUser && currentUser.uid) {
+            remove(ref(database, `users/${currentUser.uid}/activeGame`));
+        }
+
         if (winner === 'aborted') {
             msg.textContent = "ABANDON";
-            msg.className = "lose-title";
-            sub.textContent = "L'adversaire a fui le champ de bataille.";
-            document.getElementById('record-status').innerText = "";
             return;
         }
-
-        const isMe = winner === myId;
-        if(isMe) { 
-            msg.textContent = "VICTOIRE !"; 
-            msg.className = "win-title"; 
-            sub.textContent = "La flotte adverse repose au fond de l'océan.";
-        } else { 
-            msg.textContent = "DÉFAITE..."; 
-            msg.className = "lose-title"; 
-            sub.textContent = "Votre flotte a été décimée.";
-        }
+        msg.textContent = (winner === myId) ? "VICTOIRE !" : "DÉFAITE...";
+        msg.className = (winner === myId) ? "win-title" : "lose-title";
     }
 
-    // --- MISE À JOUR VISUELLE ---
     function updateUI() {
-        const info = document.getElementById('game-info');
-        if(gameState.winner) return;
+    const info = document.getElementById('game-info');
+    if(gameState.winner) return;
+    if (!gameState.p1Ready || !gameState.p2Ready) return;
+
+    info.innerHTML = (gameState.turn === myId) ? "<b style='color:#64ffda;'>🎯 À VOUS DE TIRER !</b>" : "<span style='color:#ff4757;'>🌊 L'ENNEMI ATTAQUE...</span>";
+
+    const mCells = document.getElementById('myGrid').children;
+    const oCells = document.getElementById('oppGrid').children;
+    const myAttacks = gameState[myId + 'Attacks'] || [];
+    const oppAttacks = gameState[opponentId + 'Attacks'] || [];
+    
+    myAttacks.forEach(i => {
+        const hit = gameState[opponentId + 'Ships']?.some(s=>s.coords.includes(i));
+        oCells[i].classList.add(hit ? 'hit' : 'miss');
+    });
+    oppAttacks.forEach(i => {
+        const hit = myShipsCoords.some(s=>s.coords.includes(i));
+        mCells[i].classList.add(hit ? 'hit' : 'miss');
+    });
+
+    // --- SAUVEGARDE SUR FIREBASE (CORRIGÉE) ---
+    if (currentUser && currentUser.uid && !gameState.winner && gameState.p1Ready) {
+        const savePath = ref(database, `users/${currentUser.uid}/activeGame`);
         
-        if (!gameState.p1Ready || !gameState.p2Ready) {
-            info.textContent = isAiGame ? "Placez vos navires stratégiquement." : "Attente que les deux joueurs soient prêts...";
-            return;
-        }
+        // On crée l'objet de sauvegarde en s'assurant qu'aucune valeur n'est undefined
+        const dataToSave = {
+            isAiGame: isAiGame,
+            currentRoom: currentRoom || null, // Si undefined, devient null (accepté par Firebase)
+            myId: myId || null,
+            opponentId: opponentId || null,
+            myShipsCoords: myShipsCoords,
+            gameState: gameState,
+            lastUpdate: Date.now()
+        };
 
-        const isMyTurn = gameState.turn === myId;
-        info.innerHTML = isMyTurn ? "<b style='color:#64ffda;'>🎯 À VOUS DE TIRER !</b>" : "<span style='color:#ff4757;'>🌊 L'ENNEMI ATTAQUE...</span>";
+        set(savePath, dataToSave).catch(err => console.error("Erreur sauvegarde:", err));
+    }
+}
 
+    function restoreVisuals() {
         const mCells = document.getElementById('myGrid').children;
-        const oCells = document.getElementById('oppGrid').children;
-        const myAttacks = gameState[myId + 'Attacks'] || [];
-        const oppAttacks = gameState[opponentId + 'Attacks'] || [];
-        
-        // Afficher mes attaques sur la grille adverse
-        myAttacks.forEach(i => {
-            const hit = gameState[opponentId + 'Ships'] && gameState[opponentId + 'Ships'].some(s=>s.coords.includes(i));
-            oCells[i].classList.add(hit ? 'hit' : 'miss');
-        });
-        
-        // Afficher les attaques adverses sur ma grille
-        oppAttacks.forEach(i => {
-            const hit = myShipsCoords.some(s=>s.coords.includes(i));
-            mCells[i].classList.add(hit ? 'hit' : 'miss');
+        myShipsCoords.forEach(s => {
+            s.coords.forEach(c => mCells[c].classList.add('ship-' + s.id));
         });
     }
 
     window.resetGame = async () => {
-    // Cacher l'écran de victoire
-    document.getElementById('win-screen').style.display = 'none';
-    document.getElementById('record-status').innerText = "";
-    
-    // Réinitialiser les variables de placement
-    myShipsCoords = [];
-    draggedShip = null;
-    
-    // Réinitialiser l'interface de préparation
-    document.getElementById('setup-area').classList.remove('hidden');
-    document.getElementById('readyBtn').classList.add('hidden');
-    document.getElementById('game-info').textContent = "Redéploiement de la flotte...";
-    
-    // Réafficher les bateaux dans le dock
-    document.querySelectorAll('.draggable-ship').forEach(s => {
-        s.classList.remove('hidden');
-        s.classList.remove('vertical');
-    });
-    isVertical = false;
-
-    if (isAiGame) {
-        // --- RESET LOGIQUE IA ---
-        gameState = { 
-            p1Ready: false, p2Ready: false, 
-            p1Attacks: [], p2Attacks: [], 
-            turn: 'p1', winner: null, recorded: false 
-        };
-        initBoard(); // Relance les grilles vides et génère une nouvelle IA
-    } else {
-        // --- RESET LOGIQUE MULTIJOUEUR (FIREBASE) ---
-        const roomRef = ref(database, `rooms/bn_${currentRoom}`);
+        document.getElementById('win-screen').style.display = 'none';
+        myShipsCoords = [];
+        document.getElementById('setup-area').classList.remove('hidden');
+        document.querySelectorAll('.draggable-ship').forEach(s => { s.classList.remove('hidden', 'vertical'); });
         
-        // On remet à zéro les données de combat mais on garde les noms des joueurs
-        await update(roomRef, {
-            p1Ready: false,
-            p2Ready: false,
-            p1Ships: [],
-            p2Ships: [],
-            p1Attacks: [],
-            p2Attacks: [],
-            turn: 'p1',
-            winner: null,
-            recorded: false
-        });
-        
-        initBoard();
-    }
-};
+        if (currentUser && currentUser.uid) {
+            remove(ref(database, `users/${currentUser.uid}/activeGame`));
+        }
 
+        if (isAiGame) {
+            gameState = { p1Ready: false, p2Ready: false, p1Attacks: [], p2Attacks: [], turn: 'p1', winner: null, recorded: false };
+            initBoard();
+        } else {
+            const roomRef = ref(database, `rooms/bn_${currentRoom}`);
+            await update(roomRef, { p1Ready: false, p2Ready: false, p1Ships: [], p2Ships: [], p1Attacks: [], p2Attacks: [], turn: 'p1', winner: null, recorded: false });
+            initBoard();
+        }
+    };
 </script>
 </body>
 </html>
