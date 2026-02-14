@@ -85,93 +85,109 @@
     </div>
 
 <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-    import { 
-        getAuth, 
-        signInAnonymously, 
-        onAuthStateChanged 
-    } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-    import { 
-        getDatabase, 
-        ref, 
-        set, 
-        get 
-    } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+import { 
+    getAuth, 
+    signInAnonymously, 
+    onAuthStateChanged,
+    setPersistence,
+    browserLocalPersistence 
+} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+import { 
+    getDatabase, 
+    ref, 
+    set, 
+    get 
+} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyB29fMpTwBgsqkjijkNoQJ2kGChSeQDX_w",
-        authDomain: "quiz-ea203.firebaseapp.com",
-        databaseURL: "https://quiz-ea203-default-rtdb.europe-west1.firebasedatabase.app",
-        projectId: "quiz-ea203",
-        storageBucket: "quiz-ea203.firebasestorage.app",
-        messagingSenderId: "605137421110",
-        appId: "1:605137421110:web:289e0876fe06108deaa997"
-    };
+const firebaseConfig = {
+    apiKey: "AIzaSyB29fMpTwBgsqkjijkNoQJ2kGChSeQDX_w",
+    authDomain: "quiz-ea203.firebaseapp.com",
+    databaseURL: "https://quiz-ea203-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "quiz-ea203",
+    storageBucket: "quiz-ea203.firebasestorage.app",
+    messagingSenderId: "605137421110",
+    appId: "1:605137421110:web:289e0876fe06108deaa997"
+};
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getDatabase(app);
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
 
-    let allUsers = {};
-    let selectedAvatar = '👤';
+// --- CONFIGURATION DE LA PERSISTENCE ---
+// Empêche la session de s'effacer quand on ferme l'onglet
+setPersistence(auth, browserLocalPersistence);
 
-    // Rendre les fonctions accessibles aux boutons HTML (onclick)
-    window.redirectBack = () => {
-        const fallback = "accueil.html";
-        if (document.referrer && document.referrer !== window.location.href) {
-            window.location.href = document.referrer;
-        } else {
-            window.location.href = fallback;
-        }
-    };
+let allUsers = {};
+let selectedAvatar = '👤';
 
-    window.loginWithProfile = async (uid) => {
-        try {
-            localStorage.setItem('active_uid', uid);
-            if (!auth.currentUser) {
-                await signInAnonymously(auth);
-            }
-            window.redirectBack();
-        } catch (e) {
-            alert("Erreur de connexion : " + e.message);
-        }
-    };
+window.redirectBack = () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const customRedirect = urlParams.get('redirect');
+    const fallback = "accueil.html";
 
-    window.toggleView = (viewId) => {
-        document.getElementById('view-login').classList.toggle('hidden', viewId !== 'view-login');
-        document.getElementById('view-signup').classList.toggle('hidden', viewId !== 'view-signup');
-    };
-
-    // Gestion de l'état d'authentification
-    onAuthStateChanged(auth, (user) => {
-        if (user) {
-            console.log("Connecté avec l'UID :", user.uid);
-            loadAllProfiles();
-        } else {
-            // On se connecte anonymement pour pouvoir lire la base (selon tes règles)
-            signInAnonymously(auth).catch(err => console.error("Erreur auth auto:", err));
-        }
-    });
-
-    // --- CHARGER TOUS LES COMPTES ---
-    async function loadAllProfiles() {
-        const container = document.getElementById('accounts-suggestions');
-        try {
-            const snapshot = await get(ref(db, 'users'));
-            if (snapshot.exists()) {
-                allUsers = snapshot.val();
-                // On vide le "Chargement..." mais on n'affiche rien tant qu'on ne cherche pas
-                container.innerHTML = ""; 
-            } else {
-                container.innerHTML = "Aucun profil créé.";
-            }
-        } catch (e) {
-            console.error(e);
-            container.innerHTML = "Erreur de chargement des profils.";
-        }
+    if (customRedirect) {
+        // 1. Priorité au paramètre "redirect" passé par le header
+        window.location.href = decodeURIComponent(customRedirect);
+    } else if (document.referrer && !document.referrer.includes('login.html')) {
+        // 2. Sinon, on utilise le referrer classique (si ce n'est pas login.html)
+        window.location.href = document.referrer;
+    } else {
+        // 3. Sinon, retour à l'accueil
+        window.location.href = fallback;
     }
+};
 
-    // --- LOGIQUE DE RECHERCHE ---
+// --- CONNEXION À UN PROFIL EXISTANT ---
+window.loginWithProfile = async (uid) => {
+    try {
+        // 1. On définit l'UID actif
+        localStorage.setItem('active_uid', uid);
+
+        // 2. Session Firebase (Anonyme par défaut pour les profils partagés)
+        if (!auth.currentUser) {
+            await signInAnonymously(auth);
+        }
+
+        // 3. REDIRECTION ICI
+        window.redirectBack();
+        
+    } catch (e) {
+        alert("Erreur de connexion : " + e.message);
+    }
+};
+
+window.toggleView = (viewId) => {
+    document.getElementById('view-login').classList.toggle('hidden', viewId !== 'view-login');
+    document.getElementById('view-signup').classList.toggle('hidden', viewId !== 'view-signup');
+};
+
+// --- ÉCOUTEUR D'AUTH ---
+onAuthStateChanged(auth, (user) => {
+    if (user) {
+        console.log("Session Firebase prête :", user.uid);
+        loadAllProfiles();
+    } else {
+        signInAnonymously(auth).catch(err => console.error("Erreur auth:", err));
+    }
+});
+
+async function loadAllProfiles() {
+    const container = document.getElementById('accounts-suggestions');
+    try {
+        const snapshot = await get(ref(db, 'users'));
+        if (snapshot.exists()) {
+            allUsers = snapshot.val();
+            container.innerHTML = ""; // Prêt pour la recherche
+        } else {
+            container.innerHTML = "Aucun profil créé.";
+        }
+    } catch (e) {
+        container.innerHTML = "Erreur de chargement.";
+    }
+}
+
+// --- RECHERCHE ---
 document.getElementById('search-account').oninput = (e) => {
     const query = e.target.value.toLowerCase().trim();
     const container = document.getElementById('accounts-suggestions');
@@ -179,97 +195,91 @@ document.getElementById('search-account').oninput = (e) => {
     if (query.length >= 3) {
         const filtered = Object.fromEntries(
             Object.entries(allUsers).filter(([uid, data]) => {
-                // CORRECTION ICI : On vérifie que data et data.username existent
                 return data && data.username && data.username.toLowerCase().includes(query);
             })
         );
         
-        if (Object.keys(filtered).length > 0) {
-            renderProfiles(filtered);
-        } else {
-            container.innerHTML = "Aucun profil correspondant.";
-        }
+        if (Object.keys(filtered).length > 0) renderProfiles(filtered);
+        else container.innerHTML = "Aucun profil correspondant.";
     } else {
         container.innerHTML = ""; 
     }
 };
 
-    function renderProfiles(usersToDisplay) {
-        const container = document.getElementById('accounts-suggestions');
-        container.innerHTML = "";
-        
-        Object.entries(usersToDisplay).forEach(([uid, data]) => {
-            const card = document.createElement('div');
-            card.className = 'account-card';
-            let avatarHtml = (data.avatar && data.avatar.startsWith('data:image')) 
-                ? `<img src="${data.avatar}">` 
-                : (data.avatar || '👤');
+function renderProfiles(usersToDisplay) {
+    const container = document.getElementById('accounts-suggestions');
+    container.innerHTML = "";
+    
+    Object.entries(usersToDisplay).forEach(([uid, data]) => {
+        const card = document.createElement('div');
+        card.className = 'account-card';
+        let avatarHtml = (data.avatar && data.avatar.startsWith('data:image')) 
+            ? `<img src="${data.avatar}">` 
+            : (data.avatar || '👤');
 
-            card.innerHTML = `
-                <div class="avatar-circle">${avatarHtml}</div>
-                <div class="account-name">${data.username}</div>
-            `;
-            card.onclick = () => window.loginWithProfile(uid); 
-            container.appendChild(card);
-        });
-    }
+        card.innerHTML = `
+            <div class="avatar-circle">${avatarHtml}</div>
+            <div class="account-name">${data.username}</div>
+        `;
+        card.onclick = () => window.loginWithProfile(uid); 
+        container.appendChild(card);
+    });
+}
 
-    // --- GESTION AVATAR ---
-    document.getElementById('file-input').onchange = (e) => {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            const img = new Image();
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                canvas.width = 128; canvas.height = 128;
-                ctx.drawImage(img, 0, 0, 128, 128);
-                selectedAvatar = canvas.toDataURL('image/jpeg', 0.7);
-                document.getElementById('preview-circle').innerHTML = `<img src="${selectedAvatar}">`;
-            };
-            img.src = event.target.result;
+// --- PHOTO ---
+document.getElementById('file-input').onchange = (e) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128; canvas.height = 128;
+            canvas.getContext('2d').drawImage(img, 0, 0, 128, 128);
+            selectedAvatar = canvas.toDataURL('image/jpeg', 0.7);
+            document.getElementById('preview-circle').innerHTML = `<img src="${selectedAvatar}">`;
         };
-        if(e.target.files[0]) reader.readAsDataURL(e.target.files[0]);
+        img.src = event.target.result;
     };
+    if(e.target.files[0]) reader.readAsDataURL(e.target.files[0]);
+};
 
-    // --- CRÉATION DE COMPTE ---
-    document.getElementById('btn-create').onclick = async () => {
-        const pseudo = document.getElementById('username').value.trim();
-        if(!pseudo) return alert("Pseudo requis !");
+// --- CRÉATION ---
+// --- CRÉATION ---
+document.getElementById('btn-create').onclick = async () => {
+    const pseudo = document.getElementById('username').value.trim();
+    if(!pseudo) return alert("Pseudo requis !");
 
-        try {
-            // On s'assure d'être déjà connecté pour ne pas avoir de Permission Denied sur le "get"
-            let user = auth.currentUser;
-            if (!user) {
-                const cred = await signInAnonymously(auth);
-                user = cred.user;
+    try {
+        let user = auth.currentUser;
+        if (!user) user = (await signInAnonymously(auth)).user;
+
+        const snapshot = await get(ref(db, 'users'));
+        if (snapshot.exists()) {
+            const data = snapshot.val();
+            if (Object.values(data).some(u => u.username?.toLowerCase() === pseudo.toLowerCase())) {
+                return alert("⚠️ Ce pseudo est déjà pris !");
             }
-
-            // Vérification si le pseudo existe déjà
-            const snapshot = await get(ref(db, 'users'));
-            if (snapshot.exists()) {
-                const data = snapshot.val();
-                const exists = Object.values(data).some(u => u.username && u.username.toLowerCase() === pseudo.toLowerCase());
-                if (exists) return alert("⚠️ Ce pseudo est déjà pris !");
-            }
-
-            // Enregistrement
-            await set(ref(db, `users/${user.uid}`), { 
-                username: pseudo, 
-                avatar: selectedAvatar 
-            });
-
-            localStorage.setItem('active_uid', user.uid);
-            window.redirectBack();
-        } catch (e) { 
-            console.error(e);
-            alert("Erreur : " + e.message); 
         }
-    };
 
-    // --- INIT AU CHARGEMENT ---
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('mode') === 'signup') window.toggleView('view-signup');
+        // Sauvegarde
+        await set(ref(db, `users/${user.uid}`), { 
+            username: pseudo, 
+            avatar: selectedAvatar 
+        });
+
+        // Activation du profil
+        localStorage.setItem('active_uid', user.uid);
+
+        // REDIRECTION ICI
+        window.redirectBack(); 
+        
+    } catch (e) { 
+        alert("Erreur : " + e.message); 
+    }
+};
+
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.get('mode') === 'signup') window.toggleView('view-signup');
 
 </script>
 </body>

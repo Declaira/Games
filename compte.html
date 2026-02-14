@@ -2,46 +2,138 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Mon Compte</title>
+    <title>Mon Compte - Déclaira</title>
     <link rel="icon" href="logo/logo.png" type="image/x-icon">
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Quicksand', sans-serif; background: linear-gradient(135deg,#fff3cd,#ffe5b4,#ffd1d1,#ffc4e1);; margin: 0; }
-        .main-container { max-width: 500px; margin: 40px auto; padding: 20px; }
-        .card { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); text-align: center; }
+        body { font-family: 'Quicksand', sans-serif; background: linear-gradient(135deg,#fff3cd,#ffe5b4,#ffd1d1,#ffc4e1); margin: 0; min-height: 100vh; }
+        .main-container { max-width: 800px; margin: 40px auto; padding: 20px; }
+        
+        /* Onglets */
+        .tabs-nav { display: flex; gap: 10px; margin-bottom: 20px; justify-content: center; }
+        .tab-btn { padding: 12px 20px; border: none; background: white; border-radius: 12px; cursor: pointer; font-weight: bold; color: #666; transition: 0.3s; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .tab-btn.active { background: #ff9a00; color: white; transform: translateY(-2px); }
+
+        .card { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); text-align: center; min-height: 400px; }
+        .tab-content { display: none; animation: fadeIn 0.3s ease; }
+        .tab-content.active { display: block; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Profil */
         .profile-pic { width: 120px; height: 120px; border-radius: 50%; border: 4px solid #ff9a00; object-fit: cover; margin-bottom: 15px; }
         input { width: 100%; padding: 12px; margin: 10px 0; border: 2px solid #eee; border-radius: 10px; box-sizing: border-box; font-family: inherit; }
         .btn-save { background: #ff9a00; color: white; border: none; padding: 15px; width: 100%; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 20px; }
-        .btn-danger { background: #ffeded; color: #e74c3c; border: none; padding: 10px; margin-top: 30px; cursor: pointer; border-radius: 8px; font-size: 0.9em; }
-        .btn-danger:hover { background: #e74c3c; color: white; }
+        .btn-logout { background: #333; color: white; border: none; padding: 12px; width: 100%; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .btn-danger { background: #ffeded; color: #e74c3c; border: none; padding: 10px; margin-top: 30px; cursor: pointer; border-radius: 8px; font-size: 0.9em; width: 100%; }
+
+        /* Stats */
+        .stats-section { margin-bottom: 30px; text-align: left; }
+        .stats-section h4 { 
+            border-bottom: 2px solid #ff9a00; 
+            padding-bottom: 5px; 
+            color: #333; 
+            margin-bottom: 15px;
+        }
+        .stat-card {
+            background: #fff;
+            border: 1px solid #eee;
+            padding: 12px;
+            border-radius: 12px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+        }
+        .stat-card h5 { margin: 0 0 8px 0; color: #ff4e00; font-size: 1.1em; text-transform: uppercase; }
+        .stat-row { display: flex; justify-content: space-between; font-size: 0.85em; margin-bottom: 4px; border-bottom: 1px dashed #f0f0f0; }
+        .stat-row:last-child { border-bottom: none; }
+
+        /* Personnalisation */
+        .perso-item { margin-bottom: 25px; text-align: left; background: #fffaf0; padding: 15px; border-radius: 15px; }
+        .bg-preview { width: 100%; height: 120px; background-size: cover; background-position: center; border-radius: 10px; margin-top: 10px; border: 2px dashed #ff9a00; }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
     <script src="header.js"></script>
-    <script>injectHeader({ title: "Paramètres" });</script>
+    <script>injectHeader({ title: "Paramètres", customBackground: "linear-gradient(to right, #ff9a00, #ff4e00)" });</script>
 
     <div class="main-container">
+        <div class="tabs-nav">
+            <button class="tab-btn active" onclick="switchTab('account')">👤 Compte</button>
+            <button class="tab-btn" onclick="switchTab('stats')">📊 Stats</button>
+            <button class="tab-btn" onclick="switchTab('perso')">🎨 Personnalisation</button>
+        </div>
+
         <div class="card">
-            <div id="loading">Chargement du profil...</div>
-            <div id="content" class="hidden">
+            <div id="tab-account" class="tab-content active">
+            
+            <div id="view-mode">
+                <div id="display-avatar-container" class="profile-pic" style="display: flex; align-items: center; justify-content: center; font-size: 50px; overflow: hidden; margin: 0 auto 15px auto;">
+                    <span id="display-avatar-fallback">👤</span>
+                </div>
+                <h2 id="display-pseudo">Chargement...</h2>
+                
+                <button class="btn-save" onclick="toggleEdit(true)">✏️ Modifier mon profil</button>
+                <button class="btn-logout" id="btn-logout-main">Déconnexion</button>
+                <button class="btn-danger" id="btn-delete">Supprimer mon compte</button>
+            </div>
+
+            <div id="edit-mode" class="hidden">
                 <div style="position: relative; display: inline-block;">
-                    <img id="current-pic" class="profile-pic" src="">
+                    <div id="edit-pic-preview-container" class="profile-pic" style="display: flex; align-items: center; justify-content: center; font-size: 50px; overflow: hidden; margin-bottom: 15px;">
+                        <span id="edit-avatar-fallback">👤</span>
+                    </div>
                     <label for="change-pic" style="position:absolute; bottom:15px; right:5px; background:#333; color:white; border-radius:50%; width:35px; height:35px; display:flex; align-items:center; justify-content:center; cursor:pointer; border:3px solid white;">📷</label>
                     <input type="file" id="change-pic" accept="image/*" style="display:none;">
                 </div>
-                
-                <p>Modifier mon pseudo :</p>
+                <p>Nouveau pseudo :</p>
                 <input type="text" id="new-pseudo">
                 
-                <button class="btn-save" id="btn-update">Enregistrer les modifications</button>
-                <button class="btn-danger" id="btn-delete">Supprimer mon compte définitivement</button>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn-save" id="btn-update">Enregistrer</button>
+                    <button class="btn-logout" onclick="toggleEdit(false)" style="background:#ccc;">Annuler</button>
+                </div>
+            </div>
+        </div>
+            <div id="tab-stats" class="tab-content">
+    <h3 style="color: #ff9a00;">Tableau des Performances</h3>
+    
+    <div class="stats-container">
+        <div class="stats-section">
+            <h4>🎮 Jeux</h4>
+            <div class="stats-grid" id="stats-game"></div>
+        </div>
+
+        <div class="stats-section">
+            <h4>🗺️ Géographie</h4>
+            <div class="stats-grid" id="stats-geo"></div>
+        </div>
+
+        <div class="stats-section">
+            <h4>🧩 Défis Quotidiens</h4>
+            <div class="stats-grid" id="stats-dle"></div>
+        </div>
+    </div>
+</div>
+
+            <div id="tab-perso" class="tab-content">
+                <h3>Fonds d'écran personnalisés</h3>
+                <div id="perso-display">
+                    <div class="perso-item">
+                        <strong>OnepieceDle</strong>
+                        <div id="bg-onepiece" class="bg-preview"></div>
+                    </div>
+                    <div class="perso-item">
+                        <strong>PokemonDle</strong>
+                        <div id="bg-pokemon" class="bg-preview"></div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged, deleteUser } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, deleteUser, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
         import { getDatabase, ref, get, update, remove } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
         const firebaseConfig = {
@@ -53,6 +145,7 @@
             messagingSenderId: "605137421110",
             appId: "1:605137421110:web:289e0876fe06108deaa997"
         };
+
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getDatabase(app);
@@ -60,50 +153,178 @@
         let userUID = null;
         let base64Image = null;
 
+        // --- NAVIGATION ONGLETS ---
+        window.switchTab = (tabId) => {
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('tab-' + tabId).classList.add('active');
+            event.currentTarget.classList.add('active');
+        };
+
         onAuthStateChanged(auth, async (user) => {
-            if (!user) { 
-                // Si aucun utilisateur n'est connecté, redirection vers la page de login
-                window.location.href = 'login.html'; 
-                return; 
+    const savedUid = localStorage.getItem('active_uid');
+    if (!savedUid) {
+        window.location.href = 'login.html';
+        return;
+    }
+
+    userUID = savedUid; 
+
+    try {
+        const snapshot = await get(ref(db, `users/${userUID}`));
+        if (snapshot.exists()) {
+            const data = snapshot.val();
+            
+            // Affichage Pseudo
+            document.getElementById('display-pseudo').textContent = data.username || "Sans nom";
+            document.getElementById('new-pseudo').value = data.username || "";
+            
+            // Affichage Avatar
+            const displayCont = document.getElementById('display-avatar-container');
+            const editCont = document.getElementById('edit-pic-preview-container');
+            
+            if (data.avatar && data.avatar.startsWith('data:image')) {
+                const imgHtml = `<img src="${data.avatar}" class="profile-pic" style="margin:0">`;
+                displayCont.innerHTML = imgHtml;
+                editCont.innerHTML = imgHtml;
+                base64Image = data.avatar;
+            } else {
+                const icon = data.avatar || "👤";
+                displayCont.innerHTML = `<span>${icon}</span>`;
+                editCont.innerHTML = `<span>${icon}</span>`;
             }
 
-            userUID = user.uid;
-            console.log("Utilisateur connecté avec l'UID :", userUID);
+            if (data.games) {
+                loadStats(data.games);
+                loadSettings(data.games);
+            }
+        }
+    } catch (error) {
+        console.error("Erreur:", error);
+    }
+});
+        function loadProfile(data) {
+            // 1. Mise à jour du pseudo dans l'input (Mode Édition)
+            const inputPseudo = document.getElementById('new-pseudo');
+            if (inputPseudo) inputPseudo.value = data.username || "";
 
-            try {
-                // Tentative de récupération des données dans la branche users/UID
-                const snap = await get(ref(db, `users/${userUID}`));
+            // 2. Détermination de l'avatar (soit Base64, soit DiceBear par défaut)
+            const avatarSource = (data.avatar && data.avatar.startsWith('data')) 
+                ? data.avatar 
+                : `https://api.dicebear.com/7.x/bottts/svg?seed=${data.username || userUID}`;
+            
+            base64Image = avatarSource;
 
-                if (snap.exists()) {
-                    const data = snap.val();
+            // 3. Mise à jour sécurisée des images dans le DOM
+            // On met à jour l'image de la vue ET de l'aperçu édition
+            const picView = document.getElementById('current-pic');
+            const picEdit = document.getElementById('edit-pic-preview');
+
+            if (picView) picView.src = avatarSource;
+            if (picEdit) picEdit.src = avatarSource;
+        }
+
+    function loadStats(games) {
+        const categories = {
+            game: document.getElementById('stats-game'),
+            geo: document.getElementById('stats-geo'),
+            dle: document.getElementById('stats-dle')
+        };
+
+        // On vide les conteneurs
+        Object.values(categories).forEach(c => c.innerHTML = "");
+
+        if (!games) {
+            Object.values(categories).forEach(c => c.innerHTML = "Aucune donnée");
+            return;
+        }
+
+        const groups = {
+            sudoku: 'game', bn: 'game', p4: 'game',
+            nature: 'geo', monde: 'geo', france: 'geo', 
+            onepiece: 'dle', pokemon: 'dle', football: 'dle'
+            
+        };
+
+        const names = {
+            nature: "Carte Géographie", monde: "Carte du Monde", france: "Carte de France",
+            onepiece: "OnePieceDLE", pokemon: "PokémonDLE", football: "FootballDLE",
+            sudoku: "Sudoku", bn: "Bataille Navale", p4: "Puissance 4"
+        };
+
+        // Fonction pour formater le temps (secondes -> MM:SS)
+        const formatTime = (s) => {
+            if (s === Infinity || !s) return "--:--";
+            const min = Math.floor(s / 60).toString().padStart(2, '0');
+            const sec = (s % 60).toString().padStart(2, '0');
+            return `${min}:${sec}`;
+        };
+
+        Object.keys(groups).forEach(gameKey => {
+            const gameData = games[gameKey];
+            if (!gameData || !gameData.stats) return;
+
+            const categoryKey = groups[gameKey];
+            const stats = gameData.stats;
+
+            if (gameKey === 'sudoku') {
+                // --- TRAITEMENT SPÉCIAL SUDOKU (PAR DIFFICULTÉ) ---
+                let sudokuHtml = `<div class="stat-card"><h5>${names[gameKey]}</h5>`;
+                
+                Object.entries(stats).forEach(([diff, data]) => {
+                    sudokuHtml += `
+                        <div style="margin-top:10px; border-bottom:1px solid #eee; padding-bottom:5px;">
+                            <strong style="color:#ff6f00; text-transform: capitalize;">• ${diff}</strong>
+                            <div class="stat-row"><span>Parties</span> <strong>${data.gamesWon}</strong></div>
+                            <div class="stat-row"><span>Record</span> <strong>${formatTime(data.bestTime)}</strong></div>
+                            <div class="stat-row"><span>Moyenne</span> <strong>${formatTime(data.averageTime)}</strong></div>
+                        </div>`;
+                });
+                
+                sudokuHtml += `</div>`;
+                categories[categoryKey].innerHTML += sudokuHtml;
+
+            } else {
+                // --- TRAITEMENT GÉNÉRIQUE (QUIZ & AUTRES) ---
+                let cardHtml = `<div class="stat-card"><h5>${names[gameKey]}</h5>`;
+
+                Object.entries(stats).forEach(([label, value]) => {
+                    // Si la valeur est un temps (pour d'autres puzzles futurs)
+                    const isTime = label.toLowerCase().includes('time') || label.toLowerCase().includes('record');
+                    const displayValue = isTime ? formatTime(value) : value;
                     
-                    // Remplissage du champ pseudo
-                    document.getElementById('new-pseudo').value = data.username || "";
-                    
-                    // Gestion de l'avatar (Base64 ou DiceBear par défaut)
-                    if (data.avatar && data.avatar.startsWith('data')) {
-                        document.getElementById('current-pic').src = data.avatar;
-                        base64Image = data.avatar;
-                    } else {
-                        document.getElementById('current-pic').src = 'https://api.dicebear.com/7.x/bottts/svg?seed=' + (data.username || userUID);
-                    }
-                    
-                    // Affichage de l'interface une fois les données chargées
-                    document.getElementById('loading').style.display = 'none';
-                    document.getElementById('content').classList.remove('hidden');
-                } else {
-                    console.warn("Aucune donnée trouvée dans la base pour cet UID.");
-                    document.getElementById('loading').innerText = "Profil inexistant dans la base de données.";
-                }
-            } catch (error) {
-                console.error("Erreur lors de la récupération des données :", error);
-                if (error.message.includes("Permission denied")) {
-                    alert("Erreur de permissions : vérifie tes règles Firebase Realtime Database.");
-                }
+                    const displayLabel = label.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+                    cardHtml += `
+                        <div class="stat-row">
+                            <span>${displayLabel}</span>
+                            <strong>${displayValue}</strong>
+                        </div>`;
+                });
+
+                cardHtml += `</div>`;
+                categories[categoryKey].innerHTML += cardHtml;
             }
         });
 
-        // Changement d'image
+    // Vérification vide
+    Object.keys(categories).forEach(k => {
+        if (categories[k].innerHTML === "") categories[k].innerHTML = "<em>Pas encore de parties jouées.</em>";
+    });
+}
+
+        function loadSettings(games) {
+            if (!games) return;
+            // Onepiece
+            if (games.onepiece?.settings?.bg) {
+                document.getElementById('bg-onepiece').style.backgroundImage = `url(${games.onepiece.settings.bg})`;
+            }
+            // Pokemon
+            if (games.pokemon?.settings?.bg) {
+                document.getElementById('bg-pokemon').style.backgroundImage = `url(${games.pokemon.settings.bg})`;
+            }
+        }
+
+        // Logic Update, Image & Delete (Inchangée mais connectée)
         document.getElementById('change-pic').onchange = (e) => {
             const reader = new FileReader();
             reader.onload = (event) => {
@@ -120,30 +341,88 @@
             reader.readAsDataURL(e.target.files[0]);
         };
 
-        // Mise à jour
         document.getElementById('btn-update').onclick = async () => {
             const newName = document.getElementById('new-pseudo').value.trim();
-            if(!newName) return;
             await update(ref(db, `users/${userUID}`), { username: newName, avatar: base64Image });
             alert("Profil mis à jour !");
             location.reload();
         };
 
-        // Suppression
+        document.getElementById('btn-logout-main').onclick = () => {
+            signOut(auth).then(() => {
+                localStorage.removeItem('active_uid');
+                window.location.href = 'login.html';
+            });
+        };
+
         document.getElementById('btn-delete').onclick = async () => {
             if(confirm("⚠️ Es-tu certain ? Cela supprimera toutes tes données et tes scores.")) {
-                // 1. Supprimer de la DB
                 await remove(ref(db, `users/${userUID}`));
-                // 2. Supprimer du LocalStorage
                 const saved = JSON.parse(localStorage.getItem('declaira_accounts') || "[]");
-                const filtered = saved.filter(a => a.uid !== userUID);
-                localStorage.setItem('declaira_accounts', JSON.stringify(filtered));
-                // 3. Supprimer l'utilisateur Firebase
-                deleteUser(auth.currentUser).then(() => {
-                    window.location.href = 'login.html';
-                });
+                localStorage.setItem('declaira_accounts', JSON.stringify(saved.filter(a => a.uid !== userUID)));
+                deleteUser(auth.currentUser).then(() => { window.location.href = 'login.html'; });
             }
         };
-    </script>
+
+const headerNameEl = document.getElementById('header-username');
+const headerAvatarEl = document.getElementById('header-avatar');
+
+// --- FONCTION DE SYNCHRONISATION ---
+function syncWithHeader() {
+    if (!headerNameEl || !headerAvatarEl) return;
+
+    const currentName = headerNameEl.textContent;
+    if (currentName !== "Chargement..." && currentName !== "Invité") {
+        document.getElementById('display-pseudo').textContent = currentName;
+        document.getElementById('new-pseudo').value = currentName;
+    }
+
+    // Récupération de l'avatar selon la logique du header
+    const imgInHeader = headerAvatarEl.querySelector('img');
+    const displayCont = document.getElementById('display-avatar-container');
+    const editCont = document.getElementById('edit-pic-preview-container');
+
+    if (imgInHeader) {
+        // C'est une image (Base64 ou URL)
+        const imgSrc = imgInHeader.src;
+        displayCont.innerHTML = `<img src="${imgSrc}" class="profile-pic" style="margin:0">`;
+        editCont.innerHTML = `<img src="${imgSrc}" class="profile-pic" style="margin:0">`;
+        base64Image = imgSrc;
+    } else {
+        // C'est un texte ou emoji
+        const avatarTxt = headerAvatarEl.textContent;
+        displayCont.innerHTML = `<span>${avatarTxt}</span>`;
+        editCont.innerHTML = `<span>${avatarTxt}</span>`;
+    }
+}
+
+// Utilisation d'un MutationObserver pour surveiller le header
+const headerObserver = new MutationObserver(() => syncWithHeader());
+if (headerNameEl) headerObserver.observe(headerNameEl, { childList: true });
+if (headerAvatarEl) headerObserver.observe(headerAvatarEl, { childList: true });
+
+// Basculer entre Vue et Édition
+window.toggleEdit = (isEditing) => {
+    document.getElementById('view-mode').classList.toggle('hidden', isEditing);
+    document.getElementById('edit-mode').classList.toggle('hidden', !isEditing);
+};
+
+// --- LOGIQUE DE MISE À JOUR ---
+document.getElementById('btn-update').onclick = async () => {
+    const newName = document.getElementById('new-pseudo').value.trim();
+    if(!newName) return;
+
+    try {
+        await update(ref(db, `users/${userUID}`), { 
+            username: newName, 
+            avatar: base64Image 
+        });
+        alert("Profil mis à jour !");
+        location.reload(); // Recharge pour rafraîchir le header et la page
+    } catch (e) {
+        console.error("Erreur mise à jour:", e);
+    }
+};
+</script>
 </body>
 </html>

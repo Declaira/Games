@@ -97,7 +97,8 @@ window.injectHeader = function(options = {}) {
 
   const loginPath = homeLink.replace('accueil.html', 'login.html');
   const comptePath = homeLink.replace('accueil.html', 'compte.html');
-
+  const currentUrl = encodeURIComponent(window.location.href);
+  
   document.write(`
     ${style}
     <header id="main-header">
@@ -126,7 +127,7 @@ window.injectHeader = function(options = {}) {
       </div>
     </header>
     
-    <script type="module">
+<script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
       import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
       import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
@@ -146,80 +147,102 @@ window.injectHeader = function(options = {}) {
       const db = getDatabase(app);
 
       const header = document.getElementById('main-header');
-      const trigger = document.getElementById('header-profile-trigger');
       const dropdown = document.getElementById('header-dropdown');
       const nameEl = document.getElementById('header-username');
       const avatarEl = document.getElementById('header-avatar');
       const loggedInMenu = document.getElementById('menu-logged-in');
       const guestMenu = document.getElementById('menu-guest');
-      const body = document.body;
 
-      // --- LOGIQUE VISUELLE (Masquage) ---
-      if (${autoHide}) {
-        const showH = () => { header.classList.add('header-visible'); body.style.paddingTop = "100px"; };
-        const hideH = () => { if (!dropdown.classList.contains('show')) { header.classList.remove('header-visible'); body.style.paddingTop = "0px"; }};
-
-        document.addEventListener('mousemove', (e) => {
-          if (e.clientY < 60) showH();
-          else if (e.clientY > 110) hideH();
-        });
-
-        let lastS = window.pageYOffset;
-        window.addEventListener('scroll', () => {
-          let currS = window.pageYOffset;
-          if (currS < lastS && currS > 50) showH();
-          else if (currS > lastS && currS > 100) hideH();
-          lastS = currS;
-        });
-      }
-
-      // Gestion du menu déroulant
-      trigger.onclick = (e) => { e.stopPropagation(); dropdown.classList.toggle('show'); };
-      document.addEventListener('click', () => dropdown.classList.remove('show'));
-
-      // Redirections mode Guest
-      document.getElementById('btn-goto-login').onclick = () => { window.location.href = "${loginPath}?mode=login"; };
-      document.getElementById('btn-goto-signup').onclick = () => { window.location.href = "${loginPath}?mode=signup"; };
-
-      // --- AUTHENTIFICATION ---
-      onAuthStateChanged(auth, async (user) => {
-        const savedUid = localStorage.getItem('active_uid');
-        const uidToFetch = savedUid || (user ? user.uid : null);
-
-        if (uidToFetch) {
-          const snapshot = await get(ref(db, 'users/' + uidToFetch));
-          if (snapshot.exists()) {
-            const data = snapshot.val();
-            nameEl.textContent = data.username || "Joueur";
-            if (data.avatar && data.avatar.length > 5) {
-                if(data.avatar.startsWith('data:image') || data.avatar.startsWith('http')) {
-                    avatarEl.innerHTML = '<img src="' + data.avatar + '">';
-                } else {
-                    avatarEl.textContent = data.avatar;
-                }
-            } else {
-                avatarEl.innerHTML = "👤";
-            }
-            loggedInMenu.classList.remove('hidden');
-            guestMenu.classList.add('hidden');
-            return; 
-          }
-        }
+      // --- LOGIQUE DE RESET UI ---
+      const clearUI = () => {
+        localStorage.removeItem('active_uid');
         nameEl.textContent = "Invité";
         avatarEl.innerHTML = "👤";
+        avatarEl.style.fontSize = "24px";
         loggedInMenu.classList.add('hidden');
         guestMenu.classList.remove('hidden');
-      });
+      };
 
-      const logoutBtn = document.getElementById('header-logout-btn');
-      if(logoutBtn) {
-        logoutBtn.onclick = () => {
-          signOut(auth).then(() => {
-            localStorage.removeItem('active_uid');
-            window.location.href = "${loginPath}";
-          });
-        };
-      }
+      // --- SURVEILLANCE DE L'ÉTAT ---
+      onAuthStateChanged(auth, async (user) => {
+    // 1. On vérifie en priorité si un profil a été choisi (même en session anonyme)
+    const savedUid = localStorage.getItem('active_uid');
+    
+    // 2. L'UID à charger est soit le profil choisi, soit l'UID Firebase si l'user est connecté "en dur"
+    const uidToLoad = savedUid || (user && !user.isAnonymous ? user.uid : null);
+
+    console.log("🔍 [Debug Header] État Auth changé");
+    console.log("   - Firebase User UID:", user ? user.uid : "null");
+    console.log("   - Est Anonyme (Firebase):", user ? user.isAnonymous : "n/a");
+    console.log("   - Profil Choisi (Local):", savedUid);
+    console.log("   - UID utilisé pour le Header:", uidToLoad);
+
+    if (uidToLoad) {
+        try {
+            const snapshot = await get(ref(db, 'users/' + uidToLoad));
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                console.log("✅ [Debug Header] Données trouvées pour :", data.username);
+                
+                nameEl.textContent = data.username || "Joueur";
+                
+                if (data.avatar && data.avatar.length > 5) {
+                    avatarEl.innerHTML = (data.avatar.startsWith('data:image') || data.avatar.startsWith('http')) 
+                        ? '<img src="' + data.avatar + '" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">'
+                        : data.avatar;
+                }
+                
+                loggedInMenu.classList.remove('hidden');
+                guestMenu.classList.add('hidden');
+                return; // Succès : On arrête ici
+            } else {
+                console.warn("⚠️ [Debug Header] UID présent mais aucune donnée trouvée en DB.");
+            }
+        } catch (e) {
+            console.error("❌ [Debug Header] Erreur lors du chargement profil:", e);
+        }
+    }
+
+    // 3. Si on arrive ici, c'est le vrai mode invité
+    console.log("👤 [Debug Header] Mode Invité activé.");
+    clearUI();
+});
+
+      // Gestion menu et déconnexion (inchangés)
+      document.getElementById('header-profile-trigger').onclick = (e) => { 
+        e.stopPropagation(); 
+        dropdown.classList.toggle('show'); 
+      };
+      document.addEventListener('click', () => dropdown.classList.remove('show'));
+      
+      
+
+      document.getElementById('btn-goto-login').onclick = () => { 
+          window.location.href = '${loginPath}?mode=login&redirect=${currentUrl}'; 
+      };
+
+      document.getElementById('btn-goto-signup').onclick = () => { 
+          window.location.href = '${loginPath}?mode=signup&redirect=${currentUrl}'; 
+      };
+
+      document.getElementById('header-logout-btn').onclick = () => {
+        signOut(auth).then(() => {
+          // 1. On nettoie l'UID choisi
+          localStorage.removeItem('active_uid');
+          
+          // 2. On ferme le menu visuellement (optionnel mais plus propre)
+          dropdown.classList.remove('show');
+          
+          // 3. On recharge la page actuelle : 
+          // Comme l'UID est supprimé, onAuthStateChanged va se déclencher 
+          // au rechargement et passer l'interface en mode "Invité" sur la même page.
+          window.location.reload();
+        }).catch((error) => {
+          console.error("Erreur déconnexion:", error);
+          // En cas d'erreur, on tente quand même le reload pour reset l'UI
+          window.location.reload();
+        });
+      };
     </script>
   `);
 }
