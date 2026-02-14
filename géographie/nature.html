@@ -337,7 +337,6 @@ const firebaseConfig = {
     messagingSenderId: "605137421110",
     appId: "1:605137421110:web:289e0876fe06108deaa997"
 };
-
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getDatabase(app);
@@ -370,10 +369,13 @@ let score = 0, current = null, remainingTargets = [], activeTargets = [...target
 
 // 3. FONCTIONS DE PERSISTANCE (FILTRES & SESSION)
 async function saveFilters(selectedTypes) {
-    if (!currentUserUid) return;
-    try {
+    if (currentUserUid) {
+        // FIREBASE
         await set(ref(db, `users/${currentUserUid}/games/nature/settings/filters`), selectedTypes);
-    } catch (e) { console.error("Erreur saveFilters:", e); }
+    } else {
+        // LOCAL
+        localStorage.setItem('nature_filters_guest', JSON.stringify(selectedTypes));
+    }
 }
 
 async function restoreFilters() {
@@ -416,6 +418,37 @@ async function restoreSession() {
     updateScoreDisplay();
 }
 
+function restoreLocalGuestSession() {
+    // Restaurer les filtres
+    const savedFilters = JSON.parse(localStorage.getItem('nature_filters_guest'));
+    if (savedFilters) {
+        document.querySelectorAll('.type-filter').forEach(cb => cb.checked = savedFilters.includes(cb.value));
+        activeTargets = targets.filter(t => savedFilters.includes(t.type));
+    }
+
+    // Appliquer visuellement les filtres
+    const selectedTypes = Array.from(document.querySelectorAll('.type-filter:checked')).map(cb => cb.value);
+    targets.forEach(t => {
+        const el = document.getElementById(t.id);
+        if (el) el.style.display = selectedTypes.includes(t.type) ? "block" : "none";
+    });
+
+    // Restaurer les réponses (points rouges/verts)
+    const localSess = JSON.parse(localStorage.getItem('nature_session_guest') || '{}');
+    remainingTargets = [...activeTargets];
+    score = 0;
+
+    Object.keys(localSess).forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            const isCorrect = localSess[id] === 'correct';
+            el.classList.add(isCorrect ? 'state-correct' : 'state-wrong');
+            if (isCorrect) score++;
+        }
+        remainingTargets = remainingTargets.filter(t => t.id !== id);
+    });
+    updateScoreDisplay();
+}
 // 4. LOGIQUE DU JEU
 function updateScoreDisplay() {
     document.getElementById('score').textContent = score;
@@ -443,12 +476,17 @@ async function checkAnswer() {
     if (inputEl.disabled || !current) return;
     inputEl.disabled = true;
 
+    // Normalisation de la réponse (minuscules et retrait des accents)
     const userVal = inputEl.value.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     const correctVal = current.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     const element = document.getElementById(current.id);
+    
     if (element) element.classList.remove('highlight-current');
 
     const isCorrect = userVal === correctVal;
+    const status = isCorrect ? 'correct' : 'wrong';
+
+    // Mise à jour visuelle immédiate
     if (isCorrect) {
         score++;
         if (element) element.classList.add('state-correct');
@@ -461,9 +499,33 @@ async function checkAnswer() {
     }
 
     updateScoreDisplay();
-    if (currentUserUid) await update(ref(db, `users/${currentUserUid}/games/nature/session`), { [current.id]: isCorrect ? 'correct' : 'wrong' });
 
-    setTimeout(() => { nextQuestion(); }, 1500);
+    // --- LOGIQUE DE SAUVEGARDE HYBRIDE SÉCURISÉE ---
+    // On utilise currentUserUid qui est null si l'utilisateur est anonyme
+    if (currentUserUid) {
+        // Mode Connecté (Compte réel) : Sauvegarde sur Firebase
+        try {
+            await update(ref(db, `users/${currentUserUid}/games/nature/session`), { 
+                [current.id]: status 
+            });
+        } catch (e) {
+            console.error("Erreur sauvegarde Firebase:", e);
+        }
+    } else {
+        // Mode Invité ou Anonyme : Sauvegarde uniquement dans le localStorage
+        try {
+            const localSess = JSON.parse(localStorage.getItem('nature_session_guest') || '{}');
+            localSess[current.id] = status;
+            localStorage.setItem('nature_session_guest', JSON.stringify(localSess));
+        } catch (e) {
+            console.error("Erreur sauvegarde LocalStorage:", e);
+        }
+    }
+
+    // Passage à la question suivante après un court délai
+    setTimeout(() => { 
+        nextQuestion(); 
+    }, 1500);
 }
 
 // 5. GESTION DES FILTRES
@@ -488,6 +550,9 @@ async function applyFilters() { // 1. On ajoute async ici
             // On supprime la session précédente pour que les points rouges/verts disparaissent
             await remove(ref(db, `users/${currentUserUid}/games/nature/session`));
         } catch (e) { console.error("Erreur reset session Firebase:", e); }
+    }
+    if (!auth.currentUser) {
+        localStorage.removeItem('nature_session_guest');
     }
     // ----------------------------------------------
 
@@ -523,6 +588,7 @@ async function handleGameOver() {
     const finalPercent = Math.round((score / total) * 100);
     document.getElementById('final-score').textContent = finalPercent;
 
+    // Enregistrement des stats uniquement si compte réel
     if (currentUserUid) {
         const statsRef = ref(db, `users/${currentUserUid}/games/nature/stats`);
         const snap = await get(statsRef);
@@ -532,13 +598,19 @@ async function handleGameOver() {
             games = (d.gamesPlayed || 0) + 1;
             avg = Math.round(((d.averageScore || 0) * (games - 1) + finalPercent) / games);
         }
-        await update(statsRef, { gamesPlayed: games, averageScore: avg, lastPlayed: new Date().toISOString() });
+        await update(statsRef, { 
+            gamesPlayed: games, 
+            averageScore: avg, 
+            lastPlayed: new Date().toISOString() 
+        });
+        document.getElementById('global-average-container').style.display = 'block';
         document.getElementById('global-average').textContent = avg;
-        // NOTE: On ne remove PAS la session ici pour garder les couleurs sur la carte.
+    } else {
+        // Cacher la moyenne globale en mode invité
+        document.getElementById('global-average-container').style.display = 'none';
     }
     document.getElementById('end-modal').style.display = 'flex';
 }
-
 // Utilitaires
 function getDeterminate(type) {
     const vowels = ['a', 'e', 'i', 'o', 'u', 'y'];
@@ -546,17 +618,26 @@ function getDeterminate(type) {
     return ['mer', 'chaîne de montagnes', 'montagne'].includes(type.toLowerCase()) ? "de la " + type : "du " + type;
 }
 
+
 // 6. INITIALISATION & AUTH
 onAuthStateChanged(auth, async (user) => {
-    currentUserUid = localStorage.getItem('active_uid') || (user ? user.uid : null);
-    if (currentUserUid) {
-        await restoreSession();
+    // PRIORITÉ : On vérifie si un profil a été choisi manuellement
+    const savedUid = localStorage.getItem('active_uid');
+
+    if (savedUid) {
+        // Mode VRAI COMPTE (même si session Firebase est anonyme)
+        currentUserUid = savedUid;
+        console.log("📝 Mode Profil Connecté :", currentUserUid);
+        await restoreSession(); 
     } else {
-        applyFilters(); 
+        // Mode INVITE (pas de active_uid dans le stockage)
+        currentUserUid = null;
+        console.log("🕹️ Mode Invité : Utilisation du stockage local");
+        restoreLocalGuestSession();
     }
+    
     if (remainingTargets.length > 0 && !current) nextQuestion();
 });
-
 // Exposer au Window
 window.toggleFilterMenu = () => {
     const m = document.getElementById('type-selector');

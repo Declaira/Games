@@ -1298,13 +1298,14 @@ async function checkCountryAnswer() {
 
     // 7. Enregistrement Firebase
     if (currentUserUid) {
-        try {
-            await update(ref(db, `users/${currentUserUid}/games/monde/session`), { 
-                [current.id]: status 
-            });
-        } catch (e) {
-            console.error("Erreur Firebase:", e);
-        }
+        // Sauvegarde sur ton profil
+        update(ref(db, `users/${currentUserUid}/games/monde/session`), { [current.id]: status })
+        .catch(e => console.error("Erreur save Firebase:", e));
+    } else {
+        // Sauvegarde locale pour l'invité
+        const localSess = JSON.parse(localStorage.getItem('monde_session_guest') || '{}');
+        localSess[current.id] = status;
+        localStorage.setItem('monde_session_guest', JSON.stringify(localSess));
     }
 
     // 8. Prochain pays
@@ -1396,11 +1397,11 @@ window.applyContinentFilter = async () => { // Ajoute async ici
     
     // --- NOUVEAU : VIDE LA MÉMOIRE DES RÉPONSES ---
     if (currentUserUid) {
-        try {
-            // On supprime la session en cours dans Firebase pour repartir à zéro
-            await remove(ref(db, `users/${currentUserUid}/games/monde/session`));
-        } catch(e) { console.error("Erreur reset session Firebase:", e); }
+        await remove(ref(db, `users/${currentUserUid}/games/monde/session`));
+    } else {
+        localStorage.removeItem('monde_session_guest');
     }
+  
     // ----------------------------------------------
 
     // 3. On met à jour le compteur visuel
@@ -1466,60 +1467,70 @@ async function handleGameOver() {
 }
 
 window.startNewGame = async () => {
-    if (currentUserUid) await remove(ref(db, `users/${currentUserUid}/games/monde/session`));
+    if (currentUserUid) {
+        await remove(ref(db, `users/${currentUserUid}/games/monde/session`));
+    } else {
+        localStorage.removeItem('monde_session_guest');
+    }
     document.getElementById('end-modal').style.display = 'none';
     resetQuiz();
 };
 
+// --- RESTAURATION FIREBASE ---
+async function restoreFirebaseSession() {
+    try {
+        const snap = await get(ref(db, `users/${currentUserUid}/games/monde/session`));
+        if (snap.exists()) applySessionData(snap.val());
+    } catch (e) { console.error("Erreur restore Firebase:", e); }
+}
+
+// --- RESTAURATION LOCALE (INVITÉ) ---
+function restoreLocalGuestSession() {
+    const data = JSON.parse(localStorage.getItem('monde_session_guest') || '{}');
+    applySessionData(data);
+}
+
+// --- APPLICATION VISUELLE (COMMUN) ---
+function applySessionData(data) {
+    Object.keys(data).forEach(id => {
+        const status = data[id];
+        const el = document.getElementById(id);
+        if (el) {
+            el.classList.remove('correct', 'incorrect', 'partial-correct');
+            if (status === 'correct') { el.classList.add('correct'); score += 1; }
+            else if (status === 'partial') { el.classList.add('partial-correct'); score += 0.5; }
+            else if (status === 'wrong') { el.classList.add('incorrect'); }
+        }
+        remainingCountries = remainingCountries.filter(c => c.id !== id);
+    });
+    document.getElementById("score").textContent = Number.isInteger(score) ? score : score.toFixed(1);
+}
 // --- INITIALISATION ---
-
 onAuthStateChanged(auth, async (user) => {
-    // 1. Déterminer l'UID
-    currentUserUid = user ? user.uid : localStorage.getItem('active_uid');
+    // PRIORITÉ : On vérifie si un profil a été choisi (active_uid)
+    const savedUid = localStorage.getItem('active_uid');
 
-    // 2. Attendre la restauration des filtres (IMPORTANT)
+    if (savedUid) {
+        currentUserUid = savedUid;
+        console.log("📝 [Monde] Mode Profil Connecté :", currentUserUid);
+    } else {
+        currentUserUid = null;
+        console.log("🕹️ [Monde] Mode Invité");
+    }
+
+    // Initialisation du jeu
     await restoreFilters();
-
-    // 3. Initialiser la liste de travail
     remainingCountries = [...activeCountries];
     score = 0;
 
+    // Restauration de la session (Firebase si connecté, sinon LocalStorage)
     if (currentUserUid) {
-        try {
-            const snap = await get(ref(db, `users/${currentUserUid}/games/monde/session`));
-            if (snap.exists()) {
-                const data = snap.val();
-                Object.keys(data).forEach(id => {
-                    const status = data[id];
-                    const el = document.getElementById(id);
-                    
-                    if (el) {
-                        // Nettoyage au cas où
-                        el.classList.remove('correct', 'incorrect', 'partial-correct');
-                        
-                        // Application des classes selon le statut sauvegardé
-                        if (status === 'correct') {
-                            el.classList.add('correct');
-                            score += 1;
-                        } else if (status === 'partial') {
-                            el.classList.add('partial-correct'); // Applique tes hachures
-                            score += 0.5;
-                        } else if (status === 'wrong') {
-                            el.classList.add('incorrect');
-                        }
-                    }
-                    // Retirer des pays restants pour ne pas retomber dessus
-                    remainingCountries = remainingCountries.filter(c => c.id !== id);
-                });
-            }
-        } catch (e) {
-            console.error("Erreur lors de la restauration de la session:", e);
-        }
-        // Mise à jour de l'affichage du score après restauration
-        document.getElementById("score").textContent = Number.isInteger(score) ? score : score.toFixed(1);
+        await restoreFirebaseSession();
+    } else {
+        restoreLocalGuestSession();
     }
     
-    // 4. Lancer le premier pays (si la liste n'est pas vide)
+    // Lancer le jeu
     if (!current && remainingCountries.length > 0) {
         getRandomCountry();
     } else if (remainingCountries.length === 0 && activeCountries.length > 0) {

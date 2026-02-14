@@ -412,34 +412,39 @@ let remainingDepartments = [...departments]; // Copie de la liste complète
 
 // --- GESTION DE SESSION ---
 
+// --- RESTAURATION MODE INVITÉ ---
+function restoreLocalGuestSession() {
+    const data = JSON.parse(localStorage.getItem('france_session_guest') || '{}');
+    applySessionToUI(data);
+}
+
+// --- RESTAURATION MODE COMPTE (Firebase) ---
 async function restoreSession() {
     if (!currentUserUid) return;
-    
-    const sessionRef = ref(db, `users/${currentUserUid}/games/france/session`);
-    const snapshot = await get(sessionRef);
-    
-    remainingDepartments = [...departments]; // Reset liste
+    const snapshot = await get(ref(db, `users/${currentUserUid}/games/france/session`));
+    if (snapshot.exists()) {
+        applySessionToUI(snapshot.val());
+    }
+}
+
+// --- LOGIQUE COMMUNE D'AFFICHAGE ---
+function applySessionToUI(data) {
+    remainingDepartments = [...departments];
     score = 0;
 
-    if (snapshot.exists()) {
-        const data = snapshot.val();
-        Object.keys(data).forEach(deptNum => {
-            const el = document.getElementById(deptNum); // L'ID du path SVG doit correspondre au numéro
-            const result = data[deptNum];
-
-            if (el) {
-                if (result === 'correct') {
-                    el.classList.add('correct');
-                    score++;
-                } else {
-                    el.classList.add('incorrect');
-                }
-                el.classList.remove('highlight');
+    Object.keys(data).forEach(deptNum => {
+        const el = document.getElementById(deptNum);
+        const result = data[deptNum];
+        if (el) {
+            if (result === 'correct') {
+                el.classList.add('correct');
+                score++;
+            } else {
+                el.classList.add('incorrect');
             }
-            // On retire ce département de la liste à jouer
-            remainingDepartments = remainingDepartments.filter(d => d.number !== deptNum);
-        });
-    }
+        }
+        remainingDepartments = remainingDepartments.filter(d => d.number !== deptNum);
+    });
     document.getElementById("score").textContent = score;
 }
 
@@ -503,10 +508,15 @@ async function checkAnswer() {
     document.getElementById("score").textContent = score;
 
     // Mise à jour Firebase Session
+    const status = isCorrect ? 'correct' : 'wrong';
     if (currentUserUid) {
-        await update(ref(db, `users/${currentUserUid}/games/france/session`), {
-            [current.number]: isCorrect ? 'correct' : 'wrong'
-        });
+        // Mode Compte -> Firebase
+        update(ref(db, `users/${currentUserUid}/games/france/session`), { [current.number]: status });
+    } else {
+        // Mode Invité -> LocalStorage
+        const localSess = JSON.parse(localStorage.getItem('france_session_guest') || '{}');
+        localSess[current.number] = status;
+        localStorage.setItem('france_session_guest', JSON.stringify(localSess));
     }
 
     // On retire le département joué de la liste courante
@@ -557,12 +567,23 @@ async function startNewGame() {
 // --- INITIALISATION ---
 
 onAuthStateChanged(auth, async (user) => {
-    currentUserUid = localStorage.getItem('active_uid') || (user ? user.uid : null);
-    if (currentUserUid) {
-        await restoreSession();
+    // PRIORITÉ : Profil choisi (active_uid)
+    const savedUid = localStorage.getItem('active_uid');
+
+    if (savedUid) {
+        currentUserUid = savedUid;
+        console.log("🇫🇷 [France] Mode Profil Connecté :", currentUserUid);
+        await restoreSession(); // Charge depuis Firebase
+    } else {
+        currentUserUid = null;
+        console.log("🕹️ [France] Mode Invité");
+        restoreLocalGuestSession(); // Charge depuis LocalStorage
     }
+
     // Lancer le jeu si pas déjà lancé
-    if (!current) getRandomDepartment();
+    if (!current && remainingDepartments.length > 0) {
+        getRandomDepartment();
+    }
 });
 
 // Gestion Clavier
