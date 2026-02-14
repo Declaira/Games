@@ -13314,44 +13314,52 @@ initGenMenu();
 // --- 6. LOGIQUE FIREBASE SAVE/RESTORE ---
 
 async function saveSettings() {
-    if (!currentUserUid) return;
     const checkboxes = genDropdown.querySelectorAll('input[type=checkbox]');
     const currentSelection = Array.from(checkboxes).filter(cb => cb.checked).map(cb => cb.value);
-    await set(ref(db, `users/${currentUserUid}/games/pokemon/settings`), { generations: currentSelection });
+    const data = { generations: currentSelection };
+
+    if (currentUserUid) {
+        await set(ref(db, `users/${currentUserUid}/games/pokemon/settings`), data);
+    } else {
+        localStorage.setItem('pokemon_settings_guest', JSON.stringify(data));
+    }
 }
 
 async function restoreSession() {
-    if (!currentUserUid) {
-        startNewGame();
-        return;
+    let settings = null;
+    let session = null;
+
+    if (currentUserUid) {
+        // Lecture Firebase
+        const [settingsSnap, sessionSnap] = await Promise.all([
+            get(ref(db, `users/${currentUserUid}/games/pokemon/settings`)),
+            get(ref(db, `users/${currentUserUid}/games/pokemon/session`))
+        ]);
+        if (settingsSnap.exists()) settings = settingsSnap.val();
+        if (sessionSnap.exists()) session = sessionSnap.val();
+    } else {
+        // Lecture Locale
+        settings = JSON.parse(localStorage.getItem('pokemon_settings_guest'));
+        session = JSON.parse(localStorage.getItem('pokemon_session_guest'));
     }
 
-    // 1. Restaurer Filtres
-    const settingsSnap = await get(ref(db, `users/${currentUserUid}/games/pokemon/settings`));
-    if (settingsSnap.exists()) {
-        selectedGens = settingsSnap.val().generations || [];
+    // 1. Appliquer Filtres
+    if (settings) {
+        selectedGens = settings.generations || selectedGens;
         const checkboxes = genDropdown.querySelectorAll('input[type=checkbox]');
         checkboxes.forEach(cb => cb.checked = selectedGens.includes(cb.value));
-        applyFilters(false); // Applique sans reset le jeu
+        applyFilters(false); 
     }
 
-    // 2. Restaurer Session Jeu
-    const sessionSnap = await get(ref(db, `users/${currentUserUid}/games/pokemon/session`));
-    if (sessionSnap.exists()) {
-        const data = sessionSnap.val();
-        targetPokemon = pokemons.find(p => p.nom === data.targetName);
-        
-        // Si le target n'existe plus (changement de données), on reset
-        if (!targetPokemon) {
-            startNewGame();
-            return;
-        }
-      
+    // 2. Restaurer Session
+    if (session && session.targetName) {
+        targetPokemon = pokemons.find(p => p.nom === session.targetName);
+        if (!targetPokemon) { startNewGame(); return; }
 
-        if (data.guesses) {
-            data.guesses.forEach(name => {
+        if (session.guesses) {
+            session.guesses.forEach(name => {
                 const p = pokemons.find(pk => pk.nom === name);
-                if (p) makeGuess(p, false); // false = ne pas resauvegarder
+                if (p) makeGuess(p, false); 
             });
         }
     } else {
@@ -13408,8 +13416,8 @@ async function startNewGame() {
     // Nettoyage Session Firebase
     if (currentUserUid) {
         await remove(ref(db, `users/${currentUserUid}/games/pokemon/session`));
-        // On sauvegarde le nouveau target immédiatement
-        update(ref(db, `users/${currentUserUid}/games/pokemon/session`), { targetName: targetPokemon.nom });
+    } else {
+        localStorage.removeItem('pokemon_session_guest');
     }
 }
 
@@ -13492,16 +13500,20 @@ function comparePokemon(guess, target) {
     tbody.insertBefore(row, tbody.firstChild);
 
     // Firebase Save
-    if(shouldSave && currentUserUid) {
-        const attemptsRef = ref(db, `users/${currentUserUid}/games/pokemon/session/guesses`);
-        get(attemptsRef).then((snapshot) => {
-            let currentGuesses = snapshot.exists() ? snapshot.val() : [];
-            currentGuesses.push(pokemon.nom);
-            update(ref(db, `users/${currentUserUid}/games/pokemon/session`), {
-                guesses: currentGuesses,
-                targetName: targetPokemon.nom
-            });
-        });
+    if (shouldSave) {
+        const sessionData = {
+            targetName: targetPokemon.nom,
+            guesses: attempts.map(a => a.nom)
+        };
+
+        if (currentUserUid) {
+            // Mode Profil : Firebase
+            update(ref(db, `users/${currentUserUid}/games/pokemon/session`), sessionData)
+            .catch(e => console.error("Erreur save Pokémon Firebase:", e));
+        } else {
+            // Mode Invité : LocalStorage
+            localStorage.setItem('pokemon_session_guest', JSON.stringify(sessionData));
+        }
     }
 
     // Win Check
@@ -13567,7 +13579,7 @@ input.addEventListener('input', () => {
     const available = filteredPokemons.filter(p => !attempts.some(a => a.nom === p.nom));
     const starts = available.filter(p => normalize(p.nom).startsWith(val));
     const includes = available.filter(p => normalize(p.nom).includes(val) && !normalize(p.nom).startsWith(val));
-    const res = [...starts, ...includes].slice(0, 10);
+    const res = [...starts, ...includes].slice(0, 50);
     
     suggestionsDiv.innerHTML = "";
     res.forEach(p => {
@@ -13660,12 +13672,19 @@ document.getElementById('bgUpload').onchange = (e) => {
 
 // --- 9. AUTH LISTENER (POINT D'ENTRÉE) ---
 onAuthStateChanged(auth, async (user) => {
-    currentUserUid = localStorage.getItem('active_uid') || (user ? user.uid : null);
-    if(currentUserUid) {
-        await restoreSession();
+    // PRIORITÉ : Profil choisi (active_uid)
+    const savedUid = localStorage.getItem('active_uid');
+
+    if (savedUid) {
+        currentUserUid = savedUid;
+        console.log("🚀 [Pokémon] Mode Profil Connecté :", currentUserUid);
     } else {
-        startNewGame();
+        currentUserUid = null;
+        console.log("🕹️ [Pokémon] Mode Invité");
     }
+
+    // Dans les deux cas, on restaure la session
+    await restoreSession();
 });
 
 </script>

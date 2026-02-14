@@ -39423,725 +39423,758 @@
   }
 ];
 
-        // Objet pour mapper les noms de pays à leurs codes ISO (pour flagcdn.com)
-        const countryFlags = {
-            'Espagne': 'es', 'Angleterre': 'gb-eng', 'France': 'fr', 'Allemagne': 'de', 'Italie': 'it',
-            'Portugal': 'pt', 'Pays-Bas': 'nl', 'Belgique': 'be', 'Suède': 'se', 'Norvège': 'no',
-            'Danemark': 'dk', 'Pologne': 'pl', 'Russie': 'ru', 'Ukraine': 'ua', 'Serbie': 'rs', 'Albanie': 'al',
-            'Croatie': 'hr', 'Grèce': 'gr', 'Turquie': 'tr', 'Türkiye': 'tr', 'Roumanie': 'ro',
-            'Tchéquie': 'cz', 'Hongrie': 'hu', 'Slovaquie': 'sk', 'Slovénie': 'si', 'Bosnie': 'ba',
-            'Bulgarie': 'bg', 'Autriche': 'at', 'Suisse': 'ch', 'Écosse': 'gb-sct', 'Pays de Galles': 'gb-wls',
-            'Brésil': 'br', 'Argentine': 'ar', 'Uruguay': 'uy', 'Colombie': 'co', 'Venezuela': 've',
-            'Mexique': 'mx', 'États-Unis': 'us', 'Canada': 'ca', 'Jamaïque': 'jm', 'Équateur': 'ec',
-            'Paraguay': 'py', 'Chili': 'cl', 'Pérou': 'pe', 'Bolivie': 'bo', 'Mauritanie': 'mr',
-            'Japon': 'jp', 'Corée du Sud': 'kr', 'Corée, Sud': 'kr', 'Chine': 'cn', 'Australie': 'au',
-            'Cameroun': 'cm', 'Nigeria': 'ng', 'Ghana': 'gh', 'Sénégal': 'sn', 'Maroc': 'ma',
-            'Égypte': 'eg', 'Côte d\'Ivoire': 'ci', 'Côte d\'Ivoire': 'ci', 'Mali': 'ml', 'Burkina Faso': 'bf',
-            'Guinée': 'gn', 'Tunisie': 'tn', 'Algérie': 'dz', 'RD Congo': 'cd', 'Congo': 'cg', 'République Centrafricaine': 'cf',
-            'Afrique du Sud': 'za', 'Kenya': 'ke', 'Ouganda': 'ug', 'Soudan': 'sd', 'Syrie': 'sy',
-            'Guinée Équatoriale': 'gq', 'Gabon': 'ga', 'Angola': 'ao', 'Bénin': 'bj', 'Comores': 'km',
-            'Arabie Saoudite': 'sa', 'Émirats Arabes Unis': 'ae', 'Israël': 'il', 'Liban': 'lb', 'Irak': 'iq',
-            'Iran': 'ir', 'Qatar': 'qa', 'Koweït': 'kw', 'Bahreïn': 'bh', 'Oman': 'om', 'Afghanistan': 'af',
-            'Géorgie': 'ge', 'Ouzbékistan': 'uz', 'Gambie': 'gm', 'Suriname': 'sr', "Haïti": 'ht',
-            'Curaçao': 'cw', 'Aruba': 'aw', 'Guadeloupe': 'gp', 'Martinique': 'mq', 'Togo': 'tg',
-            'Libéria': 'lr', 'Sierra Leone': 'sl', 'Niger': 'ne', 'Érythrée': 'er', 'Éthiopie': 'et',
-            'Zambie': 'zm', 'Zimbabwe': 'zw', 'Guinée-Bissau': 'gw', 'Mozambique': 'mz', 'Kazakhstan': 'kz',
-            'Irlande du Nord': 'gb-nir', 'Irlande': 'ie', 'Finlande': 'fi', 'Islande': 'is',
-            'Luxembourg': 'lu', 'Malte': 'mt', 'Chypre': 'cy', 'Macédoine du Nord': 'mk',
-            'Thaïlande': 'th', 'Vietnam': 'vn', 'Philippines': 'ph', 'Indonésie': 'id', 'République dominicaine': 'do',
-            'Malaisie': 'my', 'Singapour': 'sg', 'Inde': 'in', 'Pakistan': 'pk', 'Bangladesh': 'bd',
-            'Nouvelle-Zélande': 'nz', 'Fidji': 'fj', 'El Salvador': 'sv', 'Costa Rica': 'cr',
-            'Honduras': 'hn', 'Guatemala': 'gt', 'Nicaragua': 'ni', 'Panama': 'pa', 'Gibraltar': 'gi',
-            'Saint-Christophe-et-Niévès': 'kn', 'Barbade': 'bb', 'Trinité-et-Tobago': 'tt'
-        };
+// Objet pour mapper les noms de pays à leurs codes ISO (pour flagcdn.com)
+const countryFlags = {
+  'Espagne': 'es', 'Angleterre': 'gb-eng', 'France': 'fr', 'Allemagne': 'de', 'Italie': 'it',
+  'Portugal': 'pt', 'Pays-Bas': 'nl', 'Belgique': 'be', 'Suède': 'se', 'Norvège': 'no',
+  'Danemark': 'dk', 'Pologne': 'pl', 'Russie': 'ru', 'Ukraine': 'ua', 'Serbie': 'rs', 'Albanie': 'al',
+  'Croatie': 'hr', 'Grèce': 'gr', 'Turquie': 'tr', 'Türkiye': 'tr', 'Roumanie': 'ro',
+  'Tchéquie': 'cz', 'Hongrie': 'hu', 'Slovaquie': 'sk', 'Slovénie': 'si', 'Bosnie': 'ba',
+  'Bulgarie': 'bg', 'Autriche': 'at', 'Suisse': 'ch', 'Écosse': 'gb-sct', 'Pays de Galles': 'gb-wls',
+  'Brésil': 'br', 'Argentine': 'ar', 'Uruguay': 'uy', 'Colombie': 'co', 'Venezuela': 've',
+  'Mexique': 'mx', 'États-Unis': 'us', 'Canada': 'ca', 'Jamaïque': 'jm', 'Équateur': 'ec',
+  'Paraguay': 'py', 'Chili': 'cl', 'Pérou': 'pe', 'Bolivie': 'bo', 'Mauritanie': 'mr',
+  'Japon': 'jp', 'Corée du Sud': 'kr', 'Corée, Sud': 'kr', 'Chine': 'cn', 'Australie': 'au',
+  'Cameroun': 'cm', 'Nigeria': 'ng', 'Ghana': 'gh', 'Sénégal': 'sn', 'Maroc': 'ma',
+  'Égypte': 'eg', 'Côte d\'Ivoire': 'ci', 'Côte d\'Ivoire': 'ci', 'Mali': 'ml', 'Burkina Faso': 'bf',
+  'Guinée': 'gn', 'Tunisie': 'tn', 'Algérie': 'dz', 'RD Congo': 'cd', 'Congo': 'cg', 'République Centrafricaine': 'cf',
+  'Afrique du Sud': 'za', 'Kenya': 'ke', 'Ouganda': 'ug', 'Soudan': 'sd', 'Syrie': 'sy',
+  'Guinée Équatoriale': 'gq', 'Gabon': 'ga', 'Angola': 'ao', 'Bénin': 'bj', 'Comores': 'km',
+  'Arabie Saoudite': 'sa', 'Émirats Arabes Unis': 'ae', 'Israël': 'il', 'Liban': 'lb', 'Irak': 'iq',
+  'Iran': 'ir', 'Qatar': 'qa', 'Koweït': 'kw', 'Bahreïn': 'bh', 'Oman': 'om', 'Afghanistan': 'af',
+  'Géorgie': 'ge', 'Ouzbékistan': 'uz', 'Gambie': 'gm', 'Suriname': 'sr', "Haïti": 'ht',
+  'Curaçao': 'cw', 'Aruba': 'aw', 'Guadeloupe': 'gp', 'Martinique': 'mq', 'Togo': 'tg',
+  'Libéria': 'lr', 'Sierra Leone': 'sl', 'Niger': 'ne', 'Érythrée': 'er', 'Éthiopie': 'et',
+  'Zambie': 'zm', 'Zimbabwe': 'zw', 'Guinée-Bissau': 'gw', 'Mozambique': 'mz', 'Kazakhstan': 'kz',
+  'Irlande du Nord': 'gb-nir', 'Irlande': 'ie', 'Finlande': 'fi', 'Islande': 'is',
+  'Luxembourg': 'lu', 'Malte': 'mt', 'Chypre': 'cy', 'Macédoine du Nord': 'mk',
+  'Thaïlande': 'th', 'Vietnam': 'vn', 'Philippines': 'ph', 'Indonésie': 'id', 'République dominicaine': 'do',
+  'Malaisie': 'my', 'Singapour': 'sg', 'Inde': 'in', 'Pakistan': 'pk', 'Bangladesh': 'bd',
+  'Nouvelle-Zélande': 'nz', 'Fidji': 'fj', 'El Salvador': 'sv', 'Costa Rica': 'cr',
+  'Honduras': 'hn', 'Guatemala': 'gt', 'Nicaragua': 'ni', 'Panama': 'pa', 'Gibraltar': 'gi',
+  'Saint-Christophe-et-Niévès': 'kn', 'Barbade': 'bb', 'Trinité-et-Tobago': 'tt'
+};
 
-        function getCountryFlagUrl(countryName) {
-            const code = countryFlags[countryName] || 'un';
-            return `https://flagcdn.com/${code}.svg`;
-        }
+function getCountryFlagUrl(countryName) {
+  const code = countryFlags[countryName] || 'un';
+  return `https://flagcdn.com/${code}.svg`;
+}
 
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-        import { getDatabase, ref, set, get, update, remove } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+import { getDatabase, ref, set, get, update, remove } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyB29fMpTwBgsqkjijkNoQJ2kGChSeQDX_w",
-            authDomain: "quiz-ea203.firebaseapp.com",
-            databaseURL: "https://quiz-ea203-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "quiz-ea203",
-            storageBucket: "quiz-ea203.firebasestorage.app",
-            messagingSenderId: "605137421110",
-            appId: "1:605137421110:web:289e0876fe06108deaa997"
-        };
+const firebaseConfig = {
+  apiKey: "AIzaSyB29fMpTwBgsqkjijkNoQJ2kGChSeQDX_w",
+  authDomain: "quiz-ea203.firebaseapp.com",
+  databaseURL: "https://quiz-ea203-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "quiz-ea203",
+  storageBucket: "quiz-ea203.firebasestorage.app",
+  messagingSenderId: "605137421110",
+  appId: "1:605137421110:web:289e0876fe06108deaa997"
+};
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getDatabase(app);
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
 
-        let currentUserUid = null;
-        let targetPlayer = null; 
-        let gameOver = false;
-        let championatCheckboxes = {};
+let currentUserUid = null;
+let targetPlayer = null; 
+let gameOver = false;
+let championnatCheckboxes = {};
 
-        // Sauvegarde les réglages (Slider + Championnats)
-        async function saveSettings() {
-            if (!currentUserUid) return; // Stop si pas connecté
-            const settings = {
-                minVal: parseInt(document.getElementById('marketValueSlider').value),
-                championships: getSelectedChampionnats()
-            };
-            await set(ref(db, `users/${currentUserUid}/games/football/settings`), settings);
-        }
+// Sauvegarde les réglages (Slider + Championnats)
+async function saveSettings() {
+  const settings = {
+      minVal: parseInt(document.getElementById('marketValueSlider').value),
+      championships: getSelectedChampionnats()
+  };
 
-        // Restaure la session en cours
+  if (currentUserUid) {
+      // Mode Connecté : Firebase
+      await set(ref(db, `users/${currentUserUid}/games/football/settings`), settings);
+  } else {
+      // Mode Invité : LocalStorage
+      localStorage.setItem('guest_football_settings', JSON.stringify(settings));
+  }
+}
+
+// Restaure la session en cours
 async function restoreSession() {
-            if (!currentUserUid) return;
+let settings = null;
+let sessionData = null;
 
-            // 1. Restaurer les réglages (Slider + Championnats)
-            const setSnap = await get(ref(db, `users/${currentUserUid}/games/football/settings`));
-            if (setSnap.exists()) {
-                const s = setSnap.val();
-                document.getElementById('marketValueSlider').value = s.minVal;
-                document.getElementById('marketValueText').value = s.minVal;
-                
-                // On met à jour les checkboxes des championnats
-                championnats.forEach(c => {
-                    // On vérifie d'abord si la checkbox existe pour ce championnat
-                    if (championatCheckboxes[c]) {
-                        championatCheckboxes[c].checked = s.championships.includes(c);
-                    }
-                });
-
-                // CORRECTION DE L'ERREUR : 
-                // On filtre uniquement les championnats qui ont une checkbox valide
-                const allChecked = championnats.every(c => {
-                    return championatCheckboxes[c] ? championatCheckboxes[c].checked : false;
-                });
-
-                const selectAllCheckbox = document.getElementById('selectAllChampionnats');
-                if (selectAllCheckbox) {
-                    selectAllCheckbox.checked = allChecked;
-                }
-                }
-
-            // 2. Restaurer le joueur cible et les essais
-            const sessSnap = await get(ref(db, `users/${currentUserUid}/games/football/session`));
+// 1. DÉTERMINER LA SOURCE DES DONNÉES (Firebase vs LocalStorage)
+if (currentUserUid) {
+    // --- MODE CONNECTÉ (Firebase) ---
+    console.log("📡 Restauration via Firebase pour :", currentUserUid);
     
-            if (sessSnap.exists()) {
-                const data = sessSnap.val();
-                targetPlayer = players.find(p => p.nom === data.targetName);
-                
-                if (data.guesses && data.guesses.length > 0) {
-                    // FORCE l'affichage du plateau avant d'ajouter les cellules
-                    const board = document.getElementById('board');
-                    const legend = document.getElementById('legend');
-                    if(board) board.style.display = 'flex';
-                    if(legend) legend.style.display = 'flex';
+    // Récupération des réglages
+    const setSnap = await get(ref(db, `users/${currentUserUid}/games/football/settings`));
+    if (setSnap.exists()) settings = setSnap.val();
 
-                    // On vide le tableau actuel au cas où (pour éviter les doublons au refresh)
-                    const existingRows = document.querySelectorAll('.guess-row');
-                    existingRows.forEach(r => r.remove());
-
-                    // Reconstruire les essais
-                    data.guesses.forEach(playerName => {
-                        const p = players.find(pl => pl.nom === playerName);
-                        if (p) {
-                            // On passe false pour ne pas ré-enregistrer ce qu'on vient de lire
-                            makeGuess(p, false); 
-                        }
-                    });
-                }
-            }
-        }
-        // Gestion de la recherche et filtres des championnats
-        const championnatFiltersDiv = document.getElementById('championnatFilters');
-        const championnatBtn = document.getElementById('championnatBtn');
-        
-        // Créer les checkboxes des championnats
-        const championnats = [...new Set(players.map(p => p.championnat))].sort();
-        const championnatCheckboxes = {};
-        
-        // Option "Tous les championnats"
-        const selectAllLabel = document.createElement('label');
-        const selectAllCheckbox = document.createElement('input');
-        selectAllCheckbox.type = 'checkbox';
-        selectAllCheckbox.id = 'selectAllChampionnats';
-        // cocher tout par défaut
-        selectAllCheckbox.checked = true;
-        selectAllCheckbox.addEventListener('change', () => {
-          const isChecked = selectAllCheckbox.checked;
-          championnats.forEach(champ => {
-            championnatCheckboxes[champ].checked = isChecked;
-          });
-        });
-        selectAllLabel.appendChild(selectAllCheckbox);
-        selectAllLabel.appendChild(document.createTextNode('Tous les championnats'));
-        championnatFiltersDiv.appendChild(selectAllLabel);
-        
-        
-        championnats.forEach(champ => {
-            const label = document.createElement('label');
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            checkbox.value = champ;
-            checkbox.addEventListener('change', () => {
-                // Mettre à jour le state de "Tous les championnats"
-                const allChecked = championnats.every(c => championnatCheckboxes[c].checked);
-                const anyChecked = championnats.some(c => championnatCheckboxes[c].checked);
-                selectAllCheckbox.checked = allChecked;
-                selectAllCheckbox.indeterminate = anyChecked && !allChecked;
-            });
-          // cochées par défaut
-          checkbox.checked = true;
-            championnatCheckboxes[champ] = checkbox;
-            label.appendChild(checkbox);
-            label.appendChild(document.createTextNode(champ));
-            championnatFiltersDiv.appendChild(label);
-        });
-
-        // s'assurer que l'option 'Tous' reflète l'état initial
-        selectAllCheckbox.checked = true;
-        selectAllCheckbox.indeterminate = false;
-
-        // Bouton Appliquer
-        const applyBtn = document.createElement('button');
-        applyBtn.textContent = 'Appliquer';
-        applyBtn.className = 'championnat-apply-btn';
-        applyBtn.addEventListener('click', () => {
-            resetGame();
-        });
-        championnatFiltersDiv.appendChild(applyBtn);
-
-        const searchInput = document.getElementById('searchInput');
-        const suggestionsBox = document.getElementById('suggestions');
-        const board = document.getElementById('board');
-        const messageBox = document.getElementById('message-box');
-
-        // Fonction pour normaliser les chaines (enlever accents)
-        function normalize(str) {
-            return str.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
-        }
-
-        const valueSlider = document.getElementById('marketValueSlider');
-        const valueText = document.getElementById('marketValueText');
-
-        // Synchronise le texte quand on bouge le slider
-        valueSlider.addEventListener('input', (e) => {
-            valueText.value = e.target.value;
-        });
-
-        // Synchronise le slider quand on change le texte
-        valueText.addEventListener('input', (e) => {
-            let val = parseInt(e.target.value);
-            if (val < 1) val = 1;
-            if (val > 100) val = 100;
-            valueSlider.value = val;
-        });
-
-        function selectTargetPlayer() {
-            // Récupérer la valeur du slider et s'assurer que c'est un nombre
-            const sliderElement = document.getElementById('marketValueSlider');
-            const minValMillions = sliderElement ? parseInt(sliderElement.value) : 1;
-            const minValStrict = minValMillions * 1000000;
-
-            // Récupérer les championnats sélectionnés
-            const activeChampionships = championnats.filter(champ => championnatCheckboxes[champ].checked);
-
-            const filteredPlayers = players.filter(p => {
-                // Conversion de la valeur du joueur en nombre (important)
-                const playerValue = Number(p.valeur_marchande);
-                
-                const isChampSelected = activeChampionships.includes(p.championnat);
-                const hasMinVal = playerValue >= minValStrict;
-                
-                return isChampSelected && hasMinVal;
-            });
-
-            if (filteredPlayers.length === 0) {
-                alert("Aucun joueur trouvé à " + minValMillions + "M€ ou plus dans ces championnats.");
-                // Retourne un joueur au hasard parmi tous par sécurité
-                return players[Math.floor(Math.random() * players.length)];
-            }
-
-            return filteredPlayers[Math.floor(Math.random() * filteredPlayers.length)];
-        }
-
-        // Fonction pour réinitialiser le jeu
-        async function resetGame() {
-            if (currentUserUid) {
-                await remove(ref(db, `users/${currentUserUid}/games/football/session`));
-                saveSettings(); // On ne sauvegarde les filtres que pour les connectés
-            }
-            
-            // On enregistre les nouveaux réglages si besoin
-            saveSettings();
-
-            targetPlayer = selectTargetPlayer();
-
-            // 2. Réinitialisation de l'état du jeu
-            gameOver = false;
-            
-            // 3. Réaffichage des éléments de recherche cachés
-            const searchRow = document.querySelector('.search-row');
-            if (searchRow) {
-                searchRow.style.display = 'flex'; // Fait réapparaître la barre, filtre et abandon
-            }
-
-            // 4. Nettoyage des inputs et boutons
-            searchInput.disabled = false;
-            searchInput.value = '';
-            suggestionsBox.innerHTML = '';
-            
-            // Gestion du bouton Abandonner (pour qu'il revienne)
-            if (giveUpBtn) {
-                giveUpBtn.style.display = 'inline-block';
-            }
-
-            // 5. Nettoyage de la Message Box
-            messageBox.innerHTML = '';
-            messageBox.style.display = 'none';
-            messageBox.className = ''; // Enlève les classes .win ou .wrong
-            
-            // 6. Nettoyer le tableau des essais (lignes de joueurs devinés)
-            const guessesRows = document.querySelectorAll('.guess-row');
-            guessesRows.forEach(guess => guess.remove());
-            
-            // 7. Fermer le menu des filtres s'il était ouvert
-            if (typeof championnatFiltersDiv !== 'undefined') {
-                championnatFiltersDiv.classList.remove('open');
-            }
-        }
-
-        // Ouvrir/fermer le menu des championnats
-        championnatBtn.addEventListener('click', () => {
-            championnatFiltersDiv.classList.toggle('open');
-        });
-
-        // Fermer le menu quand on clique ailleurs
-        document.addEventListener('click', (e) => {
-            if (e.target !== championnatBtn && !championnatFiltersDiv.contains(e.target)) {
-                championnatFiltersDiv.classList.remove('open');
-            }
-        });
-
-        // Fonction pour obtenir les championnats sélectionnés
-        function getSelectedChampionnats() {
-            return championnats.filter(champ => championnatCheckboxes[champ].checked);
-        }
-
-        let selectedSuggestionIndex = -1;
-
-searchInput.addEventListener('input', (e) => {
-    if (gameOver) return;
+    // Récupération de la session (essais)
+    const sessSnap = await get(ref(db, `users/${currentUserUid}/games/football/session`));
+    if (sessSnap.exists()) sessionData = sessSnap.val();
+} else {
+    // --- MODE INVITÉ (LocalStorage) ---
+    console.log("💾 Restauration via LocalStorage (Mode Invité)");
     
-    const input = normalize(e.target.value);
-    const selectedChamps = getSelectedChampionnats();
-    
-    // --- Récupération du seuil de valeur marchande ---
-    const slider = document.getElementById('marketValueSlider');
-    const minValStrict = slider ? parseInt(slider.value) * 1000000 : 0;
-    
-    selectedSuggestionIndex = -1;
-    
-    if (input.length < 1) {
-        suggestionsBox.innerHTML = '';
-        return;
+    const localSet = localStorage.getItem('guest_football_settings');
+    if (localSet) settings = JSON.parse(localSet);
+
+    const localSess = localStorage.getItem('guest_football_session');
+    if (localSess) sessionData = JSON.parse(localSess);
+}
+
+// 2. APPLIQUER LES RÉGLAGES (Slider + Championnats)
+if (settings) {
+    if (document.getElementById('marketValueSlider')) {
+        document.getElementById('marketValueSlider').value = settings.minVal;
+        document.getElementById('marketValueText').value = settings.minVal;
     }
     
-    suggestionsBox.innerHTML = '';
-
-    // 1. On récupère les noms des joueurs déjà présents dans le tableau
-    const guessedNames = Array.from(document.querySelectorAll('.guess-row .cell:first-child'))
-                              .map(cell => normalize(cell.textContent.trim()));
-
-    // 2. Filtrage (Nom OU Club) + Championnat + Valeur + Non deviné
-    const matches = players
-        .filter(p => {
-            const normalizedPName = normalize(p.nom);
-            const normalizedPClub = normalize(p.club);
-            
-            // Le joueur correspond si l'input est dans le NOM ou dans le CLUB
-            const matchesNameOrClub = normalizedPName.includes(input) || normalizedPClub.includes(input);
-            
-            const matchesChamp = selectedChamps.length === 0 || selectedChamps.includes(p.championnat);
-            const matchesValue = Number(p.valeur_marchande) >= minValStrict;
-            const notGuessed = !guessedNames.includes(normalizedPName);
-            
-            return matchesNameOrClub && matchesChamp && matchesValue && notGuessed;
-        })
-        // 3. TRI par pertinence
-        .sort((a, b) => {
-            const nameA = normalize(a.nom);
-            const clubA = normalize(a.club);
-            const nameB = normalize(b.nom);
-            const clubB = normalize(b.club);
-            
-            const startsNameA = nameA.startsWith(input);
-            const startsNameB = nameB.startsWith(input);
-            const startsClubA = clubA.startsWith(input);
-            const startsClubB = clubB.startsWith(input);
-
-            // Priorité 1 : Le nom du joueur commence par l'input
-            if (startsNameA && !startsNameB) return -1;
-            if (!startsNameA && startsNameB) return 1;
-
-            // Priorité 2 : Le nom du club commence par l'input
-            if (startsClubA && !startsClubB) return -1;
-            if (!startsClubA && startsClubB) return 1;
-            
-            // Sinon, tri alphabétique par nom
-            return nameA.localeCompare(nameB);
-        })
-        .slice(0, 100); // Augmenté à 100 car la recherche par club peut renvoyer beaucoup de monde
-
-    // 4. Affichage des suggestions
-    matches.forEach((player, index) => {
-        const div = document.createElement('div');
-        div.className = 'suggestion-item';
-        div.innerHTML = `<img src="${player.photo_URL}" class="mini-img"> ${player.nom} (${player.club})`;
-        
-        div.addEventListener('click', () => {
-            makeGuess(player);
-            suggestionsBox.innerHTML = '';
-            searchInput.value = '';
-        });
-        
-        div.addEventListener('mouseenter', () => {
-            selectedSuggestionIndex = index;
-            updateSuggestionHighlight();
-        });
-        suggestionsBox.appendChild(div);
+    // Mise à jour des checkboxes individuelles
+    championnats.forEach(c => {
+        if (championnatCheckboxes[c]) {
+            championnatCheckboxes[c].checked = settings.championships.includes(c);
+        }
     });
+
+    // Correction de l'état "Tout sélectionner"
+    const allChecked = championnats.every(c => {
+        return championnatCheckboxes[c] ? championnatCheckboxes[c].checked : false;
+    });
+
+    const selectAllCheckbox = document.getElementById('selectAllChampionnats');
+    if (selectAllCheckbox) {
+        selectAllCheckbox.checked = allChecked;
+    }
+}
+
+// 3. RESTAURER LE JOUEUR CIBLE ET LES ESSAIS
+if (sessionData) {
+    // On retrouve l'objet joueur complet à partir du nom stocké
+    targetPlayer = players.find(p => p.nom === sessionData.targetName);
+    
+    if (sessionData.guesses && sessionData.guesses.length > 0) {
+        // Affichage forcé du plateau
+        const board = document.getElementById('board');
+        const legend = document.getElementById('legend');
+        if (board) board.style.display = 'flex';
+        if (legend) legend.style.display = 'flex';
+
+        // Nettoyage du tableau pour éviter les doublons au rafraîchissement
+        const existingRows = document.querySelectorAll('.guess-row');
+        existingRows.forEach(r => r.remove());
+
+        // Reconstruire visuellement chaque ligne d'essai
+        sessionData.guesses.forEach(playerName => {
+            const p = players.find(pl => pl.nom === playerName);
+            if (p) {
+                // "false" car on ne veut pas ré-enregistrer dans la DB ce qu'on vient d'en lire
+                makeGuess(p, false); 
+            }
+        });
+    }
+}
+}
+// Gestion de la recherche et filtres des championnats
+const championnatFiltersDiv = document.getElementById('championnatFilters');
+const championnatBtn = document.getElementById('championnatBtn');
+
+// Créer les checkboxes des championnats
+const championnats = [...new Set(players.map(p => p.championnat))].sort();
+// Option "Tous les championnats"
+const selectAllLabel = document.createElement('label');
+const selectAllCheckbox = document.createElement('input');
+selectAllCheckbox.type = 'checkbox';
+selectAllCheckbox.id = 'selectAllChampionnats';
+// cocher tout par défaut
+selectAllCheckbox.checked = true;
+selectAllCheckbox.addEventListener('change', () => {
+const isChecked = selectAllCheckbox.checked;
+championnats.forEach(champ => {
+  championnatCheckboxes[champ].checked = isChecked;
+});
+});
+selectAllLabel.appendChild(selectAllCheckbox);
+selectAllLabel.appendChild(document.createTextNode('Tous les championnats'));
+championnatFiltersDiv.appendChild(selectAllLabel);
+
+
+championnats.forEach(champ => {
+  const label = document.createElement('label');
+  const checkbox = document.createElement('input');
+  checkbox.type = 'checkbox';
+  checkbox.value = champ;
+  checkbox.addEventListener('change', () => {
+      // Mettre à jour le state de "Tous les championnats"
+      const allChecked = championnats.every(c => championnatCheckboxes[c].checked);
+      const anyChecked = championnats.some(c => championnatCheckboxes[c].checked);
+      selectAllCheckbox.checked = allChecked;
+      selectAllCheckbox.indeterminate = anyChecked && !allChecked;
+  });
+// cochées par défaut
+checkbox.checked = true;
+  championnatCheckboxes[champ] = checkbox;
+  label.appendChild(checkbox);
+  label.appendChild(document.createTextNode(champ));
+  championnatFiltersDiv.appendChild(label);
+});
+
+// s'assurer que l'option 'Tous' reflète l'état initial
+selectAllCheckbox.checked = true;
+selectAllCheckbox.indeterminate = false;
+
+// Bouton Appliquer
+const applyBtn = document.createElement('button');
+applyBtn.textContent = 'Appliquer';
+applyBtn.className = 'championnat-apply-btn';
+applyBtn.addEventListener('click', () => {
+  resetGame();
+});
+championnatFiltersDiv.appendChild(applyBtn);
+
+const searchInput = document.getElementById('searchInput');
+const suggestionsBox = document.getElementById('suggestions');
+const board = document.getElementById('board');
+const messageBox = document.getElementById('message-box');
+
+// Fonction pour normaliser les chaines (enlever accents)
+function normalize(str) {
+  return str.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+}
+
+const valueSlider = document.getElementById('marketValueSlider');
+const valueText = document.getElementById('marketValueText');
+
+// Synchronise le texte quand on bouge le slider
+valueSlider.addEventListener('input', (e) => {
+  valueText.value = e.target.value;
+});
+
+// Synchronise le slider quand on change le texte
+valueText.addEventListener('input', (e) => {
+  let val = parseInt(e.target.value);
+  if (val < 1) val = 1;
+  if (val > 100) val = 100;
+  valueSlider.value = val;
+});
+
+function selectTargetPlayer() {
+  // Récupérer la valeur du slider et s'assurer que c'est un nombre
+  const sliderElement = document.getElementById('marketValueSlider');
+  const minValMillions = sliderElement ? parseInt(sliderElement.value) : 1;
+  const minValStrict = minValMillions * 1000000;
+
+  // Récupérer les championnats sélectionnés
+  const activeChampionships = championnats.filter(champ => championnatCheckboxes[champ].checked);
+
+  const filteredPlayers = players.filter(p => {
+      // Conversion de la valeur du joueur en nombre (important)
+      const playerValue = Number(p.valeur_marchande);
+      
+      const isChampSelected = activeChampionships.includes(p.championnat);
+      const hasMinVal = playerValue >= minValStrict;
+      
+      return isChampSelected && hasMinVal;
+  });
+
+  if (filteredPlayers.length === 0) {
+      alert("Aucun joueur trouvé à " + minValMillions + "M€ ou plus dans ces championnats.");
+      // Retourne un joueur au hasard parmi tous par sécurité
+      return players[Math.floor(Math.random() * players.length)];
+  }
+
+  return filteredPlayers[Math.floor(Math.random() * filteredPlayers.length)];
+}
+
+// Fonction pour réinitialiser le jeu
+async function resetGame() {
+  if (currentUserUid) {
+      await remove(ref(db, `users/${currentUserUid}/games/football/session`));
+  } else {
+      localStorage.removeItem('guest_football_session');
+  }
+  
+  // On enregistre les nouveaux réglages si besoin
+  saveSettings();
+
+  targetPlayer = selectTargetPlayer();
+
+  // 2. Réinitialisation de l'état du jeu
+  gameOver = false;
+  
+  // 3. Réaffichage des éléments de recherche cachés
+  const searchRow = document.querySelector('.search-row');
+  if (searchRow) {
+      searchRow.style.display = 'flex'; // Fait réapparaître la barre, filtre et abandon
+  }
+
+  // 4. Nettoyage des inputs et boutons
+  searchInput.disabled = false;
+  searchInput.value = '';
+  suggestionsBox.innerHTML = '';
+  
+  // Gestion du bouton Abandonner (pour qu'il revienne)
+  if (giveUpBtn) {
+      giveUpBtn.style.display = 'inline-block';
+  }
+
+  // 5. Nettoyage de la Message Box
+  messageBox.innerHTML = '';
+  messageBox.style.display = 'none';
+  messageBox.className = ''; // Enlève les classes .win ou .wrong
+  
+  // 6. Nettoyer le tableau des essais (lignes de joueurs devinés)
+  const guessesRows = document.querySelectorAll('.guess-row');
+  guessesRows.forEach(guess => guess.remove());
+  
+  // 7. Fermer le menu des filtres s'il était ouvert
+  if (typeof championnatFiltersDiv !== 'undefined') {
+      championnatFiltersDiv.classList.remove('open');
+  }
+}
+
+// Ouvrir/fermer le menu des championnats
+championnatBtn.addEventListener('click', () => {
+  championnatFiltersDiv.classList.toggle('open');
+});
+
+// Fermer le menu quand on clique ailleurs
+document.addEventListener('click', (e) => {
+  if (e.target !== championnatBtn && !championnatFiltersDiv.contains(e.target)) {
+      championnatFiltersDiv.classList.remove('open');
+  }
+});
+
+// Fonction pour obtenir les championnats sélectionnés
+function getSelectedChampionnats() {
+  return championnats.filter(champ => championnatCheckboxes[champ].checked);
+}
+
+let selectedSuggestionIndex = -1;
+
+searchInput.addEventListener('input', (e) => {
+if (gameOver) return;
+
+const input = normalize(e.target.value);
+const selectedChamps = getSelectedChampionnats();
+
+// --- Récupération du seuil de valeur marchande ---
+const slider = document.getElementById('marketValueSlider');
+const minValStrict = slider ? parseInt(slider.value) * 1000000 : 0;
+
+selectedSuggestionIndex = -1;
+
+if (input.length < 1) {
+suggestionsBox.innerHTML = '';
+return;
+}
+
+suggestionsBox.innerHTML = '';
+
+// 1. On récupère les noms des joueurs déjà présents dans le tableau
+const guessedNames = Array.from(document.querySelectorAll('.guess-row .cell:first-child'))
+                    .map(cell => normalize(cell.textContent.trim()));
+
+// 2. Filtrage (Nom OU Club) + Championnat + Valeur + Non deviné
+const matches = players
+.filter(p => {
+  const normalizedPName = normalize(p.nom);
+  const normalizedPClub = normalize(p.club);
+  
+  // Le joueur correspond si l'input est dans le NOM ou dans le CLUB
+  const matchesNameOrClub = normalizedPName.includes(input) || normalizedPClub.includes(input);
+  
+  const matchesChamp = selectedChamps.length === 0 || (p.championnat && selectedChamps.includes(p.championnat));
+  const matchesValue = Number(p.valeur_marchande) >= minValStrict;
+  const notGuessed = !guessedNames.includes(normalizedPName);
+  
+  return matchesNameOrClub && matchesChamp && matchesValue && notGuessed;
+})
+// 3. TRI par pertinence
+.sort((a, b) => {
+  const nameA = normalize(a.nom);
+  const clubA = normalize(a.club);
+  const nameB = normalize(b.nom);
+  const clubB = normalize(b.club);
+  
+  const startsNameA = nameA.startsWith(input);
+  const startsNameB = nameB.startsWith(input);
+  const startsClubA = clubA.startsWith(input);
+  const startsClubB = clubB.startsWith(input);
+
+  // Priorité 1 : Le nom du joueur commence par l'input
+  if (startsNameA && !startsNameB) return -1;
+  if (!startsNameA && startsNameB) return 1;
+
+  // Priorité 2 : Le nom du club commence par l'input
+  if (startsClubA && !startsClubB) return -1;
+  if (!startsClubA && startsClubB) return 1;
+  
+  // Sinon, tri alphabétique par nom
+  return nameA.localeCompare(nameB);
+})
+.slice(0, 100); // Augmenté à 100 car la recherche par club peut renvoyer beaucoup de monde
+
+// 4. Affichage des suggestions
+matches.forEach((player, index) => {
+const div = document.createElement('div');
+div.className = 'suggestion-item';
+div.innerHTML = `<img src="${player.photo_URL}" class="mini-img"> ${player.nom} (${player.club})`;
+
+div.addEventListener('click', () => {
+  makeGuess(player);
+  suggestionsBox.innerHTML = '';
+  searchInput.value = '';
+});
+
+div.addEventListener('mouseenter', () => {
+  selectedSuggestionIndex = index;
+  updateSuggestionHighlight();
+});
+suggestionsBox.appendChild(div);
+});
 });
 
 // Remplacez ou ajoutez ce bloc pour la gestion du clavier
 searchInput.addEventListener('keydown', (e) => {
-    const items = suggestionsBox.querySelectorAll('.suggestion-item');
-    
-    if (items.length === 0) return;
+const items = suggestionsBox.querySelectorAll('.suggestion-item');
 
-    if (e.key === 'ArrowDown') {
-        e.preventDefault(); // Empêche le curseur de bouger dans l'input
-        selectedSuggestionIndex = (selectedSuggestionIndex + 1) % items.length;
-        updateSuggestionHighlight();
-    } else if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        selectedSuggestionIndex = (selectedSuggestionIndex - 1 + items.length) % items.length;
-        updateSuggestionHighlight();
-    } else if (e.key === 'Enter') {
-        e.preventDefault();
-        if (selectedSuggestionIndex > -1 && items[selectedSuggestionIndex]) {
-            // On simule un clic sur l'élément sélectionné
-            items[selectedSuggestionIndex].click();
-        }
-    } else if (e.key === 'Escape') {
-        suggestionsBox.innerHTML = '';
-        selectedSuggestionIndex = -1;
-    }
+if (items.length === 0) return;
+
+if (e.key === 'ArrowDown') {
+e.preventDefault(); // Empêche le curseur de bouger dans l'input
+selectedSuggestionIndex = (selectedSuggestionIndex + 1) % items.length;
+updateSuggestionHighlight();
+} else if (e.key === 'ArrowUp') {
+e.preventDefault();
+selectedSuggestionIndex = (selectedSuggestionIndex - 1 + items.length) % items.length;
+updateSuggestionHighlight();
+} else if (e.key === 'Enter') {
+e.preventDefault();
+if (selectedSuggestionIndex > -1 && items[selectedSuggestionIndex]) {
+  // On simule un clic sur l'élément sélectionné
+  items[selectedSuggestionIndex].click();
+}
+} else if (e.key === 'Escape') {
+suggestionsBox.innerHTML = '';
+selectedSuggestionIndex = -1;
+}
 });
-        function updateSuggestionHighlight() {
-            const items = document.querySelectorAll('.suggestion-item');
-            items.forEach((item, index) => {
-                if (index === selectedSuggestionIndex) {
-                    item.classList.add('active');
-                    item.scrollIntoView({ block: 'nearest' });
-                } else {
-                    item.classList.remove('active');
-                }
-            });
-        }
+function updateSuggestionHighlight() {
+  const items = document.querySelectorAll('.suggestion-item');
+  items.forEach((item, index) => {
+      if (index === selectedSuggestionIndex) {
+          item.classList.add('active');
+          item.scrollIntoView({ block: 'nearest' });
+      } else {
+          item.classList.remove('active');
+      }
+  });
+}
 
-        function makeGuess(player, shouldSave = true) {
-            if (!targetPlayer) {
-                return;
-            }
-            document.getElementById('board').style.display = 'flex';
-            document.getElementById('legend').style.display = 'flex';
-            suggestionsBox.innerHTML = '';
-            searchInput.value = '';
-            const row = document.createElement('div');
-            row.className = 'guess-row';
+function makeGuess(player, shouldSave = true) {
+  if (!targetPlayer) {
+      return;
+  }
+  document.getElementById('board').style.display = 'flex';
+  document.getElementById('legend').style.display = 'flex';
+  suggestionsBox.innerHTML = '';
+  searchInput.value = '';
+  const row = document.createElement('div');
+  row.className = 'guess-row';
 
-            // Fonction helper pour créer une cellule
-            const createCell = (content, isCorrect, arrow = '') => {
-                const cell = document.createElement('div');
+  // Fonction helper pour créer une cellule
+  const createCell = (content, isCorrect, arrow = '') => {
+      const cell = document.createElement('div');
 
-                // Detect arrow type from HTML string
-                let arrowClass = '';
-                if (arrow && arrow.includes('arrow-up.png')) {
-                    arrowClass = 'arrow-up';
-                } else if (arrow && arrow.includes('arrow-down.png')) {
-                    arrowClass = 'arrow-down';
-                }
+      // Detect arrow type from HTML string
+      let arrowClass = '';
+      if (arrow && arrow.includes('arrow-up.png')) {
+          arrowClass = 'arrow-up';
+      } else if (arrow && arrow.includes('arrow-down.png')) {
+          arrowClass = 'arrow-down';
+      }
 
-                // Build className
-                let cellClass = 'cell';
-                if (isCorrect) {
-                    cellClass += ' correct';
-                } else {
-                    cellClass += ' wrong';
-                }
-                if (arrowClass) {
-                    cellClass += ' ' + arrowClass;
-                }
+      // Build className
+      let cellClass = 'cell';
+      if (isCorrect) {
+          cellClass += ' correct';
+      } else {
+          cellClass += ' wrong';
+      }
+      if (arrowClass) {
+          cellClass += ' ' + arrowClass;
+      }
 
-                cell.className = cellClass;
-                cell.innerHTML = `<div>${content}</div>`;
-                return cell;
-            };
+      cell.className = cellClass;
+      cell.innerHTML = `<div>${content}</div>`;
+      return cell;
+    };
 
-            // Fonction pour créer une cellule Nationalité_avec drapeau
-            function createNationalityCell(natName, state) {
-                const cell = document.createElement('div');
-                // state peut être 'correct' (vert), 'partial' (orange), 'wrong' (rouge)
-                cell.className = `cell ${state}`; 
-                
-                if (natName && natName !== "") {
-                    // Chemin vers vos drapeaux (ajustez l'extension .png ou .webp)
-                    const flagUrl = getCountryFlagUrl(natName);
-                    cell.innerHTML = `
-                        <img src="${flagUrl}" style="width: 50px; border-radius:3px;" onerror="this.style.display='none'">
-                        <div style="font-size: 0.8rem; margin-top: 3px;">${natName}</div>
-                    `;
-                } else {
-                    cell.innerHTML = "-";
-                }
-                
-                return cell;
-            }
+// Fonction pour créer une cellule Nationalité_avec drapeau
+function createNationalityCell(natName, state) {
+    const cell = document.createElement('div');
+    // state peut être 'correct' (vert), 'partial' (orange), 'wrong' (rouge)
+    cell.className = `cell ${state}`; 
+    
+    if (natName && natName !== "") {
+        // Chemin vers vos drapeaux (ajustez l'extension .png ou .webp)
+        const flagUrl = getCountryFlagUrl(natName);
+        cell.innerHTML = `
+            <img src="${flagUrl}" style="width: 50px; border-radius:3px;" onerror="this.style.display='none'">
+            <div style="font-size: 0.8rem; margin-top: 3px;">${natName}</div>
+        `;
+    } else {
+        cell.innerHTML = "-";
+    }
+    
+    return cell;
+}
 
-            // 1. Photo + Nom (pas de coloration)
-            const imgCell = document.createElement('div');
-            imgCell.className = 'cell neutral';
-            imgCell.style.display = 'flex';
-            imgCell.style.flexDirection = 'column';
-            imgCell.style.justifyContent = 'center';
-            imgCell.style.alignItems = 'center';
-            imgCell.style.gap = '5px';
-            imgCell.innerHTML = `<img src="${player.photo_URL}" style="width: 50px; taille: 50px; border-radius: 5px;"><div style="font-weight: bold; text-align: center;">${player.nom}</div>`;
-            row.appendChild(imgCell);
+// 1. Photo + Nom (pas de coloration)
+const imgCell = document.createElement('div');
+imgCell.className = 'cell neutral';
+imgCell.style.display = 'flex';
+imgCell.style.flexDirection = 'column';
+imgCell.style.justifyContent = 'center';
+imgCell.style.alignItems = 'center';
+imgCell.style.gap = '5px';
+imgCell.innerHTML = `<img src="${player.photo_URL}" style="width: 50px; taille: 50px; border-radius: 5px;"><div style="font-weight: bold; text-align: center;">${player.nom}</div>`;
+row.appendChild(imgCell);
 
-            // 2. Nationalités (Logique Croisée)
-            const pNat1 = player.Nationalité_1;
-            const pNat2 = player.Nationalité_2;
-            const tNat1 = targetPlayer.Nationalité_1;
-            const tNat2 = targetPlayer.Nationalité_2;
+// 2. Nationalités (Logique Croisée)
+const pNat1 = player.Nationalité_1;
+const pNat2 = player.Nationalité_2;
+const tNat1 = targetPlayer.Nationalité_1;
+const tNat2 = targetPlayer.Nationalité_2;
 
-            // Liste des nationalités du joueur cible pour vérifier la présence (Orange)
-            const targetNationalities = [tNat1, tNat2].filter(n => n && n !== "");
+// Liste des nationalités du joueur cible pour vérifier la présence (Orange)
+const targetNationalities = [tNat1, tNat2].filter(n => n && n !== "");
 
-            // Nationalité_1
-            let state1 = 'wrong'; // Rouge par défaut
-            if (pNat1 === tNat1) {
-                state1 = 'correct'; // Vert (match exact)
-            } else if (targetNationalities.includes(pNat1)) {
-                state1 = 'partial'; // Orange (existe mais pas en Nat1)
-            }
-            row.appendChild(createNationalityCell(pNat1, state1));
+// Nationalité_1
+let state1 = 'wrong'; // Rouge par défaut
+if (pNat1 === tNat1) {
+    state1 = 'correct'; // Vert (match exact)
+} else if (targetNationalities.includes(pNat1)) {
+    state1 = 'partial'; // Orange (existe mais pas en Nat1)
+}
+row.appendChild(createNationalityCell(pNat1, state1));
 
-            // Nationalité_2
-            let state2 = 'wrong';
-            if (pNat2 && pNat2 !== "") {
-                if (pNat2 === tNat2) {
-                    state2 = 'correct'; // Vert
-                } else if (targetNationalities.includes(pNat2)) {
-                    state2 = 'partial'; // Orange
-                }
-                row.appendChild(createNationalityCell(pNat2, state2));
-            } else {
-                // Si le joueur testé n'a pas de Nat 2 mais que le joueur mystère en a une
-                // ou si les deux n'en ont pas.
-                const stateNoNat = (pNat2 === tNat2) ? 'correct' : 'wrong';
-                row.appendChild(createNationalityCell("", stateNoNat));
-            }
-            // 3. Club
-            const clubCell = document.createElement('div');
-            let clubClass = 'wrong';
-            if (player.club === targetPlayer.club) {
-              clubClass = 'correct';
-            } else if (player.championnat === targetPlayer.championnat) {
-              clubClass = 'partial';
-            }
-            clubCell.className = `cell ${clubClass}`;
-            clubCell.style.display = 'flex';
-            clubCell.style.flexDirection = 'column';
-            clubCell.style.justifyContent = 'center';
-            clubCell.style.alignItems = 'center';
-            clubCell.style.gap = '5px';
-            const clubLogoUrl = `https://tmssl.akamaized.net/images/wappen/big/${player.club_ID}.png`;
-            clubCell.innerHTML = clubLogoUrl 
-              ? `<img src="${clubLogoUrl}" style="width: 40px; taille: 40px; object-fit: contain;"><div style="text-align: center; font-size: 0.85rem;">${player.club}</div>`
-              : `<div style="text-align: center;">${player.club}</div>`;
-            row.appendChild(clubCell);
+// Nationalité_2
+let state2 = 'wrong';
+if (pNat2 && pNat2 !== "") {
+    if (pNat2 === tNat2) {
+        state2 = 'correct'; // Vert
+    } else if (targetNationalities.includes(pNat2)) {
+        state2 = 'partial'; // Orange
+    }
+    row.appendChild(createNationalityCell(pNat2, state2));
+} else {
+    // Si le joueur testé n'a pas de Nat 2 mais que le joueur mystère en a une
+    // ou si les deux n'en ont pas.
+    const stateNoNat = (pNat2 === tNat2) ? 'correct' : 'wrong';
+    row.appendChild(createNationalityCell("", stateNoNat));
+}
+// 3. Club
+const clubCell = document.createElement('div');
+let clubClass = 'wrong';
+if (player.club === targetPlayer.club) {
+  clubClass = 'correct';
+} else if (player.championnat === targetPlayer.championnat) {
+  clubClass = 'partial';
+}
+clubCell.className = `cell ${clubClass}`;
+clubCell.style.display = 'flex';
+clubCell.style.flexDirection = 'column';
+clubCell.style.justifyContent = 'center';
+clubCell.style.alignItems = 'center';
+clubCell.style.gap = '5px';
+const clubLogoUrl = `https://tmssl.akamaized.net/images/wappen/big/${player.club_ID}.png`;
+clubCell.innerHTML = clubLogoUrl 
+  ? `<img src="${clubLogoUrl}" style="width: 40px; taille: 40px; object-fit: contain;"><div style="text-align: center; font-size: 0.85rem;">${player.club}</div>`
+  : `<div style="text-align: center;">${player.club}</div>`;
+row.appendChild(clubCell);
 
-            // 4. Position
-            row.appendChild(createCell(player.poste, player.poste === targetPlayer.poste));
+// 4. Position
+row.appendChild(createCell(player.poste, player.poste === targetPlayer.poste));
 
-            // 5. age (avec flèches images)
-            const upImgHtml = '<img src="images_onepiece/arrow-up.png" alt="up">';
-            const downImgHtml = '<img src="images_onepiece/arrow-down.png" alt="down">';
-            let ageArrow = '';
-            const playerage = parseInt(player.age);
-            const targetage = parseInt(targetPlayer.age);
-            if (playerage < targetage) ageArrow = upImgHtml;
-            if (playerage > targetage) ageArrow = downImgHtml;
-            row.appendChild(createCell(playerage + ' ans', playerage === targetage, ageArrow));
+// 5. age (avec flèches images)
+const upImgHtml = '<img src="images_onepiece/arrow-up.png" alt="up">';
+const downImgHtml = '<img src="images_onepiece/arrow-down.png" alt="down">';
+let ageArrow = '';
+const playerage = parseInt(player.age);
+const targetage = parseInt(targetPlayer.age);
+if (playerage < targetage) ageArrow = upImgHtml;
+if (playerage > targetage) ageArrow = downImgHtml;
+row.appendChild(createCell(playerage + ' ans', playerage === targetage, ageArrow));
 
-            // 6. taille (avec flèches images)
-            let tailleArrow = '';
-            const playertaille = parseFloat(player.taille);
-            const targettaille = parseFloat(targetPlayer.taille);
-            if (playertaille < targettaille) tailleArrow = upImgHtml;
-            if (playertaille > targettaille) tailleArrow = downImgHtml;
-            row.appendChild(createCell(player.taille + ' m', playertaille === targettaille, tailleArrow));
+// 6. taille (avec flèches images)
+let tailleArrow = '';
+const playertaille = parseFloat(player.taille);
+const targettaille = parseFloat(targetPlayer.taille);
+if (playertaille < targettaille) tailleArrow = upImgHtml;
+if (playertaille > targettaille) tailleArrow = downImgHtml;
+row.appendChild(createCell(player.taille + ' m', playertaille === targettaille, tailleArrow));
 
-            // 7. Valeur (avec flèches images)
-            let valArrow = '';
-            // Parser la valeur pour la comparer numériquement et formater en millions
-            const playerValueNum = parseFloat(player.valeur_marchande.toString().replace(/[^0-9.]/g, ''));
-            const targetValueNum = parseFloat(targetPlayer.valeur_marchande.toString().replace(/[^0-9.]/g, ''));
-            if (playerValueNum < targetValueNum) valArrow = upImgHtml;
-            if (playerValueNum > targetValueNum) valArrow = downImgHtml;
-            const playerValueDisplay = (playerValueNum / 1000000).toFixed(0) + 'M';
-            row.appendChild(createCell(playerValueDisplay, playerValueNum === targetValueNum, valArrow));
+// 7. Valeur (avec flèches images)
+let valArrow = '';
+// Parser la valeur pour la comparer numériquement et formater en millions
+const playerValueNum = parseFloat(player.valeur_marchande.toString().replace(/[^0-9.]/g, ''));
+const targetValueNum = parseFloat(targetPlayer.valeur_marchande.toString().replace(/[^0-9.]/g, ''));
+if (playerValueNum < targetValueNum) valArrow = upImgHtml;
+if (playerValueNum > targetValueNum) valArrow = downImgHtml;
+const playerValueDisplay = (playerValueNum / 1000000).toFixed(0) + 'M';
+row.appendChild(createCell(playerValueDisplay, playerValueNum === targetValueNum, valArrow));
 
-            // Insertion après le header (ou à la fin)
-            // Pour l'ordre chronologique inverse (plus récent en haut), insérer après le header
-            const header = document.querySelector('.header-row');
-            header.parentNode.insertBefore(row, header.nextSibling);
+// Insertion après le header (ou à la fin)
+// Pour l'ordre chronologique inverse (plus récent en haut), insérer après le header
+const header = document.querySelector('.header-row');
+header.parentNode.insertBefore(row, header.nextSibling);
 
-            if (shouldSave && currentUserUid && !gameOver) {
-                const sessionRef = ref(db, `users/${currentUserUid}/games/football/session`);
-                get(sessionRef).then((snapshot) => {
-                    let currentGuesses = [];
-                    if (snapshot.exists() && snapshot.val().guesses) {
-                        currentGuesses = snapshot.val().guesses;
-                    }
-                    
-                    // On n'ajoute que si le nom n'est pas déjà dans les essais sauvegardés
-                    if (!currentGuesses.includes(player.nom)) {
-                        currentGuesses.push(player.nom);
-                        update(sessionRef, {
-                            guesses: currentGuesses,
-                            targetName: targetPlayer.nom
-                        }).catch(err => console.error("Erreur save guess:", err));
-                    }
-                });
-            }
-
-                checkWin(player);
-            }
-        
-
-        // --- Éléments à récupérer ---
-        const giveUpBtn = document.getElementById('giveUpBtn');
-
-        // --- Logique du bouton Abandonner ---
-        giveUpBtn.addEventListener('click', () => {
-            if (gameOver) return;
-            showEndScreen(false); // false = Défaite/Abandon
-        });
-
-        // --- Modification de checkWin ---
-        function checkWin(player) {
-            if (player.nom === targetPlayer.nom) {
-                showEndScreen(true); // true = Victoire
-            }
-        }
-
-        // --- Nouvelle fonction unifiée pour l'écran de fin ---
-        async function showEndScreen(isWin) {
-            gameOver = true;
-
-            if (currentUserUid) {
-                await remove(ref(db, `users/${currentUserUid}/games/football/session`));
-            }
-            
-            // 1. Calcul du nombre d'essais
-            const attempts = document.querySelectorAll('.guess-row').length;
-
-            // 2. Initialisation des stats par défaut
-            let d = { gamesPlayed: 0, wins: 0, losses: 0, totalAttemptsOnWin: 0, avgAttempts: 0 };
-
-            // 3. Bloc Firebase (Uniquement si connecté)
-            if (currentUserUid) {
-                try {
-                    const statsRef = ref(db, `users/${currentUserUid}/games/football/stats`);
-                    const snap = await get(statsRef);
-                    if (snap.exists()) d = snap.val();
-
-                    d.gamesPlayed++;
-                    if (isWin) {
-                        d.wins++;
-                        d.totalAttemptsOnWin += attempts;
-                        d.avgAttempts = parseFloat((d.totalAttemptsOnWin / d.wins).toFixed(2));
-                    } else {
-                        d.losses++;
-                    }
-                    await set(statsRef, d);
-                } catch (e) {
-                    console.error("Erreur stats Firebase:", e);
-                }
-            }
-
-            // 4. Cache de l'interface de recherche
-            const searchRow = document.querySelector('.search-row');
-            if (searchRow) searchRow.style.display = 'none';
-
-            // 5. Création du bouton REJOUER (C'est ici que replayBtn est défini)
-            const mainColor = isWin ? "#538d4e" : "#c0392b"; 
-            const replayBtn = document.createElement('button'); // DÉCLARATION CRUCIALE
-            replayBtn.textContent = isWin ? 'Rejouer' : 'Essayer encore';
-            replayBtn.className = "championnat-btn";
-            replayBtn.style.cssText = `display:block; margin: 20px auto 0; padding: 12px 25px; background-color: ${mainColor}; border: none; color: white; border-radius: 4px; cursor: pointer; font-weight: bold;`;
-            replayBtn.addEventListener('click', resetGame);
-
-            // 6. Préparation des textes
-            const attemptWord = attempts <= 1 ? "essai" : "essais";
-            const statusText = isWin ? `BRAVO ! Vous avez trouvé en ${attempts} ${attemptWord} :` : "DOMMAGE ! C'était :";
-            const avgText = (currentUserUid && isWin) ? `<p style="font-size: 0.9em; color: #ddd; margin-top:5px;">Moyenne : ${d.avgAttempts} essais</p>` : "";
-
-            // 7. Affichage dans la MessageBox
-            const messageBox = document.getElementById('message-box');
-            messageBox.innerHTML = `
-                <div style="text-align: center; padding: 20px;">
-                    <p style="font-size: 1.3em; margin-bottom: 5px; color: white;">${statusText}</p>
-                    ${avgText}
-                    <img src="${targetPlayer.photo_URL}" alt="${targetPlayer.nom}" 
-                        style="width: 180px; height: 180px; border-radius: 50%; border: 5px solid ${mainColor}; object-fit: cover; margin: 15px 0; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
-                    <h2 style="margin: 5px 0; color: white; font-size: 1.8em;">${targetPlayer.nom}</h2>
-                </div>
-            `;
-            
-            // 8. Ajout du bouton à la boîte (Il faut que replayBtn soit défini au-dessus)
-            messageBox.appendChild(replayBtn);
-            
-            messageBox.className = isWin ? "win" : "lose"; 
-            messageBox.style.display = "block";
-        }       
-                // Fermer les suggestions si on clique ailleurs
-                document.addEventListener('click', (e) => {
-                    if (e.target !== searchInput) {
-                        suggestionsBox.innerHTML = '';
-                    }
-                });
-
-        onAuthStateChanged(auth, async (user) => {
-          // On essaye de récupérer l'UID
-          currentUserUid = user ? user.uid : (localStorage.getItem('active_uid') || null);
-          
-          if (currentUserUid) {
-              // On attend d'abord de restaurer la session
-              await restoreSession();
-              
-              // Si après restauration targetPlayer est toujours vide, on en choisit un
-              if (!targetPlayer) {
-                  targetPlayer = selectTargetPlayer();
-              }
-          } else {
-              targetPlayer = selectTargetPlayer();
+if (shouldSave && !gameOver) {
+  if (currentUserUid) {
+      // SAUVEGARDE FIREBASE
+      const sessionRef = ref(db, `users/${currentUserUid}/games/football/session`);
+      get(sessionRef).then((snapshot) => {
+          let currentGuesses = snapshot.exists() ? (snapshot.val().guesses || []) : [];
+          if (!currentGuesses.includes(player.nom)) {
+              currentGuesses.push(player.nom);
+              update(sessionRef, { guesses: currentGuesses, targetName: targetPlayer.nom });
           }
       });
+  } else {
+      // SAUVEGARDE LOCALSTORAGE (INVITÉ)
+      let localSess = JSON.parse(localStorage.getItem('guest_football_session') || '{"guesses":[], "targetName":""}');
+      if (!localSess.guesses.includes(player.nom)) {
+          localSess.guesses.push(player.nom);
+          localSess.targetName = targetPlayer.nom;
+          localStorage.setItem('guest_football_session', JSON.stringify(localSess));
+      }
+  }
+}
+
+    checkWin(player);
+}
+
+
+// --- Éléments à récupérer ---
+const giveUpBtn = document.getElementById('giveUpBtn');
+
+// --- Logique du bouton Abandonner ---
+giveUpBtn.addEventListener('click', () => {
+if (gameOver) return;
+showEndScreen(false); // false = Défaite/Abandon
+});
+
+// --- Modification de checkWin ---
+function checkWin(player) {
+if (player.nom === targetPlayer.nom) {
+    showEndScreen(true); // true = Victoire
+}
+}
+
+// --- Nouvelle fonction unifiée pour l'écran de fin ---
+async function showEndScreen(isWin) {
+gameOver = true;
+if (currentUserUid) {
+    await remove(ref(db, `users/${currentUserUid}/games/football/session`));
+} else {
+    localStorage.removeItem('guest_football_session');
+}
+  
+// 1. Calcul du nombre d'essais
+const attempts = document.querySelectorAll('.guess-row').length;
+
+// 2. Initialisation des stats par défaut
+let d = { gamesPlayed: 0, wins: 0, losses: 0, totalAttemptsOnWin: 0, avgAttempts: 0 };
+
+// 3. Bloc Firebase (Uniquement si connecté)
+if (currentUserUid) {
+    try {
+        const statsRef = ref(db, `users/${currentUserUid}/games/football/stats`);
+        const snap = await get(statsRef);
+        if (snap.exists()) d = snap.val();
+
+        d.gamesPlayed++;
+        if (isWin) {
+            d.wins++;
+            d.totalAttemptsOnWin += attempts;
+            d.avgAttempts = parseFloat((d.totalAttemptsOnWin / d.wins).toFixed(2));
+        } else {
+            d.losses++;
+        }
+        await set(statsRef, d);
+    } catch (e) {
+        console.error("Erreur stats Firebase:", e);
+    }
+}
+
+// 4. Cache de l'interface de recherche
+const searchRow = document.querySelector('.search-row');
+if (searchRow) searchRow.style.display = 'none';
+
+// 5. Création du bouton REJOUER (C'est ici que replayBtn est défini)
+const mainColor = isWin ? "#538d4e" : "#c0392b"; 
+const replayBtn = document.createElement('button'); // DÉCLARATION CRUCIALE
+replayBtn.textContent = isWin ? 'Rejouer' : 'Essayer encore';
+replayBtn.className = "championnat-btn";
+replayBtn.style.cssText = `display:block; margin: 20px auto 0; padding: 12px 25px; background-color: ${mainColor}; border: none; color: white; border-radius: 4px; cursor: pointer; font-weight: bold;`;
+replayBtn.addEventListener('click', resetGame);
+
+// 6. Préparation des textes
+const attemptWord = attempts <= 1 ? "essai" : "essais";
+const statusText = isWin ? `BRAVO ! Vous avez trouvé en ${attempts} ${attemptWord} :` : "DOMMAGE ! C'était :";
+const avgText = (currentUserUid && isWin) ? `<p style="font-size: 0.9em; color: #ddd; margin-top:5px;">Moyenne : ${d.avgAttempts} essais</p>` : "";
+
+// 7. Affichage dans la MessageBox
+const messageBox = document.getElementById('message-box');
+messageBox.innerHTML = `
+    <div style="text-align: center; padding: 20px;">
+        <p style="font-size: 1.3em; margin-bottom: 5px; color: white;">${statusText}</p>
+        ${avgText}
+        <img src="${targetPlayer.photo_URL}" alt="${targetPlayer.nom}" 
+            style="width: 180px; height: 180px; border-radius: 50%; border: 5px solid ${mainColor}; object-fit: cover; margin: 15px 0; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+        <h2 style="margin: 5px 0; color: white; font-size: 1.8em;">${targetPlayer.nom}</h2>
+    </div>
+`;
+
+// 8. Ajout du bouton à la boîte (Il faut que replayBtn soit défini au-dessus)
+messageBox.appendChild(replayBtn);
+
+messageBox.className = isWin ? "win" : "lose"; 
+messageBox.style.display = "block";
+}       
+// Fermer les suggestions si on clique ailleurs
+document.addEventListener('click', (e) => {
+    if (e.target !== searchInput) {
+        suggestionsBox.innerHTML = '';
+    }
+});
+
+onAuthStateChanged(auth, async (user) => {
+  // PRIORITÉ : Profil choisi (active_uid)
+  const savedUid = localStorage.getItem('active_uid');
+
+  if (savedUid) {
+      currentUserUid = savedUid;
+      console.log("🚀 [Football] Mode Profil Connecté :", currentUserUid);
+  } else {
+      currentUserUid = null;
+      console.log("🕹️ [Football] Mode Invité");
+  }
+
+  // On restaure la session (essais et réglages)
+  await restoreSession();
+
+  // Si après restauration aucun joueur n'est chargé, on en choisit un
+  if (!targetPlayer) {
+      targetPlayer = selectTargetPlayer();
+  }
+});
 
     </script>
 </body>

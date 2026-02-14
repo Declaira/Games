@@ -14130,43 +14130,52 @@ const giveUpBtn = document.getElementById('giveUpBtn');
 
 // --- 4. FIREBASE RESTORE ---
 async function restoreSession() {
-    if (!currentUserUid) return;
-    const sessionRef = ref(db, `users/${currentUserUid}/games/onepiece/session`);
-    const snap = await get(sessionRef);
+    let session = null;
 
-    if (snap.exists()) {
-        const session = snap.val();
+    if (currentUserUid) {
+        const snap = await get(ref(db, `users/${currentUserUid}/games/onepiece/session`));
+        if (snap.exists()) session = snap.val();
+    } else {
+        const local = localStorage.getItem('guest_onepiece_session');
+        if (local) session = JSON.parse(local);
+    }
+
+    if (session) {
         currentDifficulty = session.difficulty || 'normal';
         updateModeBtn();
-
-        // On retrouve le personnage dans la database locale 'data' par son nom
+        
         const recoveredChar = data.find(c => c.name === session.targetName);
         
         if (recoveredChar) {
-            targetCharacter = recoveredChar;
-            // On relance l'init mais avec le perso déjà chargé
+            targetCharacter = recoveredChar; // On fixe le perso AVANT initGame
             initGame(); 
             
-            // On restaure les tentatives précédentes
             if (session.attempts && session.attempts.length > 0) {
-                // On boucle sur les noms pour soumettre les essais sans re-sauvegarder à chaque fois
+                // On vide attempts car submitGuess va les re-remplir
+                attempts = []; 
                 session.attempts.forEach(name => {
                     const charAttempt = data.find(c => c.name === name);
-                    if (charAttempt) submitGuess(charAttempt, false); // false pour ne pas boucler saveSession
+                    if (charAttempt) submitGuess(charAttempt, false); 
                 });
             }
         } else {
-            // Si le perso n'existe plus dans les datas, on repart à zéro
             initGame();
         }
     } else {
+        targetCharacter = null; // Force un nouveau perso
         initGame();
     }
 }
 
 async function saveSettings() {
+    const settingsData = { difficulty: currentDifficulty };
+
     if (currentUserUid) {
-        await set(ref(db, `users/${currentUserUid}/games/onepiece/settings`), { difficulty: currentDifficulty });
+        // Sauvegarde sur le compte Cloud
+        await set(ref(db, `users/${currentUserUid}/games/onepiece/settings`), settingsData);
+    } else {
+        // Sauvegarde locale pour le mode Invité
+        localStorage.setItem('guest_onepiece_settings', JSON.stringify(settingsData));
     }
 }
 
@@ -14346,28 +14355,41 @@ function initGame() {
     // Filtrage selon difficulté
     filteredData = data.filter(c => {
         if (currentDifficulty === 'normal') {
-            return c.height !== "Inconnue"; // && c.origin !== "Inconnue";
+            return c.height !== "Inconnue";
         }
         return true; 
     });
 
     if(filteredData.length === 0) filteredData = data;
 
-    // Si on vient de toggleDifficulty, targetCharacter est null, donc on en prend un nouveau
+    // --- MODIFICATION ICI ---
+    // On ne génère un perso et on ne sauve QUE si targetCharacter est vraiment nul
     if (!targetCharacter) {
         targetCharacter = filteredData[Math.floor(Math.random() * filteredData.length)];
-        if (currentUserUid) saveSession();
+        // On ne sauve que si on n'est pas dans un processus de restauration
+        saveSession();
     }
 }
 async function saveSession() {
-    if (!currentUserUid || !targetCharacter) return;
-    const sessionRef = ref(db, `users/${currentUserUid}/games/onepiece/session`);
-    await set(sessionRef, {
-        targetName: targetCharacter.name, // On stocke le nom pour le retrouver au retour
+    if (!targetCharacter) return;
+
+    const sessionData = {
+        targetName: targetCharacter.name,
         attempts: attempts,
         difficulty: currentDifficulty,
         lastUpdate: Date.now()
-    });
+    };
+
+    if (currentUserUid) {
+        // --- MODE CONNECTÉ ---
+        // On sauvegarde dans le Cloud (Firebase)
+        const sessionRef = ref(db, `users/${currentUserUid}/games/onepiece/session`);
+        await set(sessionRef, sessionData);
+    } else {
+        // --- MODE INVITÉ ---
+        // On sauvegarde localement dans le navigateur
+        localStorage.setItem('guest_onepiece_session', JSON.stringify(sessionData));
+    }
 }
 // Gardez cette version
 function toggleDifficulty() {
@@ -14506,14 +14528,22 @@ function submitGuess(char, shouldSave = true) {
 
     // Victoire ?
     if (char.name === targetCharacter.name) {
-            gameOver = true;
-            handleEnd(true);
-            if (currentUserUid) {
-                remove(ref(db, `users/${currentUserUid}/games/onepiece/session`));
-            }
+        gameOver = true;
+        handleEnd(true);
+        
+        // Nettoyage de la session (Victoire)
+        if (currentUserUid) {
+            remove(ref(db, `users/${currentUserUid}/games/onepiece/session`));
         } else {
-            if (shouldSave && currentUserUid) saveSession();
+            localStorage.removeItem('guest_onepiece_session');
         }
+    } else {
+        // --- LA CORRECTION EST ICI ---
+        // On sauvegarde si shouldSave est vrai, qu'on soit connecté OU invité
+        if (shouldSave) {
+            saveSession();
+        }
+    }
 }
 
 function handleEnd(isWin) {
@@ -14778,21 +14808,32 @@ bgUploadInput.addEventListener('change', function(event) {
     }
 });
 document.getElementById('replayBtn').addEventListener('click', () => {
-    // 1. On réinitialise le personnage cible pour forcer un nouveau tirage
     targetCharacter = null; 
     
-    // 2. On supprime l'ancienne session dans Firebase pour ne pas recharger le perso gagné
     if (currentUserUid) {
         const sessionRef = ref(db, `users/${currentUserUid}/games/onepiece/session`);
         remove(sessionRef);
+    } else {
+        // --- AJOUT POUR INVITÉ ---
+        localStorage.removeItem('guest_onepiece_session');
     }
     
-    // 3. On relance le jeu
     initGame();
 });
 // --- AUTH LISTENER ---
 onAuthStateChanged(auth, async (user) => {
-    currentUserUid = localStorage.getItem('active_uid') || (user ? user.uid : null);
+    // PRIORITÉ : Profil choisi manuellement dans le localStorage
+    const savedUid = localStorage.getItem('active_uid');
+
+    if (savedUid) {
+        currentUserUid = savedUid;
+        console.log("🚀 [One Piece] Mode Profil Connecté :", currentUserUid);
+    } else {
+        currentUserUid = null;
+        console.log("🕹️ [One Piece] Mode Invité");
+    }
+
+    // On restaure la session (la fonction restoreSession s'occupera de lire Firebase ou le LocalStorage)
     await restoreSession();
 });
 
