@@ -6,6 +6,7 @@
     <link rel="icon" href="../logo/logo.png" type="image/x-icon">
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@600&display=swap" rel="stylesheet">
     <style>
+        /* --- STYLES (Conservés à l'identique) --- */
         body { font-family: 'Quicksand', sans-serif; background: #0a192f; margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; color: white; overflow-x: hidden; }
         header { width: 100%; flex-shrink: 0; }
         .status-box { margin: 10px; padding: 10px; background: rgba(100, 255, 218, 0.1); border-radius: 8px; text-align: center; width: 90%; max-width: 600px; border: 1px solid #64ffda33; min-height: 40px; font-size: 1.1em; }
@@ -29,91 +30,105 @@
         .hit::after { content: "💥"; font-size: 14px; }
         .miss { background: #1d2d44; }
         .miss::after { content: "•"; color: #64ffda; font-size: 20px; }
-        #myGrid .cell[class*="ship-"] {
+        #dock { display: flex; flex-direction: column; align-items: center; gap: 15px; padding: 15px; background: #112240; border-radius: 10px; border: 1px solid #64ffda33; }
+        .draggable-ship { display: flex; cursor: grab; width: max-content; margin: 5px auto; gap: 0; }
+        .draggable-ship.vertical { flex-direction: column; width: 32px; align-items: center; }
+        .draggable-ship div { width: 32px; height: 32px; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.2); box-sizing: border-box; }
+        .quit-button {
+            margin-top: auto; /* Pousse le bouton vers le bas si le panel a une hauteur fixe */
+            margin-top: 20px; /* Espace minimal avec les bateaux */
+            width: 100%;      /* Optionnel : pour qu'il fasse la largeur du panel */
+            padding: 10px;
+            background-color: #ff4757;
+            color: white;
+            border: none;
+            border-radius: 5px;
             cursor: pointer;
+            font-weight: bold;
         }
 
-        #myGrid .cell[class*="ship-"]:hover {
-            filter: brightness(1.2);
-            border: 1px solid white;
-        }
-        #dock { 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; /* Centre les bateaux horizontalement */
-            gap: 15px; 
-            padding: 15px; 
-            background: #112240; 
-            border-radius: 10px; 
-            border: 1px solid #64ffda33; 
-        }
-        /* Message d'aide dans le dock vide */
-        #dock:empty::before {
-            content: "Tous les navires sont déployés !";
-            font-size: 0.9em;
-            color: #2ed573;
-            padding: 20px;
-            text-align: center;
-        }
-
-        #dock::before {
-            content: "💡 Cliquez sur un navire posé pour le retirer";
-            display: block;
-            width: 100%;
-            font-size: 0.8em;
-            color: #a8b2d1;
-            margin-bottom: 10px;
-            font-style: italic;
-            order: -1; /* Place le texte en haut du dock */
-        }
-        .draggable-ship { 
-            display: flex; 
-            cursor: grab; 
-            width: max-content; /* Force le bateau à ne prendre que la largeur de ses cellules */
-            margin: 5px auto;   /* Centre le bateau horizontalement dans le dock */
-            gap: 0; 
-        }
-
-        /* Style quand le bateau est vertical */
-        .draggable-ship.vertical { 
-            flex-direction: column; 
-            width: 32px; /* Doit correspondre à la largeur d'une cellule de ta grille */
-            align-items: center; 
-        }
-
-        /* Pour s'assurer que les cases à l'intérieur ne s'écrasent pas */
-        .draggable-ship div { 
-            width: 32px; 
-            height: 32px; 
-            flex-shrink: 0; /* Empêche le bateau de se déformer */
-            border: 1px solid rgba(255,255,255,0.2);
-            box-sizing: border-box;
-        }
-        .draggable-ship:hover {
-            outline: 2px dashed #64ffda;
-            outline-offset: 5px;
-        }
-
-        /* On ajoute un petit texte d'aide au survol du dock */
-        #dock:hover::after {
-            content: "💡 Astuce : Utilisez la molette pour pivoter";
-            display: block;
-            font-size: 0.7em;
-            color: #64ffda;
-            margin-top: 10px;
-            text-align: center;
+        .quit-button:hover {
+            background-color: #ff6b81;
+            transform: translateY(-2px);
         }
         input[type="text"] { background: #112240; border: 1px solid #64ffda; color: white; padding: 10px; border-radius: 5px; outline: none; text-align: center; font-weight: bold; }
-        
-        #win-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(10, 25, 47, 0.95); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; text-align: center;}
+       /* --- Bouton de base --- */
+        .btn { 
+            padding: 12px 25px; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            background: #64ffda; 
+            color: #0a192f; 
+            margin: 10px 5px; 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* Transition fluide */
+            font-size: 1rem; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+
+        /* --- Effet Hover général (Élévation + Ombre) --- */
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 14px rgba(0,0,0,0.3);
+            filter: brightness(1.1); /* Éclaircit légèrement la couleur actuelle */
+        }
+
+        /* --- Effet au clic (Enfoncement) --- */
+        .btn:active {
+            transform: translateY(-1px);
+        }
+
+        /* --- Overrides spécifiques pour les boutons de victoire/défaite --- */
+        .btn-multi:hover { background: #ae70c7; } /* Violet plus clair */
+        .btn-solo:hover { background: #4aa3df; }  /* Bleu plus clair */
+
+        #win-screen { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: rgba(10, 25, 47, 0.98); 
+            display: none; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            z-index: 10000; 
+            text-align: center;
+        }
+
         .win-title { font-size: 4em; color: #64ffda; text-shadow: 0 0 20px #64ffda; margin-bottom: 10px; }
         .lose-title { font-size: 4em; color: #ff4757; text-shadow: 0 0 20px #ff4757; margin-bottom: 10px; }
-        
-        .btn { padding: 12px 25px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; background: #64ffda; color: #0a192f; margin: 10px 5px; transition: 0.3s; font-size: 1rem; }
-        .btn:hover { transform: scale(1.05); filter: brightness(1.1); box-shadow: 0 0 15px rgba(100, 255, 218, 0.4); }
-        .btn-multi { background: #9b59b6; color: white; }
-        .btn-solo { background: #3498db; color: white; }
-        .hidden { display: none !important; }
+
+        .btn { 
+            padding: 12px 25px; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            background: #64ffda; 
+            color: #0a192f; 
+            margin: 10px 5px; 
+            transition: 0.3s; 
+            font-size: 1rem; 
+        }
+
+        /* Effet Hover Global */
+        .btn:hover { 
+            transform: scale(1.1); 
+            filter: brightness(1.2); 
+            box-shadow: 0 0 20px rgba(100, 255, 218, 0.4); 
+        }
+
+        /* Couleur spécifique Quitter */
+        .btn-quit {
+            background: #e74c3c !important;
+            color: white !important;
+        }
+        .btn-quit:hover {
+            box-shadow: 0 0 20px rgba(231, 76, 60, 0.5) !important;
+        }
         @keyframes shake { 0%{transform:rotate(1deg)} 50%{transform:rotate(-1deg)} 100%{transform:rotate(0)} }
     </style>
 </head>
@@ -125,31 +140,28 @@
         }
     </script>
 
-<div id="win-screen">
-    <h1 id="win-msg">VICTOIRE !</h1>
-    <p id="win-sub" style="font-size: 1.2em; color: #a8b2d1;">La flotte adverse repose au fond de l'océan.</p>
-    <div id="record-status" style="margin: 15px 0; font-weight: bold; color: #2ed573; font-size: 1.2em;"></div>
-    <div>
-        <button class="btn" onclick="resetGame()">REJOUER</button>
-        <button class="btn" onclick="location.reload();" style="background: #e74c3c; color: white;">QUITTER</button>
+    <div id="win-screen">
+        <h1 id="win-msg">VICTOIRE !</h1>
+        <p id="win-sub" style="font-size: 1.2em; color: #a8b2d1; max-width: 500px; line-height: 1.5;">La flotte adverse repose au fond de l'océan.</p>
+        <div id="record-status" style="margin: 15px 0; font-weight: bold; color: #2ed573; font-size: 1.2em;"></div>
+        <div>
+            <button class="btn" onclick="resetGame()">REJOUER</button>
+            <button class="btn btn-quit" onclick="location.reload();">QUITTER</button>
+        </div>
     </div>
-</div>
 
 <div id="mode-selection" style="margin: 40px auto; text-align: center; background: #112240; padding: 30px; border-radius: 15px; border: 1px solid #64ffda; width: 90%; max-width: 400px;">
     <h2 style="color: #64ffda; margin-top: 0;">Quartier Général</h2>
-    
     <div style="margin: 20px 0;">
         <p style="margin-bottom: 10px; color: #a8b2d1;"><b>Combat en Ligne</b></p>
         <input type="text" id="roomInput" placeholder="Code Salon (ex: NAV1)" maxlength="6" style="text-transform: uppercase; width: 80%;">
         <br>
-        <button class="btn btn-multi" onclick="joinRoom()" style="width: 85%;">🌐 Rejoindre / Créer Salon</button>
+        <button id="btnMulti" class="btn btn-multi" onclick="joinRoom()" style="width: 85%;">🌐 Rejoindre / Créer Salon</button>
     </div>
-    
     <hr style="border: 0; border-top: 1px solid #233554; margin: 25px 0;">
-    
     <div>
         <p style="margin-bottom: 10px; color: #a8b2d1;"><b>Entraînement Solo</b></p>
-        <button class="btn btn-solo" onclick="prepareSolo()" style="width: 85%;">👤 Jouer contre l'IA</button>
+        <button id="btnSolo" class="btn btn-solo" onclick="prepareSolo()" style="width: 85%;">👤 Jouer contre l'IA</button>
     </div>
 </div>
 
@@ -175,20 +187,24 @@
         <div id="myGrid" class="grid"></div>
     </div>
 
+    
     <div class="grid-container">
-        <h3 id="opp-label" style="color: #ff4757;">RADAR D'ATTAQUE</h3>
-        <div class="attack-wrapper">
-            <div id="oppGrid" class="grid"></div>
-            <div class="enemy-fleet-panel">
-                <h4>CIBLES ADVERSES</h4>
-                <div id="ind-s5" class="ship-indicator"><div class="dot ship-s5"></div> Porte-avions (5)</div>
-                <div id="ind-s4" class="ship-indicator"><div class="dot ship-s4"></div> Croiseur (4)</div>
-                <div id="ind-s3a" class="ship-indicator"><div class="dot ship-s3a"></div> Sous-marin (3)</div>
-                <div id="ind-s3b" class="ship-indicator"><div class="dot ship-s3b"></div> Contre-torpilleur (3)</div>
-                <div id="ind-s2" class="ship-indicator"><div class="dot ship-s2"></div> Torpilleur (2)</div>
-            </div>
+    <h3 id="opp-label" style="color: #ff4757;">RADAR D'ATTAQUE</h3>
+    <div class="attack-wrapper">
+        <div id="oppGrid" class="grid"></div>
+
+        <div class="enemy-fleet-panel">
+            <h4>CIBLES ADVERSES</h4>
+            <div id="ind-s5" class="ship-indicator"><div class="dot ship-s5"></div> Porte-avions (5)</div>
+            <div id="ind-s4" class="ship-indicator"><div class="dot ship-s4"></div> Croiseur (4)</div>
+            <div id="ind-s3a" class="ship-indicator"><div class="dot ship-s3a"></div> Sous-marin (3)</div>
+            <div id="ind-s3b" class="ship-indicator"><div class="dot ship-s3b"></div> Contre-torpilleur (3)</div>
+            <div id="ind-s2" class="ship-indicator"><div class="dot ship-s2"></div> Torpilleur (2)</div>
+
+            <button id="quit-btn" class="quit-button" onclick="quitGame()">Quitter la partie</button>
         </div>
     </div>
+</div>
 </div>
 
 <script type="module">
@@ -196,7 +212,6 @@
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
     import { getDatabase, ref, onValue, set, update, runTransaction, onDisconnect, get, remove } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
-    // --- CONFIGURATION FIREBASE ---
     const firebaseConfig = {
         apiKey: "AIzaSyB29fMpTwBgsqkjijkNoQJ2kGChSeQDX_w",
         authDomain: "quiz-ea203.firebaseapp.com",
@@ -211,7 +226,6 @@
     const auth = getAuth(app);
     const database = getDatabase(app);
 
-    // --- VARIABLES GLOBALES ---
     let currentUser = null;
     let isRestoring = false;
     let myName = "MA FLOTTE";
@@ -219,7 +233,6 @@
     let currentRoom = null;
     let myId = null; 
     let opponentId = null;
-    
     let isVertical = false;
     let draggedShip = null;
     let myShipsCoords = [];
@@ -230,248 +243,381 @@
         turn: 'p1', winner: null, recorded: false 
     };
 
-    // --- AUTHENTIFICATION & RESTAURATION ---
+    // --- AUTHENTIFICATION ---
     onAuthStateChanged(auth, async (user) => {
-        const savedUid = localStorage.getItem('active_uid');
-        const uidToFetch = savedUid || (user ? user.uid : null);
+    console.log("--- DEBUG AUTH BATAILLE NAVALE ---");
+    const savedUid = localStorage.getItem('active_uid');
+    const savedName = localStorage.getItem('guest_name');
 
-        if (uidToFetch) {
-            currentUser = user || { uid: uidToFetch };
-            try {
-                const userRef = ref(database, 'users/' + uidToFetch);
-                const snapshot = await get(userRef);
-                
-                if (snapshot.exists()) {
-                    const data = snapshot.val();
-                    myName = data.username || "Joueur";
+    if (savedUid) {
+        // --- MODE PROFIL CONNECTÉ ---
+        console.log("📝 Profil détecté (UID):", savedUid);
+        currentUser = user || { uid: savedUid }; // On simule currentUser si Firebase n'est pas encore prêt
+        
+        const userRef = ref(database, 'users/' + savedUid);
+        const snap = await get(userRef);
+        
+        if (snap.exists()) {
+            const userData = snap.val();
+            myName = userData.username || "Joueur";
+            console.log("Données Firebase chargées pour:", myName);
 
-                    // --- LOGIQUE DE REPRISE DE PARTIE ---
-                    if (data.activeGame && !isRestoring) {
-                        if (confirm("⚓ Une partie en cours a été trouvée. Voulez-vous la reprendre ?")) {
-                            resumeGame(data.activeGame);
-                        } else {
-                            // Si l'utilisateur refuse, on efface la sauvegarde
-                            remove(ref(database, `users/${uidToFetch}/activeGame`));
-                        }
-                    }
+            if (userData.games.bn.activeGame && !isRestoring) {
+                console.log("💾 Partie Cloud trouvée.");
+                if (confirm("⚓ Une partie en cours a été trouvée. Reprendre ?")) {
+                    resumeGame(userData.games.bn.activeGame);
+                } else {
+                    remove(ref(database, `users/${savedUid}/games/bn/activeGame`));
                 }
-            } catch (e) {
-                console.error("❌ Erreur database:", e);
             }
         }
+    } else {
+        // --- MODE INVITÉ ---
+        console.log("🕹️ Mode Invité : Utilisation du stockage local");
+        currentUser = { uid: 'guest_local', isAnonymous: true };
+        myName = savedName || "Invité";
 
-        const myLabel = document.getElementById('my-label');
-        if (myLabel) myLabel.textContent = myName.toUpperCase();
-    });
-
-    // --- FONCTION DE REPRISE ---
-    window.resumeGame = (data) => {
-    isRestoring = true;
-    isAiGame = data.isAiGame;
-    currentRoom = data.currentRoom;
-    myId = data.myId;
-    opponentId = data.opponentId;
-    myShipsCoords = data.myShipsCoords;
-    gameState = data.gameState;
-
-    document.getElementById('mode-selection').classList.add('hidden');
-    document.getElementById('game-info').classList.remove('hidden');
-    document.getElementById('game-area').classList.remove('hidden');
-    document.getElementById('setup-area').classList.add('hidden');
-
-    initBoard();
-    restoreVisuals();
-    
-    if (!isAiGame && currentRoom) {
-        // Logique Multi
-        const roomRef = ref(database, `rooms/bn_${currentRoom}`);
-        onValue(roomRef, (snapshot) => {
-            const roomData = snapshot.val();
-            if (roomData) {
-                gameState = roomData;
-                updateUI();
-            }
-        });
-    }
-    
-    updateUI();
-    isRestoring = false;
-
-    // --- CORRECTION : Relancer l'IA si c'est son tour ---
-    if (isAiGame && gameState.turn === 'p2' && !gameState.winner) {
-        console.log("🤖 L'IA reprend son tour...");
-        setTimeout(iaPlay, 1000); 
-    }
-};
-
-    // --- GESTION DES STATISTIQUES ---
-    async function recordResult(result, type) {
-        if (!currentUser?.uid || currentUser.uid.startsWith('guest') || gameState.recorded) return;
-        
-        gameState.recorded = true; 
-        const statsRef = ref(database, `users/${currentUser.uid}/games/bn/stats/${type}`);
-        const snap = await get(statsRef);
-        const data = snap.exists() ? snap.val() : { wins: 0, losses: 0, draws: 0 };
-
-        if (result === 'win') data.wins++;
-        else if (result === 'loss') data.losses++;
-
-        await set(statsRef, data);
-        
-        const recordStatus = document.getElementById('record-status');
-        if (recordStatus) {
-            recordStatus.innerText = (result === 'win') ? "📈 Victoire enregistrée !" : "📉 Défaite enregistrée...";
+        const localSave = localStorage.getItem('guest_activeGame');
+        if (localSave && !isRestoring) {
+            console.log("💾 Sauvegarde locale trouvée pour l'invité.");
+            const data = JSON.parse(localSave);
+            
+            // Petit délai pour s'assurer que le DOM est chargé
+            setTimeout(() => {
+                if (confirm("⚓ (Invité) Reprendre votre bataille en cours ?")) {
+                    console.log("Restauraton locale en cours...");
+                    resumeGame(data);
+                } else {
+                    localStorage.removeItem('guest_activeGame');
+                }
+            }, 200);
+        } else {
+            console.log("Aucune sauvegarde locale trouvée.");
         }
     }
 
-    // --- INTERFACE ---
-    window.toggleRotation = () => {
-        isVertical = !isVertical;
-        document.querySelectorAll('.draggable-ship').forEach(s => s.classList.toggle('vertical', isVertical));
-    };
-
-    window.prepareSolo = () => {
-        isAiGame = true;
-        myId = 'p1'; opponentId = 'p2';
-        currentRoom = null;
-        document.getElementById('mode-selection').classList.add('hidden');
-        document.getElementById('game-info').classList.remove('hidden');
-        document.getElementById('game-area').classList.remove('hidden');
+    if (document.getElementById('my-label')) {
         document.getElementById('my-label').textContent = myName.toUpperCase();
-        document.getElementById('opp-label').textContent = "IA ENNEMIE";
-        initBoard();
-    };
-
+    }
+    console.log("-----------------------------------");
+});
+    
+    // --- JOIN ROOM (CORRIGÉ & SÉCURISÉ) ---
     window.joinRoom = async () => {
-        const roomInput = document.getElementById('roomInput').value.trim().toUpperCase();
-        if (!roomInput) return alert("Veuillez entrer un code de salon.");
+        if (!currentUser) return alert("Initialisation en cours...");
+
+        const roomInputEl = document.getElementById('roomInput');
+        const roomInput = roomInputEl ? roomInputEl.value.trim().toUpperCase() : "";
+        if (!roomInput) return alert("Veuillez entrer un code.");
         
         isAiGame = false;
         currentRoom = roomInput;
         const roomRef = ref(database, `rooms/bn_${currentRoom}`);
 
+        // On cache le menu et montre l'info
         document.getElementById('mode-selection').classList.add('hidden');
         document.getElementById('game-info').classList.remove('hidden');
 
-        await runTransaction(roomRef, (room) => {
-            if (!room) {
-                return {
-                    p1: { uid: currentUser.uid, name: myName },
-                    p2: null,
-                    p1Ready: false, p2Ready: false,
-                    p1Attacks: [], p2Attacks: [],
-                    p1Ships: [], p2Ships: [],
-                    turn: 'p1', winner: null, recorded: false
-                };
-            } else if (!room.p2 && room.p1.uid !== currentUser.uid) {
-                room.p2 = { uid: currentUser.uid, name: myName };
-                return room;
-            }
-            return; 
-        });
-
-        const snap = await get(roomRef);
-        const data = snap.val();
-        if (data.p1.uid === currentUser.uid) { myId = 'p1'; opponentId = 'p2'; }
-        else if (data.p2?.uid === currentUser.uid) { myId = 'p2'; opponentId = 'p1'; }
-        else { alert("Salon plein !"); location.reload(); return; }
-
-        onDisconnect(roomRef).update({ winner: 'aborted' });
-        document.getElementById('game-area').classList.remove('hidden');
-        initBoard();
-
-        onValue(roomRef, (snapshot) => {
-            const roomData = snapshot.val();
-            if (roomData) {
-                gameState = roomData;
-                if(roomData[opponentId]) {
-                    document.getElementById('opp-label').textContent = roomData[opponentId].name.toUpperCase();
+        try {
+            await runTransaction(roomRef, (room) => {
+                if (!room) {
+                    return {
+                        p1: { uid: currentUser.uid, name: myName },
+                        p2: null,
+                        p1Ready: false, p2Ready: false,
+                        p1Attacks: [], p2Attacks: [],
+                        p1Ships: [], p2Ships: [],
+                        turn: 'p1', winner: null, recorded: false
+                    };
+                } else if (!room.p2 && room.p1.uid !== currentUser.uid) {
+                    room.p2 = { uid: currentUser.uid, name: myName };
+                    return room;
                 }
-                updateUI();
-                checkSunk();
-            }
+                return room; 
+            });
+
+            const snap = await get(roomRef);
+            const data = snap.val();
+            if (data.p1.uid === currentUser.uid) { myId = 'p1'; opponentId = 'p2'; }
+            else if (data.p2?.uid === currentUser.uid) { myId = 'p2'; opponentId = 'p1'; }
+            else { alert("Salon plein !"); location.reload(); return; }
+
+            onDisconnect(roomRef).update({ winner: 'aborted' });
+            document.getElementById('game-area').classList.remove('hidden');
+            initBoard();
+
+            onValue(roomRef, (snapshot) => {
+                const roomData = snapshot.val();
+                if (roomData) {
+                    gameState = roomData;
+                    if(roomData[opponentId]) {
+                        document.getElementById('opp-label').textContent = roomData[opponentId].name.toUpperCase();
+                    }
+                    updateUI();
+                    checkSunk();
+                }
+            });
+        } catch (e) {
+            console.error(e);
+            alert("Erreur salon.");
+        }
+    };
+
+    // --- UPDATE UI & SESSION SAVE (IGNORE LES INVITÉS) ---
+    function updateUI() {
+        const info = document.getElementById('game-info');
+        if(gameState.winner) return;
+        if (!gameState.p1Ready || !gameState.p2Ready) {
+            info.innerHTML = "⌛ En attente du déploiement de l'adversaire...";
+            return;
+        }
+
+        info.innerHTML = (gameState.turn === myId) ? "<b style='color:#64ffda;'>🎯 À VOUS DE TIRER !</b>" : "<span style='color:#ff4757;'>🌊 L'ENNEMI ATTAQUE...</span>";
+
+        const mCells = document.getElementById('myGrid').children;
+        const oCells = document.getElementById('oppGrid').children;
+        const myAttacks = gameState[myId + 'Attacks'] || [];
+        const oppAttacks = gameState[opponentId + 'Attacks'] || [];
+        
+        myAttacks.forEach(i => {
+            const hit = gameState[opponentId + 'Ships']?.some(s=>s.coords.includes(i));
+            oCells[i].classList.add(hit ? 'hit' : 'miss');
         });
+        oppAttacks.forEach(i => {
+            const hit = myShipsCoords.some(s=>s.coords.includes(i));
+            mCells[i].classList.add(hit ? 'hit' : 'miss');
+        });
+
+        if (currentUser) {
+            // Sécurisation des données : on remplace undefined par null
+            const dataToSave = {
+                isAiGame: isAiGame || false,
+                currentRoom: currentRoom || null, // <--- C'est ici que ça plantait
+                myId: myId || null,
+                opponentId: opponentId || null,
+                myShipsCoords: myShipsCoords || [],
+                gameState: gameState, 
+                lastUpdate: Date.now()
+            };
+
+            const savedUid = localStorage.getItem('active_uid');
+            if (savedUid && !savedUid.startsWith('guest')) {
+                // Sauvegarde Cloud pour les profils
+                // On utilise l'UID propre de l'utilisateur pour éviter les erreurs de chemin
+                set(ref(database, `users/${savedUid}/games/bn/activeGame`), dataToSave)
+                    .catch(err => console.error("Erreur sauvegarde Firebase:", err));
+            } else {
+                // Sauvegarde Locale pour les invités
+                localStorage.setItem('guest_activeGame', JSON.stringify(dataToSave));
+            }
+        }
+    }
+
+    window.quitGame = async () => {
+        if (!confirm("⚠️ Voulez-vous vraiment abandonner et quitter la partie en cours ?")) return;
+
+        console.log("Fin de partie demandée...");
+
+        // 1. Nettoyage Firebase pour les profils connectés
+        const savedUid = localStorage.getItem('active_uid');
+        if (savedUid && !savedUid.startsWith('guest')) {
+            try {
+                await remove(ref(database, `users/${savedUid}/games/bn/activeGame`));
+                console.log("Sauvegarde Cloud supprimée.");
+            } catch (e) {
+                console.error("Erreur lors de la suppression Cloud:", e);
+            }
+        }
+
+        // 2. Nettoyage LocalStorage pour les invités
+        localStorage.removeItem('guest_activeGame');
+        console.log("Sauvegarde locale supprimée.");
+
+        // 3. Réinitialisation des variables de jeu
+        myShipsCoords = [];
+        gameState = { 
+            p1Ready: false, p2Ready: false, 
+            p1Attacks: [], p2Attacks: [], 
+            turn: 'p1', winner: null, recorded: false 
+        };
+
+        // 4. Retour au menu (rechargement de la page)
+        location.reload();
+    };
+
+    // --- RESET & WIN (CLEANUP SESSION) ---
+    window.resetGame = async () => {
+        document.getElementById('win-screen').style.display = 'none';
+        myShipsCoords = [];
+        
+        // Suppression session (réel uniquement)
+        if (currentUser && !currentUser.uid.startsWith('guest')) {
+            remove(ref(database, `users/${currentUser.uid}/games/bn/activeGame`));
+        }
+
+        document.getElementById('setup-area').classList.remove('hidden');
+        document.querySelectorAll('.draggable-ship').forEach(s => { s.classList.remove('hidden', 'vertical'); });
+        
+        if (isAiGame) {
+            gameState = { p1Ready: false, p2Ready: false, p1Attacks: [], p2Attacks: [], turn: 'p1', winner: null, recorded: false };
+            initBoard();
+        } else {
+            const roomRef = ref(database, `rooms/bn_${currentRoom}`);
+            await update(roomRef, { p1Ready: false, p2Ready: false, p1Ships: [], p2Ships: [], p1Attacks: [], p2Attacks: [], turn: 'p1', winner: null, recorded: false });
+            initBoard();
+        }
+        if (currentUser && currentUser.uid.startsWith('guest')) {
+            localStorage.removeItem('guest_activeGame');
+        }
+    };
+
+    async function showWinScreen(winner) {
+        const winScreen = document.getElementById('win-screen');
+        const msg = document.getElementById('win-msg');
+        const sub = document.getElementById('win-sub');
+        const status = document.getElementById('record-status');
+        
+        // 1. Affichage de l'écran
+        winScreen.style.display = 'flex';
+
+        // 2. Nettoyage immédiat de la partie active (Firebase / Local)
+        const savedUid = localStorage.getItem('active_uid');
+        if (savedUid && !savedUid.startsWith('guest')) {
+            remove(ref(database, `users/${savedUid}/games/bn/activeGame`));
+        } else {
+            localStorage.removeItem('guest_activeGame');
+        }
+
+        // 3. Gestion du texte Victoire / Défaite
+        if (winner === 'aborted') {
+            msg.textContent = "ABANDON";
+            msg.className = "lose-title";
+            sub.textContent = "La partie a été interrompue.";
+            return;
+        }
+
+        const isWin = (winner === myId);
+        msg.textContent = isWin ? "VICTOIRE !" : "DÉFAITE...";
+        msg.className = isWin ? "win-title" : "lose-title";
+
+        // 4. Enregistrement et Calcul des Statistiques
+        if (savedUid && !savedUid.startsWith('guest')) {
+            const type = isAiGame ? 'ia' : 'online';
+            const statsRef = ref(database, `users/${savedUid}/games/bn/stats/${type}`);
+            
+            // On enregistre le résultat (incrémente jouées et victoires)
+            await recordResult(isWin ? 'win' : 'loss', type);
+
+            // On récupère les nouvelles stats pour afficher le winrate
+            const snap = await get(statsRef);
+            if (snap.exists()) {
+                const data = snap.val();
+                const played = data.played || 0;
+                const wins = data.wins || 0;
+                const winrate = ((wins / played) * 100).toFixed(1);
+
+                sub.innerHTML = `Mode ${type.toUpperCase()}<br>📊 Stats : ${wins} Victoires / ${played} Parties<br>🎯 Winrate : ${winrate}%`;
+            }
+        } else {
+            sub.innerHTML = "La flotte adverse est coulée.<br><small>(Stats non enregistrées en mode Invité)</small>";
+        }
+    }
+
+    // Fonction de support pour enregistrer proprement
+    async function recordResult(result, type) {
+        if (gameState.recorded) return; // Évite les doubles enregistrements
+        gameState.recorded = true;
+
+        const savedUid = localStorage.getItem('active_uid');
+        const statsRef = ref(database, `users/${savedUid}/games/bn/stats/${type}`);
+
+        await runTransaction(statsRef, (current) => {
+            if (!current) {
+                return { wins: (result === 'win' ? 1 : 0), played: 1 };
+            }
+            return {
+                wins: (current.wins || 0) + (result === 'win' ? 1 : 0),
+                played: (current.played || 0) + 1
+            };
+        });
+    }
+
+    // --- AUTRES FONCTIONS (DUPLIQUÉES / INCHANGÉES POUR LE FONCTIONNEMENT) ---
+    window.resumeGame = (data) => {
+        isRestoring = true; 
+        isAiGame = data.isAiGame || false; 
+        currentRoom = data.currentRoom || null;
+        myId = data.myId || 'p1'; 
+        opponentId = data.opponentId || 'p2'; 
+        myShipsCoords = data.myShipsCoords || []; 
+        gameState = data.gameState || gameState;
+
+        // Affichage des sections
+        document.getElementById('mode-selection').classList.add('hidden');
+        document.getElementById('game-info').classList.remove('hidden');
+        document.getElementById('game-area').classList.remove('hidden');
+        document.getElementById('setup-area').classList.add('hidden');
+
+        initBoard(); 
+        restoreVisuals(); // <--- Crucial pour voir ses bateaux !
+
+        if (!isAiGame && currentRoom) {
+            onValue(ref(database, `rooms/bn_${currentRoom}`), (snapshot) => {
+                if (snapshot.exists()) { 
+                    gameState = snapshot.val(); 
+                    updateUI(); 
+                }
+            });
+        }
+        
+        updateUI(); 
+        isRestoring = false;
+
+        if (isAiGame && gameState.turn === 'p2' && !gameState.winner) {
+            setTimeout(iaPlay, 1000);
+        }
     };
 
     function initBoard() {
-        const mG = document.getElementById('myGrid');
-        const oG = document.getElementById('oppGrid');
+        const mG = document.getElementById('myGrid'); const oG = document.getElementById('oppGrid');
         mG.innerHTML = ''; oG.innerHTML = '';
-        
         for(let i = 0; i < 100; i++) {
-            const cM = document.createElement('div'); 
-            cM.className = 'cell';
+            const cM = document.createElement('div'); cM.className = 'cell';
             cM.ondragover = e => { e.preventDefault(); cM.classList.add('over'); };
             cM.ondragleave = () => cM.classList.remove('over');
             cM.ondrop = () => dropShip(i);
-            cM.onclick = () => {
-                const shipAtCoord = myShipsCoords.find(s => s.coords.includes(i));
-                if (shipAtCoord && !gameState.p1Ready && !gameState.winner) {
-                    window.removeShip(shipAtCoord.id);
-                }
-            };
+            cM.onclick = () => { if (myShipsCoords.find(s => s.coords.includes(i)) && !gameState.p1Ready) window.removeShip(myShipsCoords.find(s => s.coords.includes(i)).id); };
             mG.appendChild(cM);
-            
-            const cO = document.createElement('div'); 
-            cO.className = 'cell';
-            cO.onclick = () => fire(i);
-            oG.appendChild(cO);
+            const cO = document.createElement('div'); cO.className = 'cell';
+            cO.onclick = () => fire(i); oG.appendChild(cO);
         }
-        
-        if(isAiGame && !isRestoring) {
-            gameState.p2Ships = generateIA();
-        }
+        if(isAiGame && !isRestoring) gameState.p2Ships = generateIA();
     }
 
+    window.toggleRotation = () => { isVertical = !isVertical; document.querySelectorAll('.draggable-ship').forEach(s => s.classList.toggle('vertical', isVertical)); };
+    window.prepareSolo = () => { isAiGame = true; myId = 'p1'; opponentId = 'p2'; currentRoom = null; document.getElementById('mode-selection').classList.add('hidden'); document.getElementById('game-info').classList.remove('hidden'); document.getElementById('game-area').classList.remove('hidden'); document.getElementById('opp-label').textContent = "IA ENNEMIE"; initBoard(); };
     window.randomizeMyShips = () => {
-    // 1. On commence par réinitialiser le placement actuel
-    myShipsCoords = [];
-    const mCells = document.getElementById('myGrid').children;
-    for (let cell of mCells) {
-        cell.className = 'cell'; // On nettoie visuellement la grille
-    }
-
-    // 2. On utilise la logique de l'IA pour générer un placement valide
-    const newShips = generateIA();
-    
-    // 3. On applique ce placement à notre flotte
-    newShips.forEach(ship => {
-        myShipsCoords.push(ship);
-        ship.coords.forEach(c => {
-            mCells[c].classList.add('ship-' + ship.id);
+        myShipsCoords = []; const mCells = document.getElementById('myGrid').children;
+        for (let cell of mCells) cell.className = 'cell';
+        const newShips = generateIA();
+        newShips.forEach(ship => {
+            myShipsCoords.push(ship); ship.coords.forEach(c => mCells[c].classList.add('ship-' + ship.id));
+            const dockShip = document.getElementById(ship.id); if (dockShip) dockShip.classList.add('hidden');
         });
-        
-        // 4. On cache les bateaux dans le dock
-        const dockShip = document.getElementById(ship.id);
-        if (dockShip) dockShip.classList.add('hidden');
-    });
-
-    // 5. On affiche le bouton "LANCER L'ASSAUT"
-    document.getElementById('readyBtn').classList.remove('hidden');
-};
+        document.getElementById('readyBtn').classList.remove('hidden');
+    };
 
     window.removeShip = (shipId) => {
-        const shipIndex = myShipsCoords.findIndex(s => s.id === shipId);
-        if (shipIndex === -1) return;
-        const coords = myShipsCoords[shipIndex].coords;
-        const cells = document.getElementById('myGrid').children;
-        coords.forEach(idx => cells[idx].className = 'cell');
-        myShipsCoords.splice(shipIndex, 1);
-        const shipElement = document.getElementById(shipId);
-        if (shipElement) {
-            shipElement.classList.remove('hidden');
-            document.getElementById('dock').appendChild(shipElement);
-        }
+        const idx = myShipsCoords.findIndex(s => s.id === shipId); if (idx === -1) return;
+        const coords = myShipsCoords[idx].coords; const cells = document.getElementById('myGrid').children;
+        coords.forEach(c => cells[c].className = 'cell'); myShipsCoords.splice(idx, 1);
+        const el = document.getElementById(shipId); if (el) el.classList.remove('hidden');
         document.getElementById('readyBtn').classList.add('hidden');
     };
 
     document.querySelectorAll('.draggable-ship').forEach(ship => {
         ship.ondragstart = () => draggedShip = ship;
-        ship.onwheel = (e) => {
-            e.preventDefault();
-            isVertical = !isVertical;
-            document.querySelectorAll('.draggable-ship').forEach(s => s.classList.toggle('vertical', isVertical));
-        };
+        ship.onwheel = (e) => { e.preventDefault(); isVertical = !isVertical; document.querySelectorAll('.draggable-ship').forEach(s => s.classList.toggle('vertical', isVertical)); };
     });
 
     function dropShip(startIdx) {
@@ -507,73 +653,51 @@
 
     window.confirmPlacement = () => {
         document.getElementById('setup-area').classList.add('hidden');
-        if(isAiGame) {
-            gameState.p1Ready = true; 
-            gameState.p1Ships = myShipsCoords; 
-            gameState.p2Ready = true;
-            updateUI();
-        } else {
-            const updates = {};
-            updates[`${myId}Ready`] = true;
-            updates[`${myId}Ships`] = myShipsCoords;
-            update(ref(database, `rooms/bn_${currentRoom}`), updates);
+        if(isAiGame) { gameState.p1Ready = true; gameState.p1Ships = myShipsCoords; gameState.p2Ready = true; updateUI(); } 
+        else {
+            const up = {}; up[`${myId}Ready`] = true; up[`${myId}Ships`] = myShipsCoords;
+            update(ref(database, `rooms/bn_${currentRoom}`), up);
         }
     };
 
     window.fire = async (idx) => {
         if (!gameState.p1Ready || !gameState.p2Ready || gameState.winner) return;
-        const myAttacksList = gameState[myId + 'Attacks'] || [];
-        if (gameState.turn !== myId || myAttacksList.includes(idx)) return;
-
+        const list = gameState[myId + 'Attacks'] || [];
+        if (gameState.turn !== myId || list.includes(idx)) return;
         const isHit = gameState[opponentId + 'Ships'].some(s => s.coords.includes(idx));
-        const newAttacks = [...myAttacksList, idx];
-
+        const newList = [...list, idx];
         if (isAiGame) {
-            gameState.p1Attacks = newAttacks;
-            if (!isHit) {
-                gameState.turn = 'p2';
-                setTimeout(iaPlay, 800);
-            }
-            checkSunk();
-            updateUI();
+            gameState.p1Attacks = newList;
+            if (!isHit) { gameState.turn = 'p2'; setTimeout(iaPlay, 800); }
+            checkSunk(); updateUI();
         } else {
-            const updates = {};
-            updates[`${myId}Attacks`] = newAttacks;
-            if (!isHit) updates[`turn`] = opponentId;
-            await update(ref(database, `rooms/bn_${currentRoom}`), updates);
+            const up = {}; up[`${myId}Attacks`] = newList;
+            if (!isHit) up[`turn`] = opponentId;
+            await update(ref(database, `rooms/bn_${currentRoom}`), up);
         }
     };
 
     function iaPlay() {
         if(gameState.winner) return;
-        let shot;
-        const aiAttacks = gameState.p2Attacks || [];
+        let shot; const aiAttacks = gameState.p2Attacks || [];
         do { shot = Math.floor(Math.random()*100); } while(aiAttacks.includes(shot));
         gameState.p2Attacks.push(shot);
-        const isHit = gameState.p1Ships.some(s => s.coords.includes(shot));
-        checkSunk(); 
-        updateUI();
-        if(isHit && !gameState.winner) setTimeout(iaPlay, 800);
+        const hit = gameState.p1Ships.some(s => s.coords.includes(shot));
+        checkSunk(); updateUI();
+        if(hit && !gameState.winner) setTimeout(iaPlay, 800);
         else if (!gameState.winner) { gameState.turn = 'p1'; updateUI(); }
     }
 
     function checkSunk() {
-        if (gameState.winner) return;
-        const check = (player, opponent) => {
-            const oppShips = gameState[opponent+'Ships'];
-            if(!oppShips) return;
-            let sunkCount = 0;
-            const pAttacks = gameState[player+'Attacks'] || [];
-            oppShips.forEach(s => {
-                if(s.coords.every(c => pAttacks.includes(c))) {
-                    sunkCount++;
-                    if(player === myId) {
-                        const ind = document.getElementById('ind-'+s.id);
-                        if(ind) ind.classList.add('sunk');
-                    }
+        const check = (p, o) => {
+            const oppS = gameState[o+'Ships']; if(!oppS) return;
+            let sunkC = 0; const att = gameState[p+'Attacks'] || [];
+            oppS.forEach(s => {
+                if(s.coords.every(c => att.includes(c))) {
+                    sunkC++; if(p === myId) document.getElementById('ind-'+s.id)?.classList.add('sunk');
                 }
             });
-            if(sunkCount === 5) { gameState.winner = player; handleWin(player); }
+            if(sunkC === 5) { gameState.winner = p; handleWin(p); }
         };
         check('p1', 'p2'); check('p2', 'p1');
     }
@@ -581,98 +705,17 @@
     function handleWin(winner) {
         showWinScreen(winner);
         if (!gameState.recorded) {
-            const typeStats = isAiGame ? 'ia' : 'online';
-            const result = winner === myId ? 'win' : 'loss';
-            recordResult(result, typeStats);
-            if (!isAiGame && winner === myId) {
-                update(ref(database, `rooms/bn_${currentRoom}`), { winner: winner, recorded: true });
-            }
+            const type = isAiGame ? 'ia' : 'online';
+            const res = winner === myId ? 'win' : 'loss';
+            recordResult(res, type);
+            if (!isAiGame && winner === myId) update(ref(database, `rooms/bn_${currentRoom}`), { winner, recorded: true });
         }
     }
-
-    function showWinScreen(winner) {
-        document.getElementById('win-screen').style.display = 'flex';
-        const msg = document.getElementById('win-msg');
-        
-        // SUPPRESSION DE LA SAUVEGARDE SUR FIREBASE
-        if (currentUser && currentUser.uid) {
-            remove(ref(database, `users/${currentUser.uid}/activeGame`));
-        }
-
-        if (winner === 'aborted') {
-            msg.textContent = "ABANDON";
-            return;
-        }
-        msg.textContent = (winner === myId) ? "VICTOIRE !" : "DÉFAITE...";
-        msg.className = (winner === myId) ? "win-title" : "lose-title";
-    }
-
-    function updateUI() {
-    const info = document.getElementById('game-info');
-    if(gameState.winner) return;
-    if (!gameState.p1Ready || !gameState.p2Ready) return;
-
-    info.innerHTML = (gameState.turn === myId) ? "<b style='color:#64ffda;'>🎯 À VOUS DE TIRER !</b>" : "<span style='color:#ff4757;'>🌊 L'ENNEMI ATTAQUE...</span>";
-
-    const mCells = document.getElementById('myGrid').children;
-    const oCells = document.getElementById('oppGrid').children;
-    const myAttacks = gameState[myId + 'Attacks'] || [];
-    const oppAttacks = gameState[opponentId + 'Attacks'] || [];
-    
-    myAttacks.forEach(i => {
-        const hit = gameState[opponentId + 'Ships']?.some(s=>s.coords.includes(i));
-        oCells[i].classList.add(hit ? 'hit' : 'miss');
-    });
-    oppAttacks.forEach(i => {
-        const hit = myShipsCoords.some(s=>s.coords.includes(i));
-        mCells[i].classList.add(hit ? 'hit' : 'miss');
-    });
-
-    // --- SAUVEGARDE SUR FIREBASE (CORRIGÉE) ---
-    if (currentUser && currentUser.uid && !gameState.winner && gameState.p1Ready) {
-        const savePath = ref(database, `users/${currentUser.uid}/activeGame`);
-        
-        // On crée l'objet de sauvegarde en s'assurant qu'aucune valeur n'est undefined
-        const dataToSave = {
-            isAiGame: isAiGame,
-            currentRoom: currentRoom || null, // Si undefined, devient null (accepté par Firebase)
-            myId: myId || null,
-            opponentId: opponentId || null,
-            myShipsCoords: myShipsCoords,
-            gameState: gameState,
-            lastUpdate: Date.now()
-        };
-
-        set(savePath, dataToSave).catch(err => console.error("Erreur sauvegarde:", err));
-    }
-}
 
     function restoreVisuals() {
         const mCells = document.getElementById('myGrid').children;
-        myShipsCoords.forEach(s => {
-            s.coords.forEach(c => mCells[c].classList.add('ship-' + s.id));
-        });
+        myShipsCoords.forEach(s => s.coords.forEach(c => mCells[c].classList.add('ship-' + s.id)));
     }
-
-    window.resetGame = async () => {
-        document.getElementById('win-screen').style.display = 'none';
-        myShipsCoords = [];
-        document.getElementById('setup-area').classList.remove('hidden');
-        document.querySelectorAll('.draggable-ship').forEach(s => { s.classList.remove('hidden', 'vertical'); });
-        
-        if (currentUser && currentUser.uid) {
-            remove(ref(database, `users/${currentUser.uid}/activeGame`));
-        }
-
-        if (isAiGame) {
-            gameState = { p1Ready: false, p2Ready: false, p1Attacks: [], p2Attacks: [], turn: 'p1', winner: null, recorded: false };
-            initBoard();
-        } else {
-            const roomRef = ref(database, `rooms/bn_${currentRoom}`);
-            await update(roomRef, { p1Ready: false, p2Ready: false, p1Ships: [], p2Ships: [], p1Attacks: [], p2Attacks: [], turn: 'p1', winner: null, recorded: false });
-            initBoard();
-        }
-    };
 </script>
 </body>
 </html>

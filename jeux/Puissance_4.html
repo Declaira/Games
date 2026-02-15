@@ -48,6 +48,21 @@
             gap: 8px; background: #34495e; padding: 12px; border-radius: 15px; border: 5px solid #2c3e50;
             margin: 0 auto; width: fit-content; box-shadow: 0 10px 20px rgba(0,0,0,0.3);
         }
+        /* Styles pour les titres de victoire/défaite */
+        .win-title { color: #2ecc71 !important; text-shadow: 0 0 15px rgba(46, 204, 113, 0.4); }
+        .lose-title { color: #e74c3c !important; text-shadow: 0 0 15px rgba(231, 76, 60, 0.4); }
+
+        /* Animation du record-status */
+        #record-status {
+            margin: 10px 0;
+            font-weight: bold;
+            padding: 8px;
+            border-radius: 8px;
+            background: #f8f9fa;
+        }
+
+        /* Opacité du plateau en attente */
+        .opacity-50 { opacity: 0.5; pointer-events: none; }
         @media (min-width: 500px) {
             #board { grid-template-columns: repeat(7, 60px); grid-template-rows: repeat(6, 60px); gap: 10px; padding: 15px; }
             .cell { width: 60px !important; height: 60px !important; }
@@ -191,80 +206,88 @@ let lastMove = null;
 
 // --- AUTH & INITIALISATION ---
 onAuthStateChanged(auth, async (user) => {
-    // 1. Détermination de l'UID (Firebase ou LocalStorage pour les guests)
     const savedUid = localStorage.getItem('active_uid');
-    const uidToFetch = user ? user.uid : savedUid;
-
-    if (uidToFetch) {
-        currentUser = user || { uid: uidToFetch };
-        if (!user && !savedUid) localStorage.setItem('active_uid', uidToFetch);
+    
+    if (savedUid || user) {
+        currentUser = { uid: savedUid || user.uid };
+        const uid = currentUser.uid;
 
         try {
-            // 2. Récupération des données utilisateur et de la session
-            const userRef = ref(db, `users/${uidToFetch}`);
-            const sessionRef = ref(db, `users/${uidToFetch}/session`);
+            const userRef = ref(db, `users/${uid}`);
+            // CHANGEMENT ICI : On pointe vers games/p4/activeGame
+            const gameRef = ref(db, `users/${uid}/games/p4/activeGame`);
             
-            const [userSnap, sessionSnap] = await Promise.all([
+            const [userSnap, gameSnap] = await Promise.all([
                 get(userRef),
-                get(sessionRef)
+                get(gameRef)
             ]);
 
-            // Mise à jour du nom
             if (userSnap.exists()) {
-                myName = userSnap.val().username || "Joueur_" + uidToFetch.substring(0, 4);
-            } else {
-                myName = user?.displayName || "Joueur_" + uidToFetch.substring(0, 4);
+                myName = userSnap.val().username || userSnap.val().name || "Joueur";
             }
 
-            // 3. LOGIQUE DE REPRISE DE PARTIE (L'ALERTE)
-            if (sessionSnap.exists()) {
-                const session = sessionSnap.val();
-                
-                // On demande confirmation à l'utilisateur
-                if (confirm("Une partie en cours a été trouvée. Voulez-vous la reprendre ?")) {
-                    if (session.isAiGame) {
-                        aiLevel = session.aiLevel || "easy";
-                        window.startAiGame(session.playerColor || "red", session.board || null);
-                    } else if (session.currentRoom) {
-                        document.getElementById('roomInput').value = session.currentRoom;
-                        window.joinRoom();
+            if (gameSnap.exists()) {
+                const session = gameSnap.val();
+                setTimeout(() => {
+                    if (confirm("Une partie de Puissance 4 en cours a été trouvée. Reprendre ?")) {
+                        if (session.isAiGame) {
+                            aiLevel = session.aiLevel || "easy";
+                            window.startAiGame(session.playerColor || "red", session.board || null);
+                        } else if (session.currentRoom) {
+                            document.getElementById('roomInput').value = session.currentRoom;
+                            window.joinRoom();
+                        }
+                    } else {
+                        remove(gameRef); // Nettoie le nouvel emplacement
                     }
-                } else {
-                    // Si l'utilisateur refuse, on nettoie la session pour ne plus reposer la question
-                    await remove(sessionRef);
-                }
+                }, 500);
             }
-        } catch (e) {
-            console.error("❌ Erreur lors de l'initialisation :", e);
+        } catch (e) { console.error("Erreur profil :", e); }
+    } else {
+        // MODE INVITÉ
+        let guestId = localStorage.getItem('guest_uid') || "guest_" + Math.floor(Math.random() * 1000000);
+        localStorage.setItem('guest_uid', guestId);
+        currentUser = { uid: guestId };
+        
+        // CHANGEMENT ICI : On utilise activeGamep4
+        const localSession = localStorage.getItem('activeGamep4');
+        if (localSession) {
+            const session = JSON.parse(localSession);
+            setTimeout(() => {
+                if (confirm("Reprendre votre partie d'invité ?")) {
+                    aiLevel = session.aiLevel || "easy";
+                    window.startAiGame(session.playerColor || "red", session.board || null);
+                } else {
+                    localStorage.removeItem('activeGamep4');
+                }
+            }, 500);
         }
     }
-
-    // Mise à jour de l'affichage du nom si l'élément existe
-    const myLabel = document.getElementById('my-label');
-    if (myLabel) myLabel.textContent = myName.toUpperCase();
 });
 
 // --- GESTION DES STATS ---
 async function recordResult(result, type) {
-    if (!currentUser?.uid || currentUser.uid.startsWith('guest')) return;
+    // On ne sauvegarde les stats QUE si ce n'est pas un invité
+    if (!currentUser || currentUser.uid.startsWith('guest')) return;
     
-    const statsRef = ref(db, `users/${currentUser.uid}/games/p4/stats/${type}`);
-    const snap = await get(statsRef);
-    const data = snap.exists() ? snap.val() : { wins: 0, losses: 0, draws: 0 };
+    try {
+        const statsRef = ref(db, `users/${currentUser.uid}/games/p4/stats/${type}`);
+        const snap = await get(statsRef);
+        const data = snap.exists() ? snap.val() : { wins: 0, losses: 0, draws: 0 };
 
-    if (result === 'win') data.wins++;
-    else if (result === 'loss') data.losses++;
-    else data.draws++;
+        if (result === 'win') data.wins++;
+        else if (result === 'loss') data.losses++;
+        else data.draws++;
 
-    await set(statsRef, data);
-    
-    // Affichage dans la modal
-    const recordStatus = document.getElementById('record-status');
-    if (recordStatus) {
-        if (result === 'win') recordStatus.innerText = "📈 Victoire enregistrée ! (+1 Win)";
-        else if (result === 'loss') recordStatus.innerText = "📉 Défaite enregistrée...";
-        else recordStatus.innerText = "🤝 Match nul enregistré.";
-    }
+        await set(statsRef, data);
+        
+        const recordStatus = document.getElementById('record-status');
+        if (recordStatus) {
+            if (result === 'win') recordStatus.innerText = "📈 Victoire enregistrée !";
+            else if (result === 'loss') recordStatus.innerText = "📉 Défaite enregistrée.";
+            else recordStatus.innerText = "🤝 Match nul enregistré.";
+        }
+    } catch (e) { console.error("Erreur stats:", e); }
 }
 
 // --- NAVIGATION INTERFACE ---
@@ -298,69 +321,92 @@ window.selectDifficulty = (level) => {
 
 // --- LOGIQUE MULTIJOUEUR ---
 window.joinRoom = async () => {
-    const roomInput = document.getElementById('roomInput').value.trim().toUpperCase();
+    // 🛡️ SÉCURITÉ : Vérifier si l'utilisateur est initialisé (connecté ou invité)
+    if (!currentUser || !currentUser.uid) {
+        alert("Initialisation de votre profil en cours... Réessayez dans un instant.");
+        return;
+    }
+
+    const roomInputEl = document.getElementById('roomInput');
+    const roomInput = roomInputEl ? roomInputEl.value.trim().toUpperCase() : "";
+    
     if (!roomInput) return alert("Code requis");
     
     currentRoom = roomInput;
     isAiGame = false;
 
-    if (currentUser && !currentUser.uid.startsWith('guest')) {
-        update(ref(db, `users/${currentUser.uid}/session`), {
-            currentRoom: currentRoom,
-            isAiGame: false,
-            timestamp: Date.now()
-        });
+    // Sauvegarde de session uniquement pour les profils réels (Firebase)
+    if (!currentUser.uid.startsWith('guest')) { 
+        try {
+            update(ref(db, `users/${currentUser.uid}/games/p4/activeGame`), {
+                currentRoom: currentRoom,
+                isAiGame: false,
+                timestamp: Date.now()
+            });
+        } catch (e) {
+            console.warn("Erreur sauvegarde session profil:", e);
+        }
     }
 
     const roomRef = ref(db, `rooms/p4_${currentRoom}`);
 
-    // --- DANS window.joinRoom ---
-    await runTransaction(roomRef, (room) => {
-        if (!room) {
-            // Création de la salle (Joueur 1)
-            return {
-                board: Array(6).fill(0).map(() => Array(7).fill(0)),
-                turn: 1,
-                p1: { uid: currentUser.uid, name: myName },
-                p2: null,
-                status: 'waiting',
-                recorded: false,
-                lastMove: null
-            };
-        } 
+    try {
+        await runTransaction(roomRef, (room) => {
+            // Si la room n'existe pas, on la crée (Joueur 1)
+            if (!room) {
+                return {
+                    board: Array(6).fill(0).map(() => Array(7).fill(0)),
+                    turn: 1,
+                    p1: { uid: currentUser.uid, name: myName },
+                    p2: null,
+                    status: 'waiting',
+                    recorded: false,
+                    lastMove: null
+                };
+            } 
+            
+            // Si on est déjà dans la partie (reconnexion/refresh)
+            if (room.p1.uid === currentUser.uid || (room.p2 && room.p2.uid === currentUser.uid)) {
+                return room; 
+            }
+
+            // Si la place Joueur 2 est libre, on la prend
+            if (!room.p2) {
+                room.p2 = { uid: currentUser.uid, name: myName };
+                room.status = 'playing';
+                return room;
+            }
+
+            // Si la room est pleine et qu'on n'est pas dedans
+            alert("Ce salon est déjà plein.");
+            return; 
+        });
+
+        // Gestion de la déconnexion
+        onDisconnect(roomRef).update({ status: 'aborted' });
         
-        // Si la salle existe et que je ne suis pas déjà le P1
-        if (!room.p2 && room.p1.uid !== currentUser.uid) {
-            // Le joueur 2 rejoint
-            room.p2 = { uid: currentUser.uid, name: myName };
-            room.status = 'playing'; // On déclenche le début du jeu ici
-            return room;
-        }
+        // Écoute des changements de la room
+        onValue(roomRef, (snap) => {
+            const data = snap.val();
+            if (data) updateUI(data);
+        });
 
-        // Si la salle est déjà pleine ou que je rafraîchis la page (je suis déjà p1 ou p2)
-        if (room.p1.uid === currentUser.uid || (room.p2 && room.p2.uid === currentUser.uid)) {
-            return room; 
-        }
+        showGame(true);
 
-        return; // Salle pleine (ne rien faire)
-    });
-
-    // Indiquer la salle comme interrompue si l'un des joueurs perd la connexion
-    onDisconnect(roomRef).update({ status: 'aborted' });
-
-    // Écoute des mises à jour
-    onValue(roomRef, (snap) => {
-        const data = snap.val();
-        if (data) updateUI(data);
-    });
-
-    showGame(true);
+    } catch (error) {
+        console.error("Erreur lors de la jonction au salon:", error);
+        alert("Impossible de rejoindre le salon.");
+    }
 };
 
 window.leaveRoom = async () => {
     // --- NETTOYAGE FIREBASE ---
     if (currentUser?.uid && !currentUser.uid.startsWith('guest')) {
-        await remove(ref(db, `users/${currentUser.uid}/session`));
+        // Nettoyage profil
+        await remove(ref(db, `users/${currentUser.uid}/games/p4/activeGame`));
+    } else {
+        // Nettoyage invité
+        localStorage.removeItem('activeGamep4');
     }
 
     if (currentRoom && !isAiGame) {
@@ -471,22 +517,20 @@ window.startAiGame = (playerColor, savedBoard = null) => {
     const aiColor = (playerColor === 'red' ? 'yellow' : 'red');
     currentRoom = "SOLO_IA";
 
-    // Sauvegarde de l'état de base dans la session
-    if (currentUser?.uid) {
-        update(ref(db, `users/${currentUser.uid}/session`), {
+    // Sauvegarde session IA (Profils uniquement)
+    if (currentUser && !currentUser.uid.startsWith('guest')) {
+        update(ref(db, `users/${currentUser.uid}/games/p4/activeGame`), {
             isAiGame: true,
             playerColor: playerColor,
             aiLevel: aiLevel,
             timestamp: Date.now(),
-            // On ne stocke pas le board ici pour ne pas alourdir la session
         });
     }
     showGame(true);
 
-    let playerStarts = (lastWinner === null) ? Math.random() > 0.5 : (lastWinner === 'ia'); 
+    let playerStarts = (lastWinner === null) ? Math.random() > 0.5 : (lastWinner === 'ia' ? false : true); 
 
     currentGameState = {
-        // --- MODIFICATION ICI : Restaurer le board si présent ---
         board: savedBoard || Array(6).fill(0).map(() => Array(7).fill(0)),
         turn: 1, 
         p1: { 
@@ -503,18 +547,12 @@ window.startAiGame = (playerColor, savedBoard = null) => {
         recorded: false
     };
     
-    // Si on a restauré un board, il faut recalculer à qui est le tour
     if (savedBoard) {
-        const counts = savedBoard.flat().reduce((acc, val) => {
-            if (val !== 0) acc++;
-            return acc;
-        }, 0);
+        const counts = savedBoard.flat().reduce((acc, val) => (val !== 0 ? acc + 1 : acc), 0);
         currentGameState.turn = (counts % 2 === 0) ? 1 : 2;
     }
 
     updateUI(currentGameState);
-    
-    // Si c'est au tour de l'IA après restauration ou au début
     const activePlayer = currentGameState.turn === 1 ? currentGameState.p1 : currentGameState.p2;
     if (activePlayer.uid === 'ia') setTimeout(() => makeAiMove(), 600);
 };
@@ -557,25 +595,58 @@ function applyMove(row, col, playerNum) {
     lastMove = { r: row, c: col };
     currentGameState.board[row][col] = playerNum;
 
-    if (currentUser?.uid && isAiGame) {
-        set(ref(db, `users/${currentUser.uid}/session/board`), currentGameState.board);
+    // --- PRÉPARATION DES DONNÉES DE SAUVEGARDE ---
+    const sessionData = {
+        board: currentGameState.board,
+        isAiGame: isAiGame,
+        playerColor: currentUserColor,
+        aiLevel: aiLevel,
+        currentRoom: currentRoom,
+        timestamp: Date.now()
+    };
+
+    // --- SAUVEGARDE DE LA PARTIE EN COURS ---
+    if (currentUser && !currentUser.uid.startsWith('guest')) {
+        // Sauvegarde PROFIL (Firebase)
+        update(ref(db, `users/${currentUser.uid}/games/p4/activeGame`), sessionData);
+    } else {
+        // Sauvegarde INVITÉ (LocalStorage)
+        localStorage.setItem('activeGamep4', JSON.stringify(sessionData));
     }
-    
+
+    // --- LOGIQUE DE VICTOIRE ET FIN DE PARTIE ---
     if (checkWin(row, col, currentGameState.board)) {
         currentGameState.status = 'finished';
-        // Détermine si le gagnant est l'utilisateur ou l'IA
-        currentGameState.winnerUid = playerNum === (currentGameState.p1.uid === currentUser.uid ? 1 : 2) ? currentUser.uid : 'ia';
         
-        // --- LIGNE À AJOUTER ICI ---
+        // Détermination du gagnant (UID du joueur ou 'ia')
+        const isPlayerP1 = currentGameState.p1.uid === currentUser.uid;
+        const myNum = isPlayerP1 ? 1 : 2;
+        currentGameState.winnerUid = (playerNum === myNum) ? currentUser.uid : 'ia';
         lastWinner = currentGameState.winnerUid; 
-        // ---------------------------
+
+        // NETTOYAGE : La partie est finie, on supprime la sauvegarde
+        if (currentUser.uid.startsWith('guest')) {
+            localStorage.removeItem('activeGamep4');
+        } else {
+            remove(ref(db, `users/${currentUser.uid}/games/p4/activeGame`));
+        }
 
     } else if (currentGameState.board[0].every(c => c !== 0)) {
+        // CAS DE MATCH NUL
         currentGameState.status = 'draw';
-        lastWinner = null; // Optionnel : match nul, on pourra repartir sur du hasard
+        
+        // NETTOYAGE
+        if (currentUser.uid.startsWith('guest')) {
+            localStorage.removeItem('activeGamep4');
+        } else {
+            remove(ref(db, `users/${currentUser.uid}/games/p4/activeGame`));
+        }
+
     } else {
+        // LA PARTIE CONTINUE : Changement de tour
         currentGameState.turn = currentGameState.turn === 1 ? 2 : 1;
     }
+
     updateUI(currentGameState);
 }
 
@@ -726,7 +797,7 @@ function updateUI(game) {
         const won = game.winnerUid === currentUser.uid;
         const typeStats = isAiGame ? `ia_${aiLevel}` : 'online';
         if (currentUser?.uid && !currentUser.uid.startsWith('guest')) {
-            remove(ref(db, `users/${currentUser.uid}/session`));
+            remove(ref(db, `users/${currentUser.uid}/games/p4/activeGame`));
         }
         if(turnEl) turnEl.innerText = game.status === 'draw' ? "Match nul !" : (won ? "🏆 VICTOIRE !" : "💀 DÉFAITE...");
 
