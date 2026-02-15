@@ -284,59 +284,76 @@ const difficultySelect = document.getElementById('difficulty');
 // --- LOGIQUE DE PERSISTANCE ---
 
 async function saveSession() {
-    if (!currentUserUid || !notes.length) return; // Sécurité si notes n'est pas encore prêt
-    
-    // On s'assure que chaque Set est bien converti en Array
+    // Préparation des données communes
     const serializableNotes = notes.map(row => 
         row.map(cellSet => Array.from(cellSet || []))
     );
 
-    try {
-        await set(ref(db, `users/${currentUserUid}/games/sudoku/session`), {
-            puzzle: puzzle,
-            solution: solution,
-            state: state,
-            seconds: seconds,
-            difficulty: difficultySelect.value,
-            notes: serializableNotes,
-            timestamp: new Date().toISOString()
-        });
-    } catch (e) { 
-        console.error("Erreur sauvegarde session:", e); 
+    const sessionData = {
+        puzzle: puzzle,
+        solution: solution,
+        state: state,
+        seconds: seconds,
+        difficulty: difficultySelect.value,
+        notes: serializableNotes,
+        timestamp: new Date().toISOString()
+    };
+
+    // Cas 1 : Utilisateur connecté -> Firebase
+    if (currentUserUid) {
+        try {
+            await set(ref(db, `users/${currentUserUid}/games/sudoku/session`), sessionData);
+        } catch (e) { 
+            console.error("Erreur sauvegarde Firebase:", e); 
+        }
+    } 
+    // Cas 2 : Mode invité -> LocalStorage
+    else {
+        localStorage.setItem('sudoku_guest_session', JSON.stringify(sessionData));
     }
 }
 
 async function restoreSession() {
-    if (!currentUserUid) return false;
+    let data = null;
+
     try {
-        const snap = await get(ref(db, `users/${currentUserUid}/games/sudoku/session`));
-        if (snap.exists()) {
-            const data = snap.val();
-            
-            // 1. Restauration des variables simples
+        // 1. Récupération des données (Firebase ou Local)
+        if (currentUserUid) {
+            const snap = await get(ref(db, `users/${currentUserUid}/games/sudoku/session`));
+            if (snap.exists()) data = snap.val();
+        } else {
+            const localData = localStorage.getItem('sudoku_guest_session');
+            if (localData) data = JSON.parse(localData);
+        }
+
+        if (data) {
+            // Restauration des variables de base
             puzzle = data.puzzle;
             solution = data.solution;
             state = data.state;
             seconds = data.seconds || 0;
             difficultySelect.value = data.difficulty;
             
-            // 2. RECONSTRUCTION MANUELLE de la grille des notes
-            // On crée d'abord une grille de Sets vides 9x9
+            // 2. RECONSTRUCTION DES NOTES (La partie qui posait erreur)
             let restoredNotes = Array.from({length: 9}, () => 
                 Array.from({length: 9}, () => new Set())
             );
 
             if (data.notes) {
-                // On parcourt les données reçues de Firebase
-                // On utilise Object.entries pour être sûr de lire les bons index (r)
+                // 1. On parcourt les entrées pour garder les index réels [r]
                 Object.entries(data.notes).forEach(([r, rowData]) => {
-                    if (rowData) {
+                    const rowIndex = parseInt(r);
+                    if (rowData && rowIndex < 9) {
+                        
+                        // 2. On parcourt les entrées de la ligne pour garder les index réels [c]
                         Object.entries(rowData).forEach(([c, cellData]) => {
-                            // Si cellData contient des chiffres (le tableau converti en Set)
-                            if (Array.isArray(cellData) && cellData.length > 0) {
+                            const colIndex = parseInt(c);
+                            if (Array.isArray(cellData) && colIndex < 9) {
+                                
+                                // 3. On remplit le Set à la position exacte
                                 cellData.forEach(num => {
-                                    if (restoredNotes[r] && restoredNotes[r][c]) {
-                                        restoredNotes[r][c].add(Number(num));
+                                    if (restoredNotes[rowIndex] && restoredNotes[rowIndex][colIndex]) {
+                                        restoredNotes[rowIndex][colIndex].add(Number(num));
                                     }
                                 });
                             }
@@ -345,16 +362,15 @@ async function restoreSession() {
                 });
             }
             
-            // On assigne la grille reconstruite à la variable globale
             notes = restoredNotes;
             
-            // 3. Affichage
+            // 3. Application du rendu
             renderGrid();
             startTimer(true);
             return true;
         }
     } catch (e) { 
-        console.error("Erreur restauration critique:", e); 
+        console.error("Erreur restauration détaillée:", e); 
     }
     return false;
 }
@@ -366,8 +382,11 @@ async function initGame() {
     generateSudoku();
     renderGrid();
     startTimer();
-    // Quand on force un nouveau jeu, on supprime l'ancienne session
-    if (currentUserUid) await remove(ref(db, `users/${currentUserUid}/games/sudoku/session`));
+    if (currentUserUid) {
+        await remove(ref(db, `users/${currentUserUid}/games/sudoku/session`));
+    } else {
+        localStorage.removeItem('sudoku_guest_session'); // Nettoyage local
+    }
 }
 
 function generateSudoku() {
@@ -556,7 +575,7 @@ function startTimer(resume = false) {
     }, 1000);
 }
 
-// --- FONCTION CHECKWIN AMÉLIORÉE ---
+// --- FONCTION CHECKWIN AMÉLIORÉE AVEC STATS ---
 async function checkWin() {
     let errors = document.querySelectorAll('.cell.error').length;
     let full = state.flat().every(v => v !== 0);
@@ -564,28 +583,53 @@ async function checkWin() {
     if (full && errors === 0) {
         clearInterval(timerInterval);
         const finalSeconds = seconds;
-        const difficulty = difficultySelect.value;
         
-        // 1. Supprimer la session en cours
+        // RECUPÉRATION DE LA DIFFICULTÉ RÉELLE
+        // On s'assure d'avoir la valeur au moment précis de la victoire
+        const diffValue = document.getElementById('difficulty').value;
+        
+        // Traduction optionnelle pour avoir des noms clairs dans Firebase
+        const diffNames = { "35": "facile", "45": "moyen", "55": "difficile" };
+        const diffKey = diffNames[diffValue] || diffValue;
+
         if (currentUserUid) {
+            // 1. Supprimer la session
             await remove(ref(db, `users/${currentUserUid}/games/sudoku/session`));
-        }
 
-        // 2. Gérer le record
-        let isRecord = false;
-        if (currentUserUid) {
-            const recordPath = `users/${currentUserUid}/games/sudoku/records/${difficulty}`;
-            const snap = await get(ref(db, recordPath));
-            const oldRecord = snap.exists() ? snap.val() : Infinity;
+            // 2. Chemin spécifique à la difficulté : .../stats/facile/
+            const statsPath = `users/${currentUserUid}/games/sudoku/stats/${diffKey}`;
+            
+            try {
+                const snap = await get(ref(db, statsPath));
+                let stats = snap.exists() ? snap.val() : { 
+                    bestTime: Infinity, 
+                    gamesWon: 0, 
+                    totalTime: 0,
+                    averageTime: 0 
+                };
 
-            if (finalSeconds < oldRecord) {
-                await set(ref(db, recordPath), finalSeconds);
-                isRecord = true;
+                // Mise à jour
+                stats.gamesWon += 1;
+                stats.totalTime += finalSeconds;
+                stats.averageTime = Math.round(stats.totalTime / stats.gamesWon);
+
+                let isRecord = false;
+                if (finalSeconds < stats.bestTime) {
+                    stats.bestTime = finalSeconds;
+                    isRecord = true;
+                }
+
+                // SAUVEGARDE DANS LE DOSSIER DE DIFFICULTÉ
+                await set(ref(db, statsPath), stats);
+
+                showEndModal(finalSeconds, isRecord);
+            } catch (error) {
+                console.error("Erreur Firebase:", error);
             }
+        } else {
+            localStorage.removeItem('sudoku_guest_session');
+            showEndModal(finalSeconds, false);
         }
-
-        // 3. Afficher la modale
-        showEndModal(finalSeconds, isRecord);
     }
 }
 
@@ -612,25 +656,19 @@ document.getElementById('modalQuit').onclick = () => {
 };
 // --- INITIALISATION & ÉVÉNEMENTS ---
 
+// --- INITIALISATION & ÉVÉNEMENTS ---
+
 onAuthStateChanged(auth, async (user) => {
-    // 1. Récupérer l'UID (Firebase ou local)
-    currentUserUid = user ? user.uid : localStorage.getItem('active_uid');
+    // 1. On récupère le profil choisi dans le localStorage (priorité absolue)
+    const savedUid = localStorage.getItem('active_uid');
+    currentUserUid = savedUid || (user && !user.isAnonymous ? user.uid : null);
+
+    // 3. Tentative de restauration (la fonction restoreSession gérera Firebase vs Local toute seule)
+    const restored = await restoreSession();
     
-    if (currentUserUid) {
-        // 2. Tenter de restaurer la session
-        const restored = await restoreSession();
-        
-        // 3. SI ET SEULEMENT SI rien n'a été trouvé, on lance un nouveau jeu
-        if (!restored) {
-            console.log("Aucune session trouvée, création d'une nouvelle grille.");
-            initGame();
-        } else {
-            console.log("Session restaurée avec succès !");
-        }
-    } else {
-        // Si vraiment pas d'UID, on lance un jeu local
+    if (!restored) {
         initGame();
-    }
+    } 
 });
 
 noteBtn.onclick = () => {
