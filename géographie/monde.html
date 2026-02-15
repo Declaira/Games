@@ -1460,7 +1460,22 @@ async function handleGameOver() {
     if (rawScoreEl) rawScoreEl.textContent = `${score} / ${totalSelected}`;
 
     if (currentUserUid) {
-        // ... (ton code Firebase existant pour sauvegarder les stats) ...
+        const statsRef = ref(db, `users/${currentUserUid}/games/monde/stats`);
+        const snap = await get(statsRef);
+        let games = 1, avg = finalPercent;
+
+        if (snap.exists()) {
+            const d = snap.val();
+            games = (d.gamesPlayed || 0) + 1;
+            avg = Math.round(((d.averageScore || 0) * (games - 1) + finalPercent) / games);
+        }
+
+        await update(statsRef, { 
+            gamesPlayed: games, 
+            averageScore: avg, 
+            lastPlayed: new Date().toISOString() 
+        });
+        document.getElementById('global-average').textContent = avg;
     }
     
     document.getElementById('end-modal').style.display = 'flex';
