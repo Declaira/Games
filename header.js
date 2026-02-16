@@ -98,10 +98,10 @@ window.injectHeader = function(options = {}) {
   const loginPath = homeLink.replace('accueil.html', 'login.html');
   const comptePath = homeLink.replace('accueil.html', 'compte.html');
   const currentUrl = encodeURIComponent(window.location.href);
-  
+
   document.write(`
     ${style}
-    <header id="main-header">
+    <header id="main-header" data-default-bg="${customBackground}">
       ${showHome ? `<a href="${homeLink}" class="home-icon">${homeIcon}</a>` : ""}
       
       ${logoUrl ? `<img src="${logoUrl}" alt="${title}" class="header-logo">` : `<span class="header-title">${title}</span>`}
@@ -155,12 +155,17 @@ window.injectHeader = function(options = {}) {
 
       // --- LOGIQUE DE RESET UI ---
       const clearUI = () => {
-        localStorage.removeItem('active_uid');
-        nameEl.textContent = "Invité";
-        avatarEl.innerHTML = "👤";
-        avatarEl.style.fontSize = "24px";
-        loggedInMenu.classList.add('hidden');
-        guestMenu.classList.remove('hidden');
+          localStorage.removeItem('active_uid');
+          nameEl.textContent = "Invité";
+          avatarEl.innerHTML = "👤";
+          
+          // --- RÉCUPÉRATION DE LA VALEUR SAUVEGARDÉE ---
+          const defaultBg = header.getAttribute('data-default-bg');
+          header.style.background = defaultBg; 
+          
+          document.body.style.background = ""; 
+          loggedInMenu.classList.add('hidden');
+          guestMenu.classList.remove('hidden');
       };
 
       // --- SURVEILLANCE DE L'ÉTAT ---
@@ -183,7 +188,18 @@ window.injectHeader = function(options = {}) {
             if (snapshot.exists()) {
                 const data = snapshot.val();
                 console.log("✅ [Debug Header] Données trouvées pour :", data.username);
-                
+                if (data.theme) {
+                    if (data.theme.headerColor) {
+                        header.style.background = data.theme.headerColor;
+                    }
+                    if (data.theme.bodyColor) {
+                        // Cela appliquera soit une couleur simple (#ffffff) 
+                        // soit le linear-gradient sauvegardé
+                        document.body.style.background = data.theme.bodyColor;
+                        document.body.style.backgroundAttachment = "fixed";
+                    }
+                    
+                }
                 nameEl.textContent = data.username || "Joueur";
                 
                 if (data.avatar && data.avatar.length > 5) {

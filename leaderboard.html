@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Classement</title>
+    <link rel="icon" href="logo/logo.png" type="image/x-icon">
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Quicksand', sans-serif; background: linear-gradient(135deg,#fff3cd,#ffe5b4,#ffd1d1,#ffc4e1); margin: 0; min-height: 100vh; }
+        .main-container { max-width: 1100px; margin: 40px auto; padding: 20px; }
+        
+        h2.page-title { text-align: center; color: #333; margin-bottom: 30px; font-size: 2em; }
+        .highlight { color: #ff9a00; }
+
+        .stats-section { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); margin-bottom: 40px; }
+        .stats-section h4 { border-bottom: 2px solid #ff9a00; padding-bottom: 10px; color: #333; margin-top: 0; margin-bottom: 20px; font-size: 1.4em; }
+
+        /* Grille de 3 colonnes */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr); /* 3 colonnes horizontales */
+            gap: 20px;
+        }
+
+        /* Cartes Interactives */
+        .stat-card {
+            background: #fff;
+            border: 1px solid #eee;
+            padding: 15px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .stat-card:hover { transform: translateY(-5px); box-shadow: 0 8px 15px rgba(0,0,0,0.1); border-color: #ff9a00; }
+        .icon {
+            width: 20px;         /* Ajuste la taille selon tes besoins */
+            height: 20px;
+            vertical-align: middle; /* Aligne l'icône avec le texte */
+            margin-right: 8px;   /* Espace entre l'image et le texte */
+            object-fit: contain;
+        }
+
+        .stat-card h5 {
+            display: flex;
+            align-items: center; /* Centre verticalement le texte et l'image */
+            justify-content: center; /* Si tu veux que le titre soit centré */
+        }
+
+        /* Rangs */
+        .rank-row { display: flex; align-items: center; padding: 6px 0; border-bottom: 1px dashed #f0f0f0; font-size: 0.85em; }
+        .rank-num { width: 25px; font-weight: bold; }
+        .rank-avatar { width: 28px; height: 28px; border-radius: 50%; margin-right: 8px; border: 1px solid #eee; }
+        .rank-user { flex-grow: 1; font-weight: bold; color: #555; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .rank-score { font-weight: bold; color: #ff9a00; }
+
+        /* Détails cachés (Accordéon) */
+        .details-panel {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease-out;
+            background: #fdfdfd;
+            border-radius: 0 0 10px 10px;
+            font-size: 0.8em;
+            margin-top: 5px;
+        }
+        .stat-card.active .details-panel { max-height: 200px; padding-top: 10px; border-top: 1px solid #eee; }
+        .detail-row { display: flex; justify-content: space-between; padding: 3px 10px; color: #777; font-style: italic; }
+
+        #loading { text-align: center; font-size: 1.2em; color: #666; margin-top: 50px; }
+
+        @media (max-width: 900px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 600px) { .stats-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <script src="header.js"></script>
+    <script>injectHeader({ title: "Classement", customBackground: "linear-gradient(to right, #ff9a00, #ff4e00)" });</script>
+
+    <div class="main-container">
+        <div id="loading">Récupération des données...</div>
+
+        <div id="leaderboard-content" style="display: none;" class="stats-container">
+            <div class="stats-section">
+                <h4>🎮 Jeux</h4>
+                <div class="stats-grid" id="grid-games"></div>
+            </div>
+
+            <div class="stats-section">
+                <h4>🗺️ Géographie</h4>
+                <div class="stats-grid" id="grid-geo"></div>
+            </div>
+
+            <div class="stats-section">
+                <h4>🧩 Défis Quotidiens</h4>
+                <div class="stats-grid" id="grid-dle"></div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged, deleteUser, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+        import { getDatabase, ref, get, update, remove } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+        import { push, onValue } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyB29fMpTwBgsqkjijkNoQJ2kGChSeQDX_w",
+            authDomain: "quiz-ea203.firebaseapp.com",
+            databaseURL: "https://quiz-ea203-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "quiz-ea203",
+            storageBucket: "quiz-ea203.firebasestorage.app",
+            messagingSenderId: "605137421110",
+            appId: "1:605137421110:web:289e0876fe06108deaa997"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+
+        let userUID = null;
+        let base64Image = null;
+
+        const formatTime = (s) => (s && s !== Infinity) ? `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}` : "--:--";
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const snap = await get(ref(db, 'users'));
+            if (snap.exists()) {
+                const users = Object.entries(snap.val()).map(([uid, d]) => ({ uid, ...d }));
+                renderAll(users);
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('leaderboard-content').style.display = 'block';
+            }
+        });
+
+        function renderAll(users) {
+            const containers = {
+                game: document.getElementById('grid-games'),
+                geo: document.getElementById('grid-geo'),
+                dle: document.getElementById('grid-dle')
+            };
+
+            
+            // --- 1. PUISSANCE 4 (IA Easy/Hard + Online) ---
+            const p4Data = users.map(u => {
+                const s = u.games?.p4?.stats || u.games?.p4 || {};
+                const easy = parseInt(s.ia_easy?.wins || 0);
+                const hard = parseInt(s.ia_hard?.wins || 0);
+                const online = parseInt(s.online?.wins || 0);
+                return { 
+                    name: u.username, avatar: u.avatar, total: easy + hard + online, 
+                    display: `${easy + hard + online} Victoires`,
+                    details: { "IA Facile": easy, "IA Difficile": hard, "En Ligne": online } 
+                };
+            }).filter(u => u.total > 0).sort((a,b) => b.total - a.total).slice(0,3);
+            appendCard(containers.game, "🟡 Puissance 4 🔴", p4Data);
+
+            // --- 2. BATAILLE NAVALE (IA + Online) ---
+            const bnData = users.map(u => {
+                const s = u.games?.bn?.stats || u.games?.bn || {};
+                const ia = parseInt(s.ia?.wins || s.ia?.played || 0); // Ajuste selon si tu veux victoires ou parties
+                const online = parseInt(s.online?.wins || 0);
+                return { 
+                    name: u.username, avatar: u.avatar, total: ia + online, 
+                    display: `${ia + online} Victoires`,
+                    details: { "Contre IA": ia, "En Ligne": online } 
+                };
+            }).filter(u => u.total > 0).sort((a,b) => b.total - a.total).slice(0,3);
+            appendCard(containers.game, "⚓ Bataille Navale", bnData);
+
+            // --- 3. SUDOKU ---
+            const sudokuData = users.map(u => {
+                // On vérifie tous les chemins possibles : u.games.sudoku.stats OU u.games.sudoku
+                const s = (u.games?.sudoku?.stats) || (u.games?.sudoku) || {};
+                
+                // On récupère les victoires pour chaque mode
+                const easyWin = parseInt(s.facile?.gamesWon || s.facile?.wins || 0);
+                const medWin = parseInt(s.moyen?.gamesWon || s.moyen?.wins || 0);
+                const hardWin = parseInt(s.difficile?.gamesWon || s.difficile?.wins || 0);
+                
+                const totalWins = easyWin + medWin + hardWin;
+
+                return {
+                    name: u.username,
+                    avatar: u.avatar,
+                    total: totalWins,
+                    display: `${totalWins} Victoires`,
+                    details: {
+                        "Victoire Facile": formatTime(s.facile?.gamesWon),
+                        "Record Facile": formatTime(s.facile?.bestTime),
+                        "Victoire Moyen": formatTime(s.moyen?.gamesWon),
+                        "Record Moyen": formatTime(s.moyen?.bestTime),
+                        "Victoire Difficile": formatTime(s.difficile?.gamesWon),
+                        "Record Difficile": formatTime(s.difficile?.bestTime)
+                    }
+                };
+            }).filter(u => u.total > 0)
+            .sort((a, b) => b.total - a.total)
+            .slice(0, 3);
+
+            console.log("Data Sudoku:", sudokuData); // Pour déboguer
+            appendCard(containers.game, "🔢 Sudoku", sudokuData);
+
+            // --- 4. GÉOGRAPHIE ---
+            const geoConfigs = [
+                { key: 'nature', label: '🧭 Carte Géographie' },
+                { key: 'monde', label: '🌍 Carte du Monde' },
+                { key: 'france', label: '🥖 Carte de France' }
+            ];
+
+            geoConfigs.forEach(conf => {
+                const data = users.map(u => {
+                    const s = u.games?.[conf.key]?.stats || u.games?.[conf.key] || {};
+                    
+                    // Récupération des parties jouées pour le classement
+                    const played = parseInt(s.gamesPlayed || s.played || 0);
+                    
+                    // Récupération du score moyen pour les détails
+                    const avg = s.averageScore !== undefined ? Math.round(s.averageScore) : 0;
+
+                    return { 
+                        name: u.username, 
+                        avatar: u.avatar, 
+                        total: played, 
+                        display: `${played} Parties`,
+                        details: {
+                            "Score Moyen": `${avg} %`,
+                            "Total Victoires": played,
+                        }
+                    };
+                })
+                .filter(u => u.total > 0)
+                .sort((a, b) => b.total - a.total)
+                .slice(0, 3);
+
+                appendCard(containers.geo, conf.label, data);
+            });
+
+            // --- 5. DLE ---
+            const dleConfigs = [
+                { 
+                    key: 'onepiece', 
+                    label: '<img src="Defis_Quotidiens/images_onepiece/icone.png" alt="OP" class="icon"> OnePieceDLE' 
+                },
+                { 
+                    key: 'pokemon', 
+                    label: '<img src="Defis_Quotidiens/images_pokemon/pokeball.png" alt="PKM" class="icon"> PokémonDLE' 
+                },
+                { 
+                    key: 'football', 
+                    label: '⚽ FootballDLE' 
+                }
+            ];
+
+            dleConfigs.forEach(conf => {
+                const data = users.map(u => {
+                    const s = u.games?.[conf.key]?.stats || u.games?.[conf.key] || {};
+                    
+                    // Données demandées
+                    const played = parseInt(s.gamesPlayed || 0);
+                    const wins = parseInt(s.wins || 0);
+                    const losses = parseInt(s.losses || 0);
+                    const avg = s.avgAttempts !== undefined ? parseFloat(s.avgAttempts).toFixed(1) : "N/A";
+
+                    return { 
+                        name: u.username, 
+                        avatar: u.avatar, 
+                        total: played, 
+                        display: `${played} Parties`,
+                        details: {
+                            "Moyenne d'essais": avg,
+                            "Victoires": wins,
+                            "Défaites": losses,
+                            "Parties totales": played
+                        } 
+                    };
+                })
+                .filter(u => u.total > 0)
+                .sort((a, b) => b.total - a.total)
+                .slice(0, 3);
+
+                appendCard(containers.dle, conf.label, data);
+            });
+        }
+
+        function appendCard(container, title, topPlayers, isTime = false) {
+            const card = document.createElement('div');
+            card.className = 'stat-card';
+            card.onclick = () => card.classList.toggle('active');
+
+            let rows = topPlayers.map((p, i) => `
+                <div class="rank-row">
+                    <span class="rank-num">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</span>
+                    <img src="${p.avatar || 'https://api.dicebear.com/7.x/bottts/svg?seed='+p.name}" class="rank-avatar">
+                    <span class="rank-user">${p.name}</span>
+                    <span class="rank-score">${p.display || p.total}</span>
+                </div>
+            `).join('');
+
+            // Génération des détails si présents
+            let detailsHtml = "";
+            if (topPlayers[0]?.details) {
+                detailsHtml = `<div class="details-panel"><div style="font-weight:bold; padding:0 10px 5px 10px;">Détails du N°1 :</div>`;
+                Object.entries(topPlayers[0].details).forEach(([label, val]) => {
+                    detailsHtml += `<div class="detail-row"><span>${label}</span> <span>${val}</span></div>`;
+                });
+                detailsHtml += `</div><div style="font-size:0.6em; text-align:center; color:#aaa; margin-top:5px;">(Cliquez pour voir les détails)</div>`;
+            }
+
+            card.innerHTML = `<h5>${title}</h5>${rows}${detailsHtml}`;
+            container.appendChild(card);
+        }
+    </script>
+</body>
+</html>

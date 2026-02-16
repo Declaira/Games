@@ -48,8 +48,57 @@
 
         /* Personnalisation */
         .perso-item { margin-bottom: 25px; text-align: left; background: #fffaf0; padding: 15px; border-radius: 15px; }
+        .theme-preset, .custom-bubble div {
+            border: 2px solid white !important;
+            transition: all 0.3s ease;
+        }
+
+        /* Effet au survol (Hover) */
+        .theme-preset:hover, .custom-bubble div:hover {
+            border-color: #ff9a00 !important;
+            transform: scale(1.05);
+        }
+
+        /* Style quand sélectionné (Appliqué par le JS) */
+        .theme-preset.selected, .custom-bubble div.selected {
+            border-color: #ff9a00 !important;
+            transform: scale(1.1);
+            box-shadow: 0 0 12px rgba(255, 154, 0, 0.4);
+            z-index: 5;
+        }
         .bg-preview { width: 100%; height: 120px; background-size: cover; background-position: center; border-radius: 10px; margin-top: 10px; border: 2px dashed #ff9a00; }
         .hidden { display: none !important; }
+        .bg-selection-grid {
+        display: flex; 
+        gap: 12px; 
+        align-items: center;
+        padding: 5px 10px;
+        margin: -5px 0;    
+        overflow-x: auto; 
+        scrollbar-width: none;
+        }
+        .mini-bg {
+            width: 60px;
+            height: 40px;
+            object-fit: cover;
+            border-radius: 6px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: 0.2s;
+        }
+        .mini-bg:hover { transform: scale(1.1); border-color: #ff9a00; }
+        .mini-bg.selected { border-color: #ff9a00; box-shadow: 0 0 5px rgba(255,154,0,0.5); }
+        .tab-btn{
+            height: 35px; 
+            padding: 0 12px; 
+            font-size: 0.75em; 
+            white-space: nowrap; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            margin: 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
     </style>
 </head>
 <body>
@@ -114,27 +163,105 @@
         </div>
     </div>
 </div>
+<div id="tab-perso" class="tab-content">
+    <h3>Fonds d'écran personnalisés</h3>
 
-            <div id="tab-perso" class="tab-content">
-                <h3>Fonds d'écran personnalisés</h3>
-                <div id="perso-display">
-                    <div class="perso-item">
-                        <strong>OnepieceDle</strong>
-                        <div id="bg-onepiece" class="bg-preview"></div>
-                    </div>
-                    <div class="perso-item">
-                        <strong>PokemonDle</strong>
-                        <div id="bg-pokemon" class="bg-preview"></div>
-                    </div>
-                </div>
+    <div class="perso-item">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <strong>🎨 Mes Thèmes</strong>
+        <button id="toggle-manual" onclick="toggleManualSettings()" style="background: #ff9a00; color: white; border: none; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-weight: bold; font-size: 1.2em; display: flex; align-items: center; justify-content: center;">+</button>
+    </div>
+
+    <div id="themes-container" style="display: flex; gap: 12px; margin: 15px 0; flex-wrap: wrap; align-items: center;">
+        <div class="theme-preset" 
+            data-bg="linear-gradient(135deg,#fff3cd,#ffe5b4,#ffd1d1,#ffc4e1)"
+            onclick="setFullTheme('linear-gradient(to right, #ff9a00, #ff4e00)', 'linear-gradient(135deg,#fff3cd,#ffe5b4,#ffd1d1,#ffc4e1)', '#ff6f00')" 
+            style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg,#fff3cd,#ffc4e1); cursor: pointer; border: 2px solid white;"></div>
+
+        <div class="theme-preset" 
+            data-bg="linear-gradient(135deg, #1d2b64, #f8cdda)"
+            onclick="setFullTheme('#1d2b64', 'linear-gradient(135deg, #1d2b64, #f8cdda)', '#1d2b64')" 
+            style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #1d2b64, #f8cdda); cursor: pointer; border: 2px solid white;"></div>
+        <div id="custom-presets-list" style="display: flex; gap: 12px;"></div>
+    </div>
+
+    <div id="manual-settings" class="hidden" style="border-top: 1px solid #eee; margin-top: 15px; padding-top: 15px;">
+        <div style="display: flex; gap: 15px; align-items: center; justify-content: space-around;">
+            <div style="text-align: center;">
+                <span style="font-size: 0.7em; display: block;">Header</span>
+                <input type="color" id="color-header" value="#ff9a00" style="width: 35px; height: 35px; cursor: pointer; border: none; background: none;">
             </div>
+            <div style="text-align: center;">
+                <span style="font-size: 0.7em; display: block;">Fond H.</span>
+                <input type="color" id="color-body-1" value="#ffffff" style="width: 35px; height: 35px; cursor: pointer; border: none; background: none;">
+            </div>
+            <div style="text-align: center;">
+                <span style="font-size: 0.7em; display: block;">Fond B.</span>
+                <input type="color" id="color-body-2" value="#000000" style="width: 35px; height: 35px; cursor: pointer; border: none; background: none;">
+            </div>
+            <div style="text-align: center;">
+                <span style="font-size: 0.7em; display: block;">Boutons</span>
+                <input type="color" id="color-btn" value="#ff6f00" style="width: 35px; height: 35px; cursor: pointer; border: none; background: none;">
+            </div>
+            <button onclick="saveNewPreset()" style="background: #27ae60; color: white; border: none; padding: 8px 15px; border-radius: 20px; font-size: 0.8em; font-weight: bold; cursor: pointer;">💾 Enregistrer</button>
         </div>
     </div>
+</div>
+    
+    <div class="perso-item">
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 15px; margin-bottom: 10px;">
+            <strong style="min-width: fit-content;">PokémonDLE</strong>
+            
+            <div class="bg-selection-grid">
+                <img src="Defis_quotidiens/images_pokemon/bg1.png" class="mini-bg" data-game="pokemon" data-path="images_pokemon/bg1.png">
+                <img src="Defis_quotidiens/images_pokemon/bg2.png" class="mini-bg" data-game="pokemon" data-path="images_pokemon/bg2.png">
+                <img src="Defis_quotidiens/images_pokemon/bg3.png" class="mini-bg" data-game="pokemon" data-path="images_pokemon/bg3.png">
+                
+                <label class="mini-bg upload-label" style="display: flex; align-items: center; justify-content: center; background: #eee; border: 2px dashed #ccc; cursor: pointer; min-width: 50px; height: 35px; font-size: 16px; border-radius: 6px;">
+                    📂 <input type="file" class="bg-upload-input" data-game="pokemon" hidden accept="image/*">
+                </label>
+            </div>
+
+            <button class="tab-btn" onclick="openFullscreen('pokemon')">⛶ Plein écran</button>
+        </div>
+        
+        <div id="bg-pokemon" class="bg-preview" style="height: 80px; background-color: #f9f9f9;"></div>
+    </div>
+
+    <div class="perso-item">
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 15px; margin-bottom: 10px;">
+            <strong style="min-width: fit-content;">OnepieceDLE</strong>
+            
+            <div class="bg-selection-grid">
+                <img src="Defis_quotidiens/images_onepiece/bg2.png" class="mini-bg" data-game="onepiece" data-path="images_onepiece/bg2.png">
+                <img src="Defis_quotidiens/images_onepiece/bg.png" class="mini-bg" data-game="onepiece" data-path="images_onepiece/bg.png">
+                <img src="Defis_quotidiens/images_onepiece/bg1.png" class="mini-bg" data-game="onepiece" data-path="images_onepiece/bg1.png">
+                
+                <label class="mini-bg upload-label" style="display: flex; align-items: center; justify-content: center; background: #eee; border: 2px dashed #ccc; cursor: pointer; min-width: 50px; height: 35px; font-size: 16px; border-radius: 6px;">
+                    📂 <input type="file" class="bg-upload-input" data-game="onepiece" hidden accept="image/*">
+                </label>
+            </div>
+
+            <button class="tab-btn" onclick="openFullscreen('onepiece')">⛶ Plein écran</button>
+        </div>
+        
+        <div id="bg-onepiece" class="bg-preview" style="height: 80px; background-color: #f9f9f9;"></div>
+    </div>
+
+
+</div>
+
+<div id="fullscreenModal" style="display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.9); align-items:center; justify-content:center; cursor:pointer;" onclick="this.style.display='none'">
+    <img id="fullscreenImg" src="" style="max-width:90%; max-height:90%; border-radius:10px; box-shadow: 0 0 20px rgba(255,255,255,0.2);">
+    <span style="position:absolute; top:20px; right:30px; color:white; font-size:40px;">&times;</span>
+</div>
+        </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, deleteUser, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
         import { getDatabase, ref, get, update, remove } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+        import { push, onValue } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyB29fMpTwBgsqkjijkNoQJ2kGChSeQDX_w",
@@ -157,52 +284,65 @@
         window.switchTab = (tabId) => {
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            
             document.getElementById('tab-' + tabId).classList.add('active');
-            event.currentTarget.classList.add('active');
+            
+            // Correction ici : on cible le bouton cliqué via l'événement ou le sélecteur
+            const clickedBtn = document.querySelector(`.tab-btn[onclick="switchTab('${tabId}')"]`);
+            if(clickedBtn) clickedBtn.classList.add('active');
+
+            // Sauvegarde dans le navigateur
+            localStorage.setItem('active_tab', tabId);
         };
+        // --- RÉCUPÉRATION DE L'ONGLET AU CHARGEMENT ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedTab = localStorage.getItem('active_tab');
+            if (savedTab) {
+                // On simule un clic sur l'onglet sauvegardé
+                switchTab(savedTab);
+            }
+        });
 
         onAuthStateChanged(auth, async (user) => {
+    // FORCE la même logique que le header : Priorité au profil choisi
     const savedUid = localStorage.getItem('active_uid');
-    if (!savedUid) {
-        window.location.href = 'login.html';
-        return;
-    }
+    
+    // Si on a un profil choisi, on ignore l'UID technique de Firebase
+    const uidToFetch = savedUid || (user ? user.uid : null);
 
-    userUID = savedUid; 
+    if (uidToFetch) {
+        console.log("🆔 ID Actuel (Page Compte) :", uidToFetch);
+        userUID = uidToFetch; 
+        loadCustomPresets();
 
-    try {
-        const snapshot = await get(ref(db, `users/${userUID}`));
-        if (snapshot.exists()) {
-            const data = snapshot.val();
-            
-            // Affichage Pseudo
-            document.getElementById('display-pseudo').textContent = data.username || "Sans nom";
-            document.getElementById('new-pseudo').value = data.username || "";
-            
-            // Affichage Avatar
-            const displayCont = document.getElementById('display-avatar-container');
-            const editCont = document.getElementById('edit-pic-preview-container');
-            
-            if (data.avatar && data.avatar.startsWith('data:image')) {
-                const imgHtml = `<img src="${data.avatar}" class="profile-pic" style="margin:0">`;
-                displayCont.innerHTML = imgHtml;
-                editCont.innerHTML = imgHtml;
-                base64Image = data.avatar;
+        try {
+            const snapshot = await get(ref(db, `users/${uidToFetch}`));
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                if (data.theme) {
+                    applyTheme(data.theme);
+                }
+                loadProfile(data); // Affiche pseudo et avatar
+                if (data.games) {
+                    loadStats(data.games);
+                    loadSettings(data.games);
+                }
             } else {
-                const icon = data.avatar || "👤";
-                displayCont.innerHTML = `<span>${icon}</span>`;
-                editCont.innerHTML = `<span>${icon}</span>`;
+                console.warn("⚠️ Ce profil n'a pas de données dans la DB.");
             }
-
-            if (data.games) {
-                loadStats(data.games);
-                loadSettings(data.games);
-            }
+        } catch (error) {
+            console.error("❌ Erreur de chargement :", error);
         }
-    } catch (error) {
-        console.error("Erreur:", error);
+    } else {
+        // Si vraiment aucun ID (ni choisi, ni session), retour au login
+        window.location.href = 'login.html';
     }
+    
+    // Cache le loader
+    const loader = document.getElementById('loading');
+    if (loader) loader.style.display = 'none';
 });
+
         function loadProfile(data) {
             // 1. Mise à jour du pseudo dans l'input (Mode Édition)
             const inputPseudo = document.getElementById('new-pseudo');
@@ -224,129 +364,415 @@
             if (picEdit) picEdit.src = avatarSource;
         }
 
-    function loadStats(games) {
-        const categories = {
-            game: document.getElementById('stats-game'),
-            geo: document.getElementById('stats-geo'),
-            dle: document.getElementById('stats-dle')
-        };
+function loadStats(games) {
+    const categories = {
+        game: document.getElementById('stats-game'),
+        geo: document.getElementById('stats-geo'),
+        dle: document.getElementById('stats-dle')
+    };
 
-        // On vide les conteneurs
-        Object.values(categories).forEach(c => c.innerHTML = "");
+    const translations = {
+        "played": "Parties Jouées",
+        "wins": "Victoires",
+        "losses": "Défaites",
+        "draws": "Matchs Nuls",
+        "averageScore": "Score Moyen",
+        "avgAttempts": "Essais Moyens",
+        "gamesPlayed": "Parties Jouées",
+        "lastPlayed": "Dernière Partie",
+        "totalAttemptsOnWin": "Essais (Victoires)",
+        "bestTime": "Record",
+        "averageTime": "Temps Moyen",
+        "gamesWon": "Victoires"
+    };
 
-        if (!games) {
-            Object.values(categories).forEach(c => c.innerHTML = "Aucune donnée");
-            return;
+    Object.values(categories).forEach(c => c.innerHTML = "");
+
+    if (!games) {
+        Object.values(categories).forEach(c => c.innerHTML = "Aucune donnée");
+        return;
+    }
+
+    const groups = {
+        sudoku: 'game', bn: 'game', p4: 'game',
+        nature: 'geo', monde: 'geo', france: 'geo', 
+        onepiece: 'dle', pokemon: 'dle', football: 'dle'
+    };
+
+    const names = {
+        nature: "Carte Géographie", monde: "Carte du Monde", france: "Carte de France",
+        onepiece: "OnePieceDLE", pokemon: "PokémonDLE", football: "FootballDLE",
+        sudoku: "Sudoku", bn: "Bataille Navale", p4: "Puissance 4"
+    };
+
+    const formatTime = (s) => {
+        if (s === Infinity || !s) return "--:--";
+        const min = Math.floor(s / 60).toString().padStart(2, '0');
+        const sec = (s % 60).toString().padStart(2, '0');
+        return `${min}:${sec}`;
+    };
+
+    Object.keys(groups).forEach(gameKey => {
+        const gameData = games[gameKey];
+        if (!gameData || !gameData.stats) return;
+
+        const categoryKey = groups[gameKey];
+        let cardHtml = `<div class="stat-card"><h5>${names[gameKey]}</h5>`;
+
+        // --- LOGIQUE POUR JEUX À SOUS-MODES (BN, P4, SUDOKU) ---
+        const multiModeGames = ['bn', 'p4', 'sudoku'];
+
+        if (multiModeGames.includes(gameKey)) {
+            Object.entries(gameData.stats).forEach(([mode, data]) => {
+                // Nettoyage du nom du mode (ex: ia_easy -> IA Easy)
+                const modeName = mode.replace('_', ' ').toUpperCase();
+                
+                cardHtml += `
+                    <div style="margin-top:10px; border-bottom:1px solid #eee; padding-bottom:5px;">
+                        <strong style="color:#ff6f00; font-size:0.85em;">• ${modeName}</strong>`;
+
+                // Cas Sudoku (structure différente)
+                if (gameKey === 'sudoku') {
+                    cardHtml += `
+                        <div class="stat-row"><span>Victoires</span> <strong>${data.gamesWon || 0}</strong></div>
+                        <div class="stat-row"><span>Record</span> <strong>${formatTime(data.bestTime)}</strong></div>`;
+                } 
+                // Cas BN et P4
+                else {
+                    Object.entries(data).forEach(([label, value]) => {
+                        const displayLabel = translations[label] || label;
+                        cardHtml += `<div class="stat-row"><span>${displayLabel}</span> <strong>${value}</strong></div>`;
+                    });
+
+                    // Calcul Winrate pour BN si les clés sont présentes
+                    if (gameKey === 'bn' && data.played > 0) {
+                        const wr = ((data.wins / data.played) * 100).toFixed(1);
+                        cardHtml += `<div class="stat-row"><span style="color:#27ae60;">Winrate</span> <strong style="color:#27ae60;">${wr}%</strong></div>`;
+                    }
+                }
+                cardHtml += `</div>`;
+            });
+        } 
+        // --- CAS GÉNÉRAL (Géo & DLE) ---
+        else {
+            Object.entries(gameData.stats).forEach(([label, value]) => {
+                const displayLabel = translations[label] || label;
+                const isTime = label.toLowerCase().includes('time') || label.toLowerCase().includes('record');
+                const displayValue = isTime ? formatTime(value) : (typeof value === 'number' && !Number.isInteger(value) ? value.toFixed(2) : value);
+                cardHtml += `<div class="stat-row"><span>${displayLabel}</span> <strong>${displayValue}</strong></div>`;
+            });
         }
 
-        const groups = {
-            sudoku: 'game', bn: 'game', p4: 'game',
-            nature: 'geo', monde: 'geo', france: 'geo', 
-            onepiece: 'dle', pokemon: 'dle', football: 'dle'
-            
-        };
+        cardHtml += `</div>`;
+        categories[categoryKey].innerHTML += cardHtml;
+    });
 
-        const names = {
-            nature: "Carte Géographie", monde: "Carte du Monde", france: "Carte de France",
-            onepiece: "OnePieceDLE", pokemon: "PokémonDLE", football: "FootballDLE",
-            sudoku: "Sudoku", bn: "Bataille Navale", p4: "Puissance 4"
-        };
-
-        // Fonction pour formater le temps (secondes -> MM:SS)
-        const formatTime = (s) => {
-            if (s === Infinity || !s) return "--:--";
-            const min = Math.floor(s / 60).toString().padStart(2, '0');
-            const sec = (s % 60).toString().padStart(2, '0');
-            return `${min}:${sec}`;
-        };
-
-        Object.keys(groups).forEach(gameKey => {
-            const gameData = games[gameKey];
-            if (!gameData || !gameData.stats) return;
-
-            const categoryKey = groups[gameKey];
-            const stats = gameData.stats;
-
-            if (gameKey === 'sudoku') {
-                // --- TRAITEMENT SPÉCIAL SUDOKU (PAR DIFFICULTÉ) ---
-                let sudokuHtml = `<div class="stat-card"><h5>${names[gameKey]}</h5>`;
-                
-                Object.entries(stats).forEach(([diff, data]) => {
-                    sudokuHtml += `
-                        <div style="margin-top:10px; border-bottom:1px solid #eee; padding-bottom:5px;">
-                            <strong style="color:#ff6f00; text-transform: capitalize;">• ${diff}</strong>
-                            <div class="stat-row"><span>Parties</span> <strong>${data.gamesWon}</strong></div>
-                            <div class="stat-row"><span>Record</span> <strong>${formatTime(data.bestTime)}</strong></div>
-                            <div class="stat-row"><span>Moyenne</span> <strong>${formatTime(data.averageTime)}</strong></div>
-                        </div>`;
-                });
-                
-                sudokuHtml += `</div>`;
-                categories[categoryKey].innerHTML += sudokuHtml;
-
-            } else {
-                // --- TRAITEMENT GÉNÉRIQUE (QUIZ & AUTRES) ---
-                let cardHtml = `<div class="stat-card"><h5>${names[gameKey]}</h5>`;
-
-                Object.entries(stats).forEach(([label, value]) => {
-                    // Si la valeur est un temps (pour d'autres puzzles futurs)
-                    const isTime = label.toLowerCase().includes('time') || label.toLowerCase().includes('record');
-                    const displayValue = isTime ? formatTime(value) : value;
-                    
-                    const displayLabel = label.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-                    cardHtml += `
-                        <div class="stat-row">
-                            <span>${displayLabel}</span>
-                            <strong>${displayValue}</strong>
-                        </div>`;
-                });
-
-                cardHtml += `</div>`;
-                categories[categoryKey].innerHTML += cardHtml;
-            }
-        });
-
-    // Vérification vide
     Object.keys(categories).forEach(k => {
-        if (categories[k].innerHTML === "") categories[k].innerHTML = "<em>Pas encore de parties jouées.</em>";
+        if (categories[k].innerHTML === "") categories[k].innerHTML = "<em>Pas encore de données.</em>";
+    });
+}
+// --- GESTION DES COULEURS DU THÈME ---
+
+function loadCustomPresets() {
+    if (!userUID) return;
+    const presetsRef = ref(db, `users/${userUID}/themePresets`);
+    
+    onValue(presetsRef, (snapshot) => {
+        const listCont = document.getElementById('custom-presets-list');
+        listCont.innerHTML = "";
+        
+        if (snapshot.exists()) {
+            const data = snapshot.val();
+            Object.entries(data).forEach(([id, preset]) => {
+                const div = document.createElement('div');
+                div.style.position = "relative";
+                div.innerHTML = `
+                    <div class="theme-circle" 
+                        data-bg="${preset.body}" 
+                        onclick="setFullTheme('${preset.header}', '${preset.body}', '${preset.btn || ''}')" 
+                        style="width: 40px; height: 40px; border-radius: 50%; background: ${preset.body}; border: 2px solid white; cursor: pointer;">
+                    </div>
+                    <button onclick="deletePreset('${id}')" style="position: absolute; top: -5px; right: -5px; background: #e74c3c; color: white; border: none; border-radius: 50%; width: 18px; height: 18px; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center;">×</button>
+                `;
+                listCont.appendChild(div);
+            });
+        }
+        const currentBody = document.body.style.background;
+        if (currentBody) {
+            // Utilise directement la variable globale ou le style du body
+            const bodyStyle = document.body.style.background;
+            window.highlightSelectedTheme(bodyStyle);
+        }
     });
 }
 
-        function loadSettings(games) {
-            if (!games) return;
-            // Onepiece
-            if (games.onepiece?.settings?.bg) {
-                document.getElementById('bg-onepiece').style.backgroundImage = `url(${games.onepiece.settings.bg})`;
-            }
-            // Pokemon
-            if (games.pokemon?.settings?.bg) {
-                document.getElementById('bg-pokemon').style.backgroundImage = `url(${games.pokemon.settings.bg})`;
-            }
+window.saveNewPreset = async () => {
+    const h = document.getElementById('color-header').value;
+    const b1 = document.getElementById('color-body-1').value;
+    const b2 = document.getElementById('color-body-2').value;
+    const bodyGradient = `linear-gradient(135deg, ${b1}, ${b2})`;
+
+    try {
+        await push(ref(db, `users/${userUID}/themePresets`), {
+            header: h,
+            body: bodyGradient
+        });
+        toggleManualSettings(); // Referme le menu
+    } catch (e) { console.error(e); }
+};
+
+// --- SUPPRIMER UN PRESET ---
+window.deletePreset = async (id) => {
+    if (confirm("Supprimer ce thème enregistré ?")) {
+        await remove(ref(db, `users/${userUID}/themePresets/${id}`));
+    }
+};
+
+// 1. Sauvegarde dans Firebase
+window.updateThemeColor = async (type, value) => {
+    if (!userUID) return;
+    try {
+        await update(ref(db, `users/${userUID}/theme`), { [type]: value });
+        applyTheme({ [type]: value }); // Appliquer immédiatement
+    } catch (e) {
+        console.error("Erreur couleur:", e);
+    }
+};
+
+// 2. Application des couleurs sur la page
+window.applyTheme = (themeData) => {
+    if (!themeData) return;
+
+    if (themeData.headerColor) {
+        const headerEl = document.getElementById('main-header');
+        if (headerEl) headerEl.style.background = themeData.headerColor;
+    }
+
+    if (themeData.bodyColor) {
+        document.body.style.background = themeData.bodyColor;
+        document.body.style.backgroundAttachment = "fixed";
+        
+        // Correction ici : on ne passe que le bodyColor
+        // Et on attend 200ms que les bulles personnalisées soient éventuellement injectées
+        setTimeout(() => {
+            window.highlightSelectedTheme(themeData.bodyColor);
+        }, 200);
+    }
+};
+
+// --- BASCULE DU MENU MANUEL ---
+window.toggleManualSettings = () => {
+    const section = document.getElementById('manual-settings');
+    const btn = document.getElementById('toggle-manual');
+    
+    if (section.classList.contains('hidden')) {
+        section.classList.remove('hidden');
+        btn.textContent = "—";
+        btn.style.background = "#333";
+    } else {
+        section.classList.add('hidden');
+        btn.textContent = "+";
+        btn.style.background = "#ff9a00";
+    }
+};
+
+// --- SUPPRIMER LE RÉGLAGE PERSO (RETOUR AUX PRÉSETS) ---
+window.clearCustomTheme = async () => {
+    if (!userUID || !confirm("Supprimer ton ajustement manuel et revenir au thème par défaut ?")) return;
+
+    try {
+        // On supprime les entrées dans Firebase
+        await update(ref(db, `users/${userUID}/theme`), {
+            headerColor: null,
+            bodyColor: null
+        });
+
+        // On réapplique le preset de base visuellement
+        setFullTheme('linear-gradient(to right, #ff9a00, #ff4e00)', 'linear-gradient(135deg,#fff3cd,#ffe5b4,#ffd1d1,#ffc4e1)');
+        
+        // On referme le menu
+        toggleManualSettings();
+        
+        alert("Réglage manuel supprimé !");
+    } catch (e) {
+        console.error("Erreur suppression réglage:", e);
+    }
+};
+// Calcule et applique le dégradé de fond
+window.updateGradient = async () => {
+    const c1 = document.getElementById('color-body-1').value;
+    const c2 = document.getElementById('color-body-2').value;
+    
+    // On crée une chaîne linear-gradient
+    const gradientString = `linear-gradient(135deg, ${c1}, ${c2})`;
+    
+    if (!userUID) return;
+    try {
+        await update(ref(db, `users/${userUID}/theme`), { bodyColor: gradientString });
+        document.body.style.background = gradientString;
+        document.body.style.backgroundAttachment = "fixed"; // Optionnel: pour que le fond ne scrolle pas
+    } catch (e) {
+        console.error("Erreur gradient:", e);
+    }
+};
+window.setFullTheme = async (headerVal, bodyVal) => {
+    if (!userUID) return;
+    document.querySelectorAll('.theme-preset, .custom-bubble div').forEach(el => {
+        el.classList.remove('selected');
+    });
+
+    // Ajoute la classe à la bulle cliquée
+    if (window.event && window.event.currentTarget) {
+        window.event.currentTarget.classList.add('selected');
+    }
+    try {
+        // Sauvegarde groupée dans Firebase
+        await update(ref(db, `users/${userUID}/theme`), { 
+            headerColor: headerVal, 
+            bodyColor: bodyVal 
+        });
+
+        // Application immédiate visuelle
+        const headerEl = document.getElementById('main-header');
+        if (headerEl) headerEl.style.background = headerVal;
+        document.body.style.background = bodyVal;
+        document.body.style.backgroundAttachment = "fixed";
+
+        // Mise à jour optionnelle des inputs de couleur pour correspondre
+        if (!headerVal.includes('gradient')) document.getElementById('color-header').value = headerVal;
+        
+        const colors = bodyVal.match(/#[a-fA-F0-9]{6}/g);
+        if (colors && colors.length >= 2) {
+            document.getElementById('color-body-1').value = colors[0];
+            document.getElementById('color-body-2').value = colors[colors.length - 1];
         }
 
-        // Logic Update, Image & Delete (Inchangée mais connectée)
-        document.getElementById('change-pic').onchange = (e) => {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                const img = new Image();
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    canvas.width = 128; canvas.height = 128;
-                    canvas.getContext('2d').drawImage(img, 0, 0, 128, 128);
-                    base64Image = canvas.toDataURL('image/jpeg', 0.7);
-                    document.getElementById('current-pic').src = base64Image;
-                };
-                img.src = event.target.result;
-            };
-            reader.readAsDataURL(e.target.files[0]);
-        };
+    } catch (e) {
+        console.error("Erreur application thème:", e);
+    }
+};
+window.highlightSelectedTheme = (currentBody) => {
+    if (!currentBody) return;
 
-        document.getElementById('btn-update').onclick = async () => {
-            const newName = document.getElementById('new-pseudo').value.trim();
-            await update(ref(db, `users/${userUID}`), { username: newName, avatar: base64Image });
-            alert("Profil mis à jour !");
-            location.reload();
-        };
+    // 1. Nettoyer toutes les sélections
+    document.querySelectorAll('.theme-preset, .theme-circle').forEach(el => {
+        el.classList.remove('selected');
+    });
+
+    // 2. Préparation de la cible (on enlève espaces, guillemets et on met en minuscule)
+    const cleanTarget = currentBody.replace(/\s/g, '').replace(/["']/g, "").toLowerCase();
+
+    document.querySelectorAll('[data-bg]').forEach(el => {
+        const dataAttr = el.getAttribute('data-bg');
+        if (!dataAttr) return;
+
+        const elBg = dataAttr.replace(/\s/g, '').replace(/["']/g, "").toLowerCase();
+        
+        // On vérifie si l'un contient l'autre (car le navigateur peut ajouter des paramètres)
+        if (cleanTarget.includes(elBg) || elBg.includes(cleanTarget)) {
+            el.classList.add('selected');
+        }
+    });
+};
+// Fonction Reset mise à jour avec ton dégradé spécifique
+window.resetTheme = async () => {
+    if (!userUID || !confirm("Réinitialiser les couleurs par défaut ?")) return;
+    
+    const defaultBody = "linear-gradient(135deg,#fff3cd,#ffe5b4,#ffd1d1,#ffc4e1)";
+    const defaultHeader = "linear-gradient(to right, #ff9a00, #ff4e00)";
+
+    try {
+        await update(ref(db, `users/${userUID}/theme`), {
+            headerColor: null,
+            bodyColor: null
+        });
+
+        // Application immédiate
+        document.getElementById('main-header').style.background = defaultHeader;
+        document.body.style.background = defaultBody;
+
+        // Reset visuel des inputs (approximatif pour le dégradé multi-couleurs)
+        document.getElementById('color-header').value = "#ff9a00";
+        document.getElementById('color-body-1').value = "#fff3cd";
+        document.getElementById('color-body-2').value = "#ffc4e1";
+
+        alert("Thème réinitialisé !");
+    } catch (e) {
+        console.error("Erreur reset:", e);
+    }
+};
+// --- GESTION DES FONDS D'ÉCRAN ---
+// --- FONCTION VISUALISATION GRAND ÉCRAN ---
+window.openFullscreen = (game) => {
+    const previewEl = document.getElementById(`bg-${game}`);
+    const bgUrl = previewEl.style.backgroundImage.slice(5, -2).replace(/"/g, ""); // Extrait l'URL propre
+    
+    if (bgUrl && bgUrl !== "none" && bgUrl !== "") {
+        document.getElementById('fullscreenImg').src = bgUrl;
+        document.getElementById('fullscreenModal').style.display = 'flex';
+    } else {
+        alert("Aucun fond d'écran sélectionné !");
+    }
+};
+
+// --- GESTION DES CLICS MINIATURES ---
+document.querySelectorAll('.mini-bg[data-path]').forEach(img => {
+    img.onclick = async function() {
+        const game = this.dataset.game;
+        const path = this.dataset.path;
+        await updateGameBackground(game, path);
+        
+        // Update visuel sélection
+        document.querySelectorAll(`.mini-bg[data-game="${game}"]`).forEach(m => m.classList.remove('selected'));
+        this.classList.add('selected');
+    };
+});
+
+// --- GESTION UPLOAD ---
+document.querySelectorAll('.bg-upload-input').forEach(input => {
+    input.onchange = (e) => {
+        const game = e.target.dataset.game;
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+                await updateGameBackground(game, event.target.result);
+                document.querySelectorAll(`.mini-bg[data-game="${game}"]`).forEach(m => m.classList.remove('selected'));
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+});
+
+// --- SAUVEGARDE ET MISE À JOUR PREVIEW ---
+async function updateGameBackground(game, value) {
+    if (!userUID) return;
+    try {
+        await update(ref(db, `users/${userUID}/games/${game}`), { customBackground: value });
+        const previewEl = document.getElementById(`bg-${game}`);
+        const fullUrl = value && value.startsWith('images_') ? `Defis_quotidiens/${value}` : value;
+        previewEl.style.backgroundImage = value ? `url('${fullUrl}')` : 'none';
+    } catch (e) {
+        console.error("Erreur save background:", e);
+    }
+}
+
+// 4. Initialisation (loadSettings) adaptée aux dossiers
+function loadSettings(games) {
+    if (!games) return;
+    ['pokemon', 'onepiece'].forEach(gameKey => {
+        const val = games[gameKey]?.customBackground;
+        if (val) {
+            const previewEl = document.getElementById(`bg-${gameKey}`);
+            const fullUrl = val.startsWith('images_') ? `Defis_quotidiens/${val}` : val;
+            previewEl.style.backgroundImage = `url('${fullUrl}')`;
+            
+            // Sélectionner la miniature correspondante si c'est une image de base
+            const mini = document.querySelector(`.mini-bg[data-path="${val}"]`);
+            if (mini) mini.classList.add('selected');
+        }
+    });
+}
 
         document.getElementById('btn-logout-main').onclick = () => {
             signOut(auth).then(() => {
