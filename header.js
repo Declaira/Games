@@ -3,12 +3,13 @@ window.injectHeader = function(options = {}) {
     title = "Déclaira",
     homeLink = "accueil.html",
     showHome = true,
-    homeIcon = "🏠", // Paramètre icône accueil
-    autoHide = false, // Paramètre logique de masquage
-    customBackground = "linear-gradient(to right, #ff9a00, #ff4e00)", // Paramètre fond
-    logoUrl = "" // Paramètre image titre
+    homeIcon = "🏠",
+    autoHide = false,
+    customBackground = "linear-gradient(to right, #ff9a00, #ff4e00)",
+    logoUrl = "",
+    useThemeBackground = true
   } = options;
-
+  const initialBg = useThemeBackground ? customBackground : 'transparent';
   const style = `
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@600;700&display=swap');
@@ -95,13 +96,19 @@ window.injectHeader = function(options = {}) {
   </style>
   `;
 
-  const loginPath = homeLink.replace(homeLink, 'login.html');
-  const comptePath = homeLink.replace(homeLink, 'compte.html');
+  const basePath = homeLink.includes('/') 
+      ? homeLink.substring(0, homeLink.lastIndexOf('/') + 1) 
+      : '';
+
+  const loginPath = basePath + 'login.html';
+  const comptePath = basePath + 'compte.html';
   const currentUrl = encodeURIComponent(window.location.href);
 
   document.write(`
     ${style}
-    <header id="main-header" data-default-bg="${customBackground}">
+    <header id="main-header" 
+        data-default-bg="${customBackground}" 
+        data-use-theme="${useThemeBackground}">
       ${showHome ? `<a href="${homeLink}" class="home-icon">${homeIcon}</a>` : ""}
       
       ${logoUrl ? `<img src="${logoUrl}" alt="${title}" class="header-logo">` : `<span class="header-title">${title}</span>`}
@@ -188,17 +195,16 @@ window.injectHeader = function(options = {}) {
             if (snapshot.exists()) {
                 const data = snapshot.val();
                 console.log("✅ [Debug Header] Données trouvées pour :", data.username);
-                if (data.theme) {
+                const canChangeBg = header.getAttribute('data-use-theme') === 'true'; // Vérification
+
+                if (data.theme && canChangeBg) { // On n'applique que si autorisé
                     if (data.theme.headerColor) {
                         header.style.background = data.theme.headerColor;
                     }
                     if (data.theme.bodyColor) {
-                        // Cela appliquera soit une couleur simple (#ffffff) 
-                        // soit le linear-gradient sauvegardé
                         document.body.style.background = data.theme.bodyColor;
                         document.body.style.backgroundAttachment = "fixed";
                     }
-                    
                 }
                 nameEl.textContent = data.username || "Joueur";
                 
