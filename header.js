@@ -95,8 +95,8 @@ window.injectHeader = function(options = {}) {
   </style>
   `;
 
-  const loginPath = homeLink.replace('accueil.html', 'login.html');
-  const comptePath = homeLink.replace('accueil.html', 'compte.html');
+  const loginPath = homeLink.replace(homeLink, 'login.html');
+  const comptePath = homeLink.replace(homeLink, 'compte.html');
   const currentUrl = encodeURIComponent(window.location.href);
 
   document.write(`
