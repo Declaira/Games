@@ -206,7 +206,8 @@ td.flip { animation: flipIn 0.5s ease-in-out; }
     homeLink: "../accueil.html",
     customBackground: "transparent",
     showHome: true,
-    logoUrl: "images_pokemon/titre.png"
+    logoUrl: "images_pokemon/titre.png",
+    useThemeBackground: false
   });
 </script>
 
@@ -13646,6 +13647,39 @@ giveUpBtn.addEventListener('click', () => {
 replayBtn.addEventListener('click', startNewGame);
 
 // Fond d'écran
+// --- SAUVEGARDE DU FOND ---
+async function saveBackground(bgValue) {
+    if (currentUserUid) {
+        // Sauvegarde Cloud (Firebase)
+        await update(ref(db, `users/${currentUserUid}/games/pokemon`), {
+            customBackground: bgValue
+        });
+    } else {
+        // Sauvegarde Locale (Invité)
+        localStorage.setItem('pokemon_guest_bg', bgValue);
+    }
+}
+
+// --- RESTAURATION DU FOND ---
+async function applySavedBackground() {
+    let savedBg = null;
+
+    if (currentUserUid) {
+        const snap = await get(ref(db, `users/${currentUserUid}/games/pokemon/customBackground`));
+        if (snap.exists()) savedBg = snap.val();
+    } else {
+        savedBg = localStorage.getItem('pokemon_guest_bg');
+    }
+
+    if (savedBg) {
+        document.body.style.backgroundImage = `url('${savedBg}')`;
+        // Optionnel : recocher la preview correspondante
+        document.querySelectorAll('.bg-preview').forEach(img => {
+            if (savedBg.includes(img.dataset.bg)) img.classList.add('selected-bg');
+        });
+    }
+}
+
 const bgModal = document.getElementById('bgModal');
 document.getElementById('bgBtn').onclick = () => bgModal.style.display = "block";
 document.querySelector('.close-modal').onclick = () => bgModal.style.display = "none";
@@ -13654,16 +13688,25 @@ document.querySelectorAll('.bg-preview').forEach(img => {
     img.onclick = function() {
         document.querySelectorAll('.bg-preview').forEach(i => i.classList.remove('selected-bg'));
         this.classList.add('selected-bg');
-        document.body.style.backgroundImage = `url('images_pokemon/${this.dataset.bg}')`;
+        
+        const fullPath = `images_pokemon/${this.dataset.bg}`;
+        document.body.style.backgroundImage = `url('${fullPath}')`;
+        
+        saveBackground(fullPath); // Sauvegarde
         setTimeout(() => bgModal.style.display = "none", 200);
     }
 });
+
+// Upload d'une image personnelle
 document.getElementById('bgUpload').onchange = (e) => {
     const file = e.target.files[0];
     if(file) {
         const reader = new FileReader();
         reader.onload = (ev) => {
-            document.body.style.backgroundImage = `url('${ev.target.result}')`;
+            const base64 = ev.target.result;
+            document.body.style.backgroundImage = `url('${base64}')`;
+            
+            saveBackground(base64); // Sauvegarde
             bgModal.style.display = "none";
         };
         reader.readAsDataURL(file);
@@ -13684,6 +13727,7 @@ onAuthStateChanged(auth, async (user) => {
     }
 
     // Dans les deux cas, on restaure la session
+    await applySavedBackground();
     await restoreSession();
 });
 

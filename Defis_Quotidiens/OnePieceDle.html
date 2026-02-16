@@ -378,7 +378,8 @@
     homeLink: "../accueil.html",
     customBackground: "transparent",
     showHome: true,
-    logoUrl: "images_onepiece/titre.png"
+    logoUrl: "images_onepiece/titre.png",
+    useThemeBackground: false
   });
 </script>
 
@@ -14586,21 +14587,15 @@ async function updateStats(isWin) {
     const snap = await get(statsRef);
     
     // Initialisation si premières stats
-    let s = snap.exists() ? snap.val() : { 
-        played: 0, 
-        wins: 0, 
-        losses: 0, 
-        totalAttempts: 0, 
-        avg: 0 
-    };
+    let s = snap.exists() ? snap.val() : { gamesPlayed:0, wins:0, losses:0, totalAttemptsOnWin:0, avgAttempts:0 };
 
-    s.played++; // Une partie de plus (victoire ou abandon)
+    s.gamesPlayed++; // Une partie de plus (victoire ou abandon)
 
     if (isWin) {
         s.wins++;
-        s.totalAttempts += attempts.length;
+        s.totalAttemptsOnWin += attempts.length;
         // Recalcul de la moyenne (uniquement sur les victoires)
-        s.avg = (s.totalAttempts / s.wins).toFixed(2);
+        s.avgAttempts = (s.totalAttemptsOnWin / s.wins).toFixed(2);
     } else {
         s.losses++; // Compte comme une défaite lors d'un abandon
     }
@@ -14611,7 +14606,7 @@ async function updateStats(isWin) {
     // Mise à jour de l'affichage de la moyenne sur l'écran de fin
     const statsDiv = document.getElementById('end-stats');
     if (isWin) {
-        statsDiv.innerHTML += `<br><span style="font-size: 0.9rem; color: #bbb;">Moyenne : ${s.avg} coups</span>`;
+        statsDiv.innerHTML += `<br><span style="font-size: 0.9rem; color: #bbb;">Moyenne : ${s.avgAttempts} coups</span>`;
     }
 }
 
@@ -14767,46 +14762,74 @@ window.onclick = function(event) {
     }
 }
 
+// --- SAUVEGARDE DU FOND ---
+async function saveBackground(bgValue) {
+    if (currentUserUid) {
+        // Sauvegarde Cloud
+        await update(ref(db, `users/${currentUserUid}/games/onepiece`), {
+            customBackground: bgValue
+        });
+    } else {
+        // Sauvegarde Locale
+        localStorage.setItem('onepiece_guest_bg', bgValue);
+    }
+}
+
 // 4. Gérer le clic sur les images prédéfinies
 bgPreviews.forEach(img => {
     img.addEventListener('click', function() {
-        // Retire la classe 'selected' des autres
         bgPreviews.forEach(preview => preview.classList.remove('selected-bg'));
-        // Ajoute la classe à celle cliquée
         this.classList.add('selected-bg');
         
-        // Change le fond du body
         const bgName = this.getAttribute('data-bg');
-        document.body.style.backgroundImage = `url('images_onepiece/${bgName}')`;
+        const fullPath = `images_onepiece/${bgName}`;
+        document.body.style.backgroundImage = `url('${fullPath}')`;
         
-        // Ferme la modale après un court instant
+        saveBackground(fullPath); // <--- SAUVEGARDE
         setTimeout(() => bgModal.style.display = "none", 300);
     });
 });
 
 // 5. Gérer l'upload de fichier local
 bgUploadInput.addEventListener('change', function(event) {
-    const file = event.target.files[0]; // Récupère le fichier sélectionné
-    
+    const file = event.target.files[0];
     if (file) {
-        // On utilise FileReader pour lire le fichier local
         const reader = new FileReader();
-        
         reader.onload = function(e) {
-            // e.target.result contient l'image en base64
-            document.body.style.backgroundImage = `url('${e.target.result}')`;
-            
-            // Retire la sélection visuelle des prédéfinis
+            const base64 = e.target.result;
+            document.body.style.backgroundImage = `url('${base64}')`;
             bgPreviews.forEach(preview => preview.classList.remove('selected-bg'));
             
-            // Ferme la modale
+            saveBackground(base64); // <--- SAUVEGARDE
             bgModal.style.display = "none";
         };
-        
-        // Lit le fichier comme une URL de données
         reader.readAsDataURL(file);
     }
 });
+
+async function applySavedBackground() {
+    let savedBg = null;
+
+    if (currentUserUid) {
+        // Récupère depuis Firebase
+        const snap = await get(ref(db, `users/${currentUserUid}/games/onepiece/customBackground`));
+        if (snap.exists()) savedBg = snap.val();
+    } else {
+        // Récupère depuis le LocalStorage
+        savedBg = localStorage.getItem('onepiece_guest_bg');
+    }
+
+    if (savedBg) {
+        document.body.style.backgroundImage = `url('${savedBg}')`;
+        
+        // Optionnel : cocher visuellement la preview si c'est une image prédéfinie
+        bgPreviews.forEach(img => {
+            if (savedBg.includes(img.getAttribute('data-bg'))) {
+                img.classList.add('selected-bg');
+            }
+        });
+    }
+}
 document.getElementById('replayBtn').addEventListener('click', () => {
     targetCharacter = null; 
     
@@ -14833,7 +14856,7 @@ onAuthStateChanged(auth, async (user) => {
         console.log("🕹️ [One Piece] Mode Invité");
     }
 
-    // On restaure la session (la fonction restoreSession s'occupera de lire Firebase ou le LocalStorage)
+    await applySavedBackground();
     await restoreSession();
 });
 
