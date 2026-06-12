@@ -22,6 +22,11 @@ svg path {
 svg path.highlight {
   fill: orange;
 }
+svg path.highlight-selected {
+  stroke: orange !important;
+  stroke-width: 2 !important; /* On épaissit le trait pour bien le voir */
+
+}
 svg path.correct {
   fill: green !important;
 }
@@ -167,7 +172,37 @@ body {
     <input id="dept-name" placeholder="Nom du département" type="text"/>
     <input id="prefecture" placeholder="Préfecture" type="text"/>
     <button onclick="checkAnswer()">Valider</button>
-    <p id="result"></p><p>Score : <span id="score">0</span> /101</p>
+<p id="result"></p>
+    <p>Score : <span id="score">0</span> / <span id="total-display">101</span></p>
+
+    <div style="position: relative; width: 100%; display: flex; justify-content: center; margin-top: 10px;">
+        <button id="toggle-regions" onclick="toggleRegionSelector()" style="background-color: #7f8c8d; width: auto; padding: 8px 15px; font-size: 14px;">Filtrer les régions 🗺️</button>
+
+        <div id="region-selector" style="display: none; flex-direction: column; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); z-index: 2000; background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); width: 95%; max-width: 320px;">
+            <button id="bulk-toggle" onclick="toggleAllCheckboxes()" style="background-color: #ff6f00; font-size: 12px; padding: 6px; margin-bottom: 5px;">Tout décocher</button>
+            <div id="scroll-container" style="display: grid; grid-template-columns: 1fr; gap: 8px; max-height: 120px; overflow-y: auto; padding-right: 10px; border: 1px solid #eee;">
+                <label style="font-size: 13px; display: flex; align-items: center; gap: 5px;"><input class="region-checkbox" id="region-all" type="checkbox" value="All" checked style="width: 16px; height: 16px; margin: 0;"> Toutes</label>
+                <label style="font-size: 13px; display: flex; align-items: center; gap: 5px;"><input class="region-checkbox" type="checkbox" value="Auvergne-Rhône-Alpes" checked style="width: 16px; height: 16px; margin: 0;"> Auvergne-Rhône-Alpes</label>
+                <label style="font-size: 13px; display: flex; align-items: center; gap: 5px;"><input class="region-checkbox" type="checkbox" value="Bourgogne-Franche-Comté" checked style="width: 16px; height: 16px; margin: 0;"> Bourgogne-Franche-Comté</label>
+                <label style="font-size: 13px; display: flex; align-items: center; gap: 5px;"><input class="region-checkbox" type="checkbox" value="Bretagne" checked style="width: 16px; height: 16px; margin: 0;"> Bretagne</label>
+                <label style="font-size: 13px; display: flex; align-items: center; gap: 5px;"><input class="region-checkbox" type="checkbox" value="Centre-Val de Loire" checked style="width: 16px; height: 16px; margin: 0;"> Centre-Val de Loire</label>
+                <label style="font-size: 13px; display: flex; align-items: center; gap: 5px;"><input class="region-checkbox" type="checkbox" value="Corse" checked style="width: 16px; height: 16px; margin: 0;"> Corse</label>
+                <label style="font-size: 13px; display: flex; align-items: center; gap: 5px;"><input class="region-checkbox" type="checkbox" value="DROM" checked style="width: 16px; height: 16px; margin: 0;"> DROM</label>
+                <label style="font-size: 13px; display: flex; align-items: center; gap: 5px;"><input class="region-checkbox" type="checkbox" value="Grand Est" checked style="width: 16px; height: 16px; margin: 0;"> Grand Est</label>
+                <label style="font-size: 13px; display: flex; align-items: center; gap: 5px;"><input class="region-checkbox" type="checkbox" value="Hauts-de-France" checked style="width: 16px; height: 16px; margin: 0;"> Hauts-de-France</label>
+                <label style="font-size: 13px; display: flex; align-items: center; gap: 5px;"><input class="region-checkbox" type="checkbox" value="Île-de-France" checked style="width: 16px; height: 16px; margin: 0;"> Île-de-France</label>
+                <label style="font-size: 13px; display: flex; align-items: center; gap: 5px;"><input class="region-checkbox" type="checkbox" value="Normandie" checked style="width: 16px; height: 16px; margin: 0;"> Normandie</label>
+                <label style="font-size: 13px; display: flex; align-items: center; gap: 5px;"><input class="region-checkbox" type="checkbox" value="Nouvelle-Aquitaine" checked style="width: 16px; height: 16px; margin: 0;"> Nouvelle-Aquitaine</label>
+                <label style="font-size: 13px; display: flex; align-items: center; gap: 5px;"><input class="region-checkbox" type="checkbox" value="Occitanie" checked style="width: 16px; height: 16px; margin: 0;"> Occitanie</label>
+                <label style="font-size: 13px; display: flex; align-items: center; gap: 5px;"><input class="region-checkbox" type="checkbox" value="Pays de la Loire" checked style="width: 16px; height: 16px; margin: 0;"> Pays de la Loire</label>
+                <label style="font-size: 13px; display: flex; align-items: center; gap: 5px;"><input class="region-checkbox" type="checkbox" value="Provence-Alpes-Côte d'Azur" checked style="width: 16px; height: 16px; margin: 0;"> PACA</label>
+            </div>
+            <div style="margin-top:5px; font-size:12px; color:#555; text-align:center;">
+              Départements sélectionnés : <span id="preview-count">101</span>
+            </div>
+            <button onclick="applyRegionFilter()" style="background-color: #2c3e50; margin-top:5px; padding: 8px;">Appliquer</button>
+        </div>
+    </div>
   </div>
   <div id="end-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; flex-direction: column; color: white; font-family: 'Quicksand', sans-serif;">
     <div style="background: white; color: #2c3e50; padding: 30px; border-radius: 20px; text-align: center; max-width: 400px; width: 90%;">
@@ -177,7 +212,12 @@ body {
         <button onclick="startNewGame()" style="margin-top: 20px; width: 100%; padding: 10px; background: #e67e22; color: white; border: none; border-radius: 5px; cursor: pointer;">Rejouer</button>
     </div>
 </div>
-  <div class="carte">
+<div id="info-modal" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 25px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.3); z-index: 1001; text-align: center; max-width: 300px; width: 90%; font-family: 'Quicksand', sans-serif;">
+    <h3 id="info-title" style="margin-bottom: 15px; color: #2c3e50;"></h3>
+    <p style="margin-bottom: 10px;"><strong>Votre proposition :</strong> <br><span id="info-guess" style="font-size: 1.1em;"></span></p>
+    <p><strong>La bonne réponse :</strong> <br><span id="info-correct" style="color: green; font-weight: bold; font-size: 1.1em;"></span></p>
+  </div>
+<div class="carte">
 <svg version="1.1" viewbox="0 0 667 578" x="0px" xml:space="preserve" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
 <path class="region-01 departement departement-971 departement-guadeloupe" d="M35.87,487.13l0.7,7.2l-4.5-1.1l-2,1.7l-5.8-0.6l-1.7-1.2l4.9,0.5l3.2-4.4L35.87,487.13z M104.87,553.63 l-4.4-1.8l-1.9,0.8l0.2,2.1l-1.9,0.3l-2.2,4.9l0.7,2.4l1.7,2.9l3.4,1.2l3.4-0.5l5.3-5l-0.4-2.5L104.87,553.63z M110.27,525.53 l-6.7-2.2l-2.4-4.2l-11.1-2.5l-2.7-5.7l-0.7-7.7l-6.2-4.7l-5.9,5.5l-0.8,2.9l1.2,4.5l3.1,1.2l-1,3.4l-2.6,1.2l-2.5,5.1l-1.9-0.2 l-1,1.9l-4.3-0.7l1.8-0.7l-3.5-3.7l-10.4-4.1l-3.4,1.6l-2.4,4.8l-0.5,3.5l3.1,9.7l0.6,12l6.3,9l0.6,2.7c3-1.2,6-2.5,9.1-3.7l5.9-6.9 l-0.4-8.7l-2.8-5.3l0.2-5.5l3.6,0.2l0.9-1.7l1.4,3.1l6.8,2l13.8-4.9L110.27,525.53z" id="971" title="Guadeloupe"></path>
 <path class="region-02 departement departement-972 departement-martinique" d="m44.23,433.5l1.4-4.1l-6.2-7.5l0.3-5.8l4.8-4 l4.9-0.9l17,9.9l7,8.8l9.4-5.2l1.8,2.2l-2.8,0.8l0.7,2.6l-2.9,1l-2.2-2.4l-1.9,1.7l0.6,2.5l5.1,1.6l-5.3,4.9l1.6,2.3l4.5-1.5 l-0.8,5.6l3.7,0.2l7.6,19l-1.8,5.5l-4.1,5.1h-2.6l-2-3l3.7-5.7l-4.3,1.7l-2.5-2.5l-2.4,1.2l-6-2.8l-5.5,0.1l-5.4,3.5l-2.4-2.1 l0.2-2.7l-2-2l2.5-4.9l3.4-2.5l4.9,3.4l3.2-1.9l-4.4-4.7l0.2-2.4l-1.8,1.2l-7.2-1.1l-7.6-7L44.23,433.5z" id="972" title="Martinique"></path>
@@ -304,112 +344,113 @@ const db = getDatabase(app);
 let currentUserUid = null;
 let score = 0;
   const  departments = [
-{ number: "01", name: "Ain", prefecture: "Bourg-en-Bresse" },
-{ number: "02", name: "Aisne", prefecture: "Laon" },
-{ number: "03", name: "Allier", prefecture: "Moulins" },
-{ number: "04", name: "Alpes-de-Haute-Provence", prefecture: "Digne-les-Bains" },
-{ number: "05", name: "Hautes-Alpes", prefecture: "Gap" },
-{ number: "06", name: "Alpes-Maritimes", prefecture: "Nice" },
-{ number: "07", name: "Ardèche", prefecture: "Privas" },
-{ number: "08", name: "Ardennes", prefecture: "Charleville-Mézières" },
-{ number: "09", name: "Ariège", prefecture: "Foix" },
-{ number: "10", name: "Aube", prefecture: "Troyes" },
-{ number: "11", name: "Aude", prefecture: "Carcassonne" },
-{ number: "12", name: "Aveyron", prefecture: "Rodez" },
-{ number: "13", name: "Bouches-du-Rhône", prefecture: "Marseille" },
-{ number: "14", name: "Calvados", prefecture: "Caen" },
-{ number: "15", name: "Cantal", prefecture: "Aurillac" },
-{ number: "16", name: "Charente", prefecture: "Angoulême" },
-{ number: "17", name: "Charente-Maritime", prefecture: "La Rochelle" },
-{ number: "18", name: "Cher", prefecture: "Bourges" },
-{ number: "19", name: "Corrèze", prefecture: "Tulle" },
-{ number: "2A", name: "Corse-du-Sud", prefecture: "Ajaccio" },
-{ number: "2B", name: "Haute-Corse", prefecture: "Bastia" },
-{ number: "21", name: "Côte-d'Or", prefecture: "Dijon" },
-{ number: "22", name: "Côtes d'Armor", prefecture: "Saint-Brieuc" },
-{ number: "23", name: "Creuse", prefecture: "Guéret" },
-{ number: "24", name: "Dordogne", prefecture: "Périgueux" },
-{ number: "25", name: "Doubs", prefecture: "Besançon" },
-{ number: "26", name: "Drôme", prefecture: "Valence" },
-{ number: "27", name: "Eure", prefecture: "Évreux" },
-{ number: "28", name: "Eure-et-Loir", prefecture: "Chartres" },
-{ number: "29", name: "Finistère", prefecture: "Quimper" },
-{ number: "30", name: "Gard", prefecture: "Nîmes" },
-{ number: "31", name: "Haute-Garonne", prefecture: "Toulouse" },
-{ number: "32", name: "Gers", prefecture: "Auch" },
-{ number: "33", name: "Gironde", prefecture: "Bordeaux" },
-{ number: "34", name: "Hérault", prefecture: "Montpellier" },
-{ number: "35", name: "Ille-et-Vilaine", prefecture: "Rennes" },
-{ number: "36", name: "Indre", prefecture: "Châteauroux" },
-{ number: "37", name: "Indre-et-Loire", prefecture: "Tours" },
-{ number: "38", name: "Isère", prefecture: "Grenoble" },
-{ number: "39", name: "Jura", prefecture: "Lons-le-Saunier" },
-{ number: "40", name: "Landes", prefecture: "Mont-de-Marsan" },
-{ number: "41", name: "Loir-et-Cher", prefecture: "Blois" },
-{ number: "42", name: "Loire", prefecture: "Saint-Étienne" },
-{ number: "43", name: "Haute-Loire", prefecture: "Le Puy-en-Velay" },
-{ number: "44", name: "Loire-Atlantique", prefecture: "Nantes" },
-{ number: "45", name: "Loiret", prefecture: "Orléans" },
-{ number: "46", name: "Lot", prefecture: "Cahors" },
-{ number: "47", name: "Lot-et-Garonne", prefecture: "Agen" },
-{ number: "48", name: "Lozère", prefecture: "Mende" },
-{ number: "49", name: "Maine-et-Loire", prefecture: "Angers" },
-{ number: "50", name: "Manche", prefecture: "Saint-Lô" },
-{ number: "51", name: "Marne", prefecture: "Châlons-en-Champagne" },
-{ number: "52", name: "Haute-Marne", prefecture: "Chaumont" },
-{ number: "53", name: "Mayenne", prefecture: "Laval" },
-{ number: "54", name: "Meurthe-et-Moselle", prefecture: "Nancy" },
-{ number: "55", name: "Meuse", prefecture: "Bar-le-Duc" },
-{ number: "56", name: "Morbihan", prefecture: "Vannes" },
-{ number: "57", name: "Moselle", prefecture: "Metz" },
-{ number: "58", name: "Nièvre", prefecture: "Nevers" },
-{ number: "59", name: "Nord", prefecture: "Lille" },
-{ number: "60", name: "Oise", prefecture: "Beauvais" },
-{ number: "61", name: "Orne", prefecture: "Alençon" },
-{ number: "62", name: "Pas-de-Calais", prefecture: "Arras" },
-{ number: "63", name: "Puy-de-Dôme", prefecture: "Clermont-Ferrand" },
-{ number: "64", name: "Pyrénées-Atlantiques", prefecture: "Pau" },
-{ number: "65", name: "Hautes-Pyrénées", prefecture: "Tarbes" },
-{ number: "66", name: "Pyrénées-Orientales", prefecture: "Perpignan" },
-{ number: "67", name: "Bas-Rhin", prefecture: "Strasbourg" },
-{ number: "68", name: "Haut-Rhin", prefecture: "Colmar" },
-{ number: "69", name: "Rhône", prefecture: "Lyon" },
-{ number: "70", name: "Haute-Saône", prefecture: "Vesoul" },
-{ number: "71", name: "Saône-et-Loire", prefecture: "Mâcon" },
-{ number: "72", name: "Sarthe", prefecture: "Le Mans" },
-{ number: "73", name: "Savoie", prefecture: "Chambéry" },
-{ number: "74", name: "Haute-Savoie", prefecture: "Annecy" },
-{ number: "75", name: "Paris", prefecture: "Paris" },
-{ number: "76", name: "Seine-Maritime", prefecture: "Rouen" },
-{ number: "77", name: "Seine-et-Marne", prefecture: "Melun" },
-{ number: "78", name: "Yvelines", prefecture: "Versailles" },
-{ number: "79", name: "Deux-Sèvres", prefecture: "Niort" },
-{ number: "80", name: "Somme", prefecture: "Amiens" },
-{ number: "81", name: "Tarn", prefecture: "Albi" },
-{ number: "82", name: "Tarn-et-Garonne", prefecture: "Montauban" },
-{ number: "83", name: "Var", prefecture: "Toulon" },
-{ number: "84", name: "Vaucluse", prefecture: "Avignon" },
-{ number: "85", name: "Vendée", prefecture: "La Roche-sur-Yon" },
-{ number: "86", name: "Vienne", prefecture: "Poitiers" },
-{ number: "87", name: "Haute-Vienne", prefecture: "Limoges" },
-{ number: "88", name: "Vosges", prefecture: "Épinal" },
-{ number: "89", name: "Yonne", prefecture: "Auxerre" },
-{ number: "90", name: "Territoire de Belfort", prefecture: "Belfort" },
-{ number: "91", name: "Essonne", prefecture: "Évry-Courcouronnes" },
-{ number: "92", name: "Hauts-de-Seine", prefecture: "Nanterre" },
-{ number: "93", name: "Seine-Saint-Denis", prefecture: "Bobigny" },
-{ number: "94", name: "Val-de-Marne", prefecture: "Créteil" },
-{ number: "95", name: "Val-d'Oise", prefecture: "Cergy" },
-{ number: "971", name: "Guadeloupe", prefecture: "Basse-Terre" },
-{ number: "972", name: "Martinique", prefecture: "Fort-de-France" },
-{ number: "973", name: "Guyane", prefecture: "Cayenne" },
-{ number: "974", name: "La Réunion", prefecture: "Saint-Denis" },
-{ number: "976", name: "Mayotte", prefecture: "Dzaoudzi" }
+{ number: "01", name: "Ain", prefecture: "Bourg-en-Bresse", region: "Auvergne-Rhône-Alpes" },
+{ number: "02", name: "Aisne", prefecture: "Laon", region: "Hauts-de-France" },
+{ number: "03", name: "Allier", prefecture: "Moulins", region: "Auvergne-Rhône-Alpes" },
+{ number: "04", name: "Alpes-de-Haute-Provence", prefecture: "Digne-les-Bains", region: "Provence-Alpes-Côte d'Azur" },
+{ number: "05", name: "Hautes-Alpes", prefecture: "Gap", region: "Provence-Alpes-Côte d'Azur" },
+{ number: "06", name: "Alpes-Maritimes", prefecture: "Nice", region: "Provence-Alpes-Côte d'Azur" },
+{ number: "07", name: "Ardèche", prefecture: "Privas", region: "Auvergne-Rhône-Alpes" },
+{ number: "08", name: "Ardennes", prefecture: "Charleville-Mézières", region: "Hauts-de-France" },
+{ number: "09", name: "Ariège", prefecture: "Foix", region: "Occitanie" },
+{ number: "10", name: "Aube", prefecture: "Troyes", region: "Grand Est" },
+{ number: "11", name: "Aude", prefecture: "Carcassonne", region: "Occitanie" },
+{ number: "12", name: "Aveyron", prefecture: "Rodez", region: "Occitanie" },
+{ number: "13", name: "Bouches-du-Rhône", prefecture: "Marseille", region: "Provence-Alpes-Côte d'Azur" },
+{ number: "14", name: "Calvados", prefecture: "Caen", region: "Normandie" },
+{ number: "15", name: "Cantal", prefecture: "Aurillac", region: "Auvergne-Rhône-Alpes" },
+{ number: "16", name: "Charente", prefecture: "Angoulême", region: "Nouvelle-Aquitaine" },
+{ number: "17", name: "Charente-Maritime", prefecture: "La Rochelle", region: "Nouvelle-Aquitaine" },
+{ number: "18", name: "Cher", prefecture: "Bourges", region: "Centre-Val de Loire" },
+{ number: "19", name: "Corrèze", prefecture: "Tulle", region: "Nouvelle-Aquitaine" },
+{ number: "2A", name: "Corse-du-Sud", prefecture: "Ajaccio", region: "Corse" },
+{ number: "2B", name: "Haute-Corse", prefecture: "Bastia", region: "Corse" },
+{ number: "21", name: "Côte-d'Or", prefecture: "Dijon", region: "Bourgogne-Franche-Comté" },
+{ number: "22", name: "Côtes d'Armor", prefecture: "Saint-Brieuc", region: "Bretagne" },
+{ number: "23", name: "Creuse", prefecture: "Guéret", region: "Nouvelle-Aquitaine" },
+{ number: "24", name: "Dordogne", prefecture: "Périgueux", region: "Nouvelle-Aquitaine" },
+{ number: "25", name: "Doubs", prefecture: "Besançon", region: "Bourgogne-Franche-Comté" },
+{ number: "26", name: "Drôme", prefecture: "Valence", region: "Auvergne-Rhône-Alpes" },
+{ number: "27", name: "Eure", prefecture: "Évreux", region: "Normandie" },
+{ number: "28", name: "Eure-et-Loir", prefecture: "Chartres", region: "Centre-Val de Loire" },
+{ number: "29", name: "Finistère", prefecture: "Quimper", region: "Bretagne" },
+{ number: "30", name: "Gard", prefecture: "Nîmes", region: "Occitanie" },
+{ number: "31", name: "Haute-Garonne", prefecture: "Toulouse", region: "Occitanie" },
+{ number: "32", name: "Gers", prefecture: "Auch", region: "Occitanie" },
+{ number: "33", name: "Gironde", prefecture: "Bordeaux", region: "Nouvelle-Aquitaine" },
+{ number: "34", name: "Hérault", prefecture: "Montpellier", region: "Occitanie" },
+{ number: "35", name: "Ille-et-Vilaine", prefecture: "Rennes", region: "Bretagne" },
+{ number: "36", name: "Indre", prefecture: "Châteauroux", region: "Centre-Val de Loire" },
+{ number: "37", name: "Indre-et-Loire", prefecture: "Tours", region: "Centre-Val de Loire" },
+{ number: "38", name: "Isère", prefecture: "Grenoble", region: "Auvergne-Rhône-Alpes" },
+{ number: "39", name: "Jura", prefecture: "Lons-le-Saunier", region: "Bourgogne-Franche-Comté" },
+{ number: "40", name: "Landes", prefecture: "Mont-de-Marsan", region: "Nouvelle-Aquitaine" },
+{ number: "41", name: "Loir-et-Cher", prefecture: "Blois", region: "Centre-Val de Loire" },
+{ number: "42", name: "Loire", prefecture: "Saint-Étienne", region: "Auvergne-Rhône-Alpes" },
+{ number: "43", name: "Haute-Loire", prefecture: "Le Puy-en-Velay", region: "Auvergne-Rhône-Alpes" },
+{ number: "44", name: "Loire-Atlantique", prefecture: "Nantes", region: "Pays de la Loire" },
+{ number: "45", name: "Loiret", prefecture: "Orléans", region: "Centre-Val de Loire" },
+{ number: "46", name: "Lot", prefecture: "Cahors", region: "Occitanie" },
+{ number: "47", name: "Lot-et-Garonne", prefecture: "Agen", region: "Nouvelle-Aquitaine" },
+{ number: "48", name: "Lozère", prefecture: "Mende", region: "Occitanie" },
+{ number: "49", name: "Maine-et-Loire", prefecture: "Angers", region: "Pays de la Loire" },
+{ number: "50", name: "Manche", prefecture: "Saint-Lô", region: "Normandie" },
+{ number: "51", name: "Marne", prefecture: "Châlons-en-Champagne", region: "Grand Est" },
+{ number: "52", name: "Haute-Marne", prefecture: "Chaumont", region: "Grand Est" },
+{ number: "53", name: "Mayenne", prefecture: "Laval", region: "Pays de la Loire" },
+{ number: "54", name: "Meurthe-et-Moselle", prefecture: "Nancy", region: "Grand Est" },
+{ number: "55", name: "Meuse", prefecture: "Bar-le-Duc", region: "Grand Est" },
+{ number: "56", name: "Morbihan", prefecture: "Vannes", region: "Bretagne" },
+{ number: "57", name: "Moselle", prefecture: "Metz", region: "Grand Est" },
+{ number: "58", name: "Nièvre", prefecture: "Nevers", region: "Bourgogne-Franche-Comté" },
+{ number: "59", name: "Nord", prefecture: "Lille", region: "Hauts-de-France" },
+{ number: "60", name: "Oise", prefecture: "Beauvais", region: "Hauts-de-France" },
+{ number: "61", name: "Orne", prefecture: "Alençon", region: "Centre-Val de Loire" },
+{ number: "62", name: "Pas-de-Calais", prefecture: "Arras", region: "Hauts-de-France" },
+{ number: "63", name: "Puy-de-Dôme", prefecture: "Clermont-Ferrand", region: "Auvergne-Rhône-Alpes" },
+{ number: "64", name: "Pyrénées-Atlantiques", prefecture: "Pau", region: "Nouvelle-Aquitaine" },
+{ number: "65", name: "Hautes-Pyrénées", prefecture: "Tarbes", region: "Occitanie" },
+{ number: "66", name: "Pyrénées-Orientales", prefecture: "Perpignan", region: "Occitanie" },
+{ number: "67", name: "Bas-Rhin", prefecture: "Strasbourg", region: "Grand Est" },
+{ number: "68", name: "Haut-Rhin", prefecture: "Colmar", region: "Grand Est" },
+{ number: "69", name: "Rhône", prefecture: "Lyon", region: "Auvergne-Rhône-Alpes" },
+{ number: "70", name: "Haute-Saône", prefecture: "Vesoul", region: "Grand Est" },
+{ number: "71", name: "Saône-et-Loire", prefecture: "Mâcon", region: "Bourgogne-Franche-Comté" },
+{ number: "72", name: "Sarthe", prefecture: "Le Mans", region: "Pays de la Loire" },
+{ number: "73", name: "Savoie", prefecture: "Chambéry", region: "Auvergne-Rhône-Alpes" },
+{ number: "74", name: "Haute-Savoie", prefecture: "Annecy", region: "Auvergne-Rhône-Alpes" },
+{ number: "75", name: "Paris", prefecture: "Paris", region: "Île-de-France" },
+{ number: "76", name: "Seine-Maritime", prefecture: "Rouen", region: "Normandie" },
+{ number: "77", name: "Seine-et-Marne", prefecture: "Melun", region: "Île-de-France" },
+{ number: "78", name: "Yvelines", prefecture: "Versailles", region: "Île-de-France" },
+{ number: "79", name: "Deux-Sèvres", prefecture: "Niort", region: "Nouvelle-Aquitaine" },
+{ number: "80", name: "Somme", prefecture: "Amiens", region: "Hauts-de-France" },
+{ number: "81", name: "Tarn", prefecture: "Albi", region: "Occitanie" },
+{ number: "82", name: "Tarn-et-Garonne", prefecture: "Montauban", region: "Occitanie" },
+{ number: "83", name: "Var", prefecture: "Toulon", region: "Provence-Alpes-Côte d'Azur" },
+{ number: "84", name: "Vaucluse", prefecture: "Avignon", region: "Provence-Alpes-Côte d'Azur" },
+{ number: "85", name: "Vendée", prefecture: "La Roche-sur-Yon", region: "Pays de la Loire" },
+{ number: "86", name: "Vienne", prefecture: "Poitiers", region: "Nouvelle-Aquitaine" },
+{ number: "87", name: "Haute-Vienne", prefecture: "Limoges", region: "Nouvelle-Aquitaine" },
+{ number: "88", name: "Vosges", prefecture: "Épinal", region: "Grand Est" },
+{ number: "89", name: "Yonne", prefecture: "Auxerre", region: "Bourgogne-Franche-Comté" },
+{ number: "90", name: "Territoire de Belfort", prefecture: "Belfort", region: "Bourgogne-Franche-Comté" },
+{ number: "91", name: "Essonne", prefecture: "Évry-Courcouronnes", region: "Île-de-France" },
+{ number: "92", name: "Hauts-de-Seine", prefecture: "Nanterre", region: "Île-de-France" },
+{ number: "93", name: "Seine-Saint-Denis", prefecture: "Bobigny", region: "Île-de-France" },
+{ number: "94", name: "Val-de-Marne", prefecture: "Créteil", region: "Île-de-France" },
+{ number: "95", name: "Val-d'Oise", prefecture: "Cergy", region: "Île-de-France" },
+{ number: "971", name: "Guadeloupe", prefecture: "Basse-Terre", region: "DROM" },
+{ number: "972", name: "Martinique", prefecture: "Fort-de-France", region: "DROM" },
+{ number: "973", name: "Guyane", prefecture: "Cayenne", region: "DROM" },
+{ number: "974", name: "La Réunion", prefecture: "Saint-Denis", region: "DROM" },
+{ number: "976", name: "Mayotte", prefecture: "Dzaoudzi", region: "DROM" }
 ];
 
 let current = null;
-let remainingDepartments = [...departments]; // Copie de la liste complète
-
+let activeDepartments = [...departments]; // La liste filtrée selon les régions
+let remainingDepartments = [];            // Les départements qu'il reste à jouer
+let sessionHistory = {};
 // --- GESTION DE SESSION ---
 
 // --- RESTAURATION MODE INVITÉ ---
@@ -426,37 +467,158 @@ async function restoreSession() {
         applySessionToUI(snapshot.val());
     }
 }
+// --- GESTION DES FILTRES ---
+
+async function saveFilters(selected) {
+    localStorage.setItem('france_filters', JSON.stringify(selected)); 
+    if (currentUserUid) {
+        try {
+            await set(ref(db, `users/${currentUserUid}/games/france/settings/filters`), selected);
+        } catch(e) { console.error("Erreur saveFilters:", e); }
+    }
+}
+
+async function restoreFilters() {
+    let selected = JSON.parse(localStorage.getItem('france_filters'));
+    
+    // Si connecté, priorité aux données Firebase
+    if (currentUserUid) {
+        try {
+            const snap = await get(ref(db, `users/${currentUserUid}/games/france/settings/filters`));
+            if (snap.exists()) selected = snap.val();
+        } catch(e) { console.error("Erreur restoreFilters Firebase:", e); }
+    }
+
+    if (selected && selected.length > 0) {
+        const checkboxes = document.querySelectorAll('.region-checkbox:not(#region-all)');
+        checkboxes.forEach(cb => {
+            cb.checked = selected.includes(cb.value);
+        });
+
+        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+        document.getElementById('region-all').checked = allChecked;
+
+        activeDepartments = departments.filter(d => selected.includes(d.region));
+    } else {
+        activeDepartments = [...departments];
+        document.querySelectorAll('.region-checkbox').forEach(cb => cb.checked = true);
+    }
+    updatePreviewCount();
+}
+
+function updatePreviewCount() {
+    const count = activeDepartments.length;
+    const previewEl = document.getElementById('preview-count');
+    if (previewEl) previewEl.textContent = count;
+    
+    const totalDisplay = document.getElementById('total-display');
+    if (totalDisplay) totalDisplay.textContent = count;
+}
+
+window.toggleRegionSelector = () => {
+    const selector = document.getElementById('region-selector');
+    const currentDisplay = window.getComputedStyle(selector).display;
+    selector.style.display = (currentDisplay === "none") ? "flex" : "none";
+};
+
+window.toggleAllCheckboxes = () => {
+    const checkboxes = document.querySelectorAll('.region-checkbox:not(#region-all)');
+    const btn = document.getElementById('bulk-toggle');
+    const allCheckbox = document.getElementById('region-all');
+    const anyChecked = Array.from(checkboxes).some(cb => cb.checked);
+
+    checkboxes.forEach(cb => cb.checked = !anyChecked);
+    if(allCheckbox) allCheckbox.checked = !anyChecked;
+
+    btn.textContent = anyChecked ? "Tout cocher" : "Tout décocher";
+    updatePreviewCountFromCheckboxes();
+};
+
+function updatePreviewCountFromCheckboxes() {
+    const checkboxes = document.querySelectorAll('.region-checkbox:not(#region-all):checked');
+    const currentSelected = Array.from(checkboxes).map(cb => cb.value);
+    const count = departments.filter(d => currentSelected.includes(d.region)).length;
+    const previewEl = document.getElementById('preview-count');
+    if (previewEl) previewEl.textContent = count;
+}
+
+window.applyRegionFilter = async () => {
+    const checkboxes = document.querySelectorAll('.region-checkbox:not(#region-all):checked');
+    const selected = Array.from(checkboxes).map(cb => cb.value);
+
+    if (selected.length === 0) return alert("Sélectionnez au moins une région !");
+    
+    activeDepartments = departments.filter(d => selected.includes(d.region));
+    saveFilters(selected);
+    
+    // VIDE LA MÉMOIRE DES RÉPONSES
+    if (currentUserUid) {
+        await remove(ref(db, `users/${currentUserUid}/games/france/session`));
+    } else {
+        localStorage.removeItem('france_session_guest');
+    }
+  
+    updatePreviewCount();
+    document.getElementById('region-selector').style.display = "none";
+    resetQuiz();
+};
+
+function resetQuiz() {
+    score = 0;
+    remainingDepartments = [...activeDepartments];
+    sessionHistory = {};
+    document.querySelectorAll('svg path').forEach(p => {
+        p.classList.remove('correct', 'incorrect', 'highlight');
+        p.style.cursor = 'default';
+    });
+    document.getElementById("score").textContent = "0";
+    document.getElementById("result").textContent = "";
+    document.getElementById("dept-name").value = "";
+    document.getElementById("prefecture").value = "";
+    getRandomDepartment();
+}
+window.resetQuiz = resetQuiz;
 
 // --- LOGIQUE COMMUNE D'AFFICHAGE ---
+// --- LOGIQUE COMMUNE D'AFFICHAGE ---
 function applySessionToUI(data) {
-    remainingDepartments = [...departments];
+    // IMPORTANT : On se base sur la liste filtrée !
+    remainingDepartments = [...activeDepartments];
     score = 0;
+    sessionHistory = {};
 
     Object.keys(data).forEach(deptNum => {
         const el = document.getElementById(deptNum);
-        const result = data[deptNum];
+        const resultData = data[deptNum];
+        
+        const isLegacy = typeof resultData === 'string';
+        const status = isLegacy ? resultData : resultData.status;
+
+        sessionHistory[deptNum] = isLegacy ? 
+            { status: status, guessedDept: 'Inconnu', guessedPref: 'Inconnu' } : 
+            resultData;
+
         if (el) {
-            if (result === 'correct') {
+            if (status === 'correct') {
                 el.classList.add('correct');
                 score++;
             } else {
                 el.classList.add('incorrect');
             }
+            el.style.cursor = 'pointer';
         }
         remainingDepartments = remainingDepartments.filter(d => d.number !== deptNum);
     });
     document.getElementById("score").textContent = score;
 }
 
-// --- LOGIQUE DU JEU ---
-
 function getRandomDepartment() {
     if (remainingDepartments.length === 0) {
+        if (activeDepartments.length === 0) return alert("Sélectionnez au moins une région !");
         handleGameOver();
         return;
     }
 
-    // Nettoyage visuel précédent
     if (current) {
         const prevPath = document.getElementById(current.number);
         if (prevPath && !prevPath.classList.contains('correct') && !prevPath.classList.contains('incorrect')) {
@@ -466,20 +628,53 @@ function getRandomDepartment() {
 
     const index = Math.floor(Math.random() * remainingDepartments.length);
     current = remainingDepartments[index];
+    
     document.getElementById("dept-number").textContent = current.number;
-    // Highlight sur la carte
     const path = document.getElementById(current.number);
-    if (path) {
-        path.classList.add("highlight");
-        // Optionnel : Zoom ou focus sur la carte ici si nécessaire
-    }
+    if (path) path.classList.add("highlight");
 
-    // Reset des champs
     document.getElementById("dept-name").value = "";
     document.getElementById("prefecture").value = "";
     document.getElementById("result").textContent = "";
     document.getElementById("dept-name").focus();
 }
+
+async function handleGameOver() {
+    const totalSelected = activeDepartments.length; // Calcul sur les régions choisies
+    const finalPercent = totalSelected > 0 ? Math.round((score / totalSelected) * 100) : 0;
+    document.getElementById('final-score').textContent = finalPercent;
+
+    if (currentUserUid) {
+        const statsRef = ref(db, `users/${currentUserUid}/games/france/stats`);
+        const snap = await get(statsRef);
+        let games = 1, avg = finalPercent;
+
+        if (snap.exists()) {
+            const d = snap.val();
+            games = (d.gamesPlayed || 0) + 1;
+            avg = Math.round(((d.averageScore || 0) * (games - 1) + finalPercent) / games);
+        }
+
+        await update(statsRef, { 
+            gamesPlayed: games, 
+            averageScore: avg, 
+            lastPlayed: new Date().toISOString() 
+        });
+        document.getElementById('global-average').textContent = avg;
+    }
+    document.getElementById('end-modal').style.display = 'flex';
+}
+
+window.startNewGame = async () => {
+    if (currentUserUid) {
+        await remove(ref(db, `users/${currentUserUid}/games/france/session`));
+    } else {
+        localStorage.removeItem('france_session_guest');
+    }
+    document.getElementById('end-modal').style.display = 'none';
+    resetQuiz();
+};
+// --- LOGIQUE DU JEU ---
 
 async function checkAnswer() {
     if (!current) return;
@@ -505,87 +700,128 @@ async function checkAnswer() {
         if (path) { path.classList.remove("highlight"); path.classList.add("incorrect"); }
     }
 
-    document.getElementById("score").textContent = score;
+document.getElementById("score").textContent = score;
 
-    // Mise à jour Firebase Session
-    const status = isCorrect ? 'correct' : 'wrong';
+    // NOUVEAU : On crée un objet de session détaillé
+    const sessionData = {
+        status: isCorrect ? 'correct' : 'wrong',
+        guessedDept: deptInput || '(vide)',
+        guessedPref: prefInput || '(vide)'
+    };
+    
+    sessionHistory[current.number] = sessionData;
+    if (path) path.style.cursor = 'pointer';
+
+    // Mise à jour Firebase ou LocalStorage avec l'objet complet
     if (currentUserUid) {
-        // Mode Compte -> Firebase
-        update(ref(db, `users/${currentUserUid}/games/france/session`), { [current.number]: status });
+        update(ref(db, `users/${currentUserUid}/games/france/session`), { [current.number]: sessionData });
     } else {
-        // Mode Invité -> LocalStorage
         const localSess = JSON.parse(localStorage.getItem('france_session_guest') || '{}');
-        localSess[current.number] = status;
+        localSess[current.number] = sessionData;
         localStorage.setItem('france_session_guest', JSON.stringify(localSess));
     }
 
-    // On retire le département joué de la liste courante
     remainingDepartments = remainingDepartments.filter(d => d.number !== current.number);
 
     setTimeout(() => { getRandomDepartment(); }, 1500);
 }
 
-async function handleGameOver() {
-    const total = departments.length;
-    const finalPercent = Math.round((score / total) * 100);
-    document.getElementById('final-score').textContent = finalPercent;
-
-    if (currentUserUid) {
-        const statsRef = ref(db, `users/${currentUserUid}/games/france/stats`);
-        const snap = await get(statsRef);
-        let games = 1, avg = finalPercent;
-
-        if (snap.exists()) {
-            const d = snap.val();
-            games = (d.gamesPlayed || 0) + 1;
-            avg = Math.round(((d.averageScore || 0) * (games - 1) + finalPercent) / games);
-        }
-
-        await update(statsRef, { 
-            gamesPlayed: games, 
-            averageScore: avg, 
-            lastPlayed: new Date().toISOString() 
-        });
-        document.getElementById('global-average').textContent = avg;
-    }
-    document.getElementById('end-modal').style.display = 'flex';
-}
-
-async function startNewGame() {
-    document.getElementById('end-modal').style.display = 'none';
-    if (currentUserUid) {
-        await remove(ref(db, `users/${currentUserUid}/games/france/session`));
-    }
-    // Reset local
-    score = 0;
-    remainingDepartments = [...departments];
-    document.querySelectorAll('svg path').forEach(p => p.classList.remove('correct', 'incorrect', 'highlight'));
-    document.getElementById("score").textContent = "0";
-    getRandomDepartment();
-}
+// --- INITIALISATION ---
 
 // --- INITIALISATION ---
 
 onAuthStateChanged(auth, async (user) => {
-    // PRIORITÉ : Profil choisi (active_uid)
     const savedUid = localStorage.getItem('active_uid');
 
     if (savedUid) {
         currentUserUid = savedUid;
         console.log("🇫🇷 [France] Mode Profil Connecté :", currentUserUid);
-        await restoreSession(); // Charge depuis Firebase
     } else {
         currentUserUid = null;
         console.log("🕹️ [France] Mode Invité");
-        restoreLocalGuestSession(); // Charge depuis LocalStorage
     }
 
-    // Lancer le jeu si pas déjà lancé
+    // 1. Charger les filtres en premier
+    await restoreFilters();
+    remainingDepartments = [...activeDepartments];
+    score = 0;
+
+    // 2. Charger l'historique
+    if (currentUserUid) {
+        await restoreSession();
+    } else {
+        restoreLocalGuestSession();
+    }
+
+    // 3. Lancer le jeu
     if (!current && remainingDepartments.length > 0) {
         getRandomDepartment();
+    } else if (remainingDepartments.length === 0 && activeDepartments.length > 0) {
+        handleGameOver();
     }
 });
 
+// Écouteurs pour le menu des filtres
+document.getElementById('region-all').addEventListener('change', (e) => {
+    const isChecked = e.target.checked;
+    document.querySelectorAll('.region-checkbox:not(#region-all)').forEach(cb => {
+        cb.checked = isChecked;
+    });
+    updatePreviewCountFromCheckboxes();
+});
+
+document.querySelectorAll('.region-checkbox').forEach(cb => {
+    cb.addEventListener('change', () => {
+        updatePreviewCountFromCheckboxes();
+    });
+});
+// --- AFFICHAGE DE L'HISTORIQUE AU CLIC ---
+window.showHistory = function(deptNum) {
+    const history = sessionHistory[deptNum];
+    if (!history) return; // Si le département n'a pas encore été joué
+
+    const deptInfo = departments.find(d => d.number === deptNum);
+
+    document.getElementById('info-title').textContent = `Département ${deptNum}`;
+    
+    const guessDisplay = document.getElementById('info-guess');
+    guessDisplay.innerHTML = `${history.guessedDept} <br> ${history.guessedPref}`;
+    guessDisplay.style.color = history.status === 'correct' ? 'green' : 'red';
+
+    document.getElementById('info-correct').innerHTML = `${deptInfo.name} <br> ${deptInfo.prefecture}`;
+
+    document.getElementById('info-modal').style.display = 'block';
+};
+
+// Ajouter l'événement de clic sur chaque département de la carte
+document.querySelectorAll('svg path.departement').forEach(path => {
+    path.addEventListener('click', () => {
+        const infoModal = document.getElementById('info-modal');
+        
+        // 1. On retire le contour orange de tous les autres départements
+        document.querySelectorAll('svg path.highlight-selected').forEach(p => {
+            p.classList.remove('highlight-selected');
+        });
+
+        // 2. Si le département n'a pas été joué, on ferme la modale et on arrête
+        if (!sessionHistory[path.id]) {
+            infoModal.style.display = 'none';
+            return;
+        }
+
+        // 3. Vérification si on veut fermer la modale (Toggle)
+        const currentTitle = document.getElementById('info-title').textContent;
+        const isAlreadyOpen = infoModal.style.display === 'block';
+
+        if (isAlreadyOpen && currentTitle.includes(path.id)) {
+            infoModal.style.display = 'none';
+        } else {
+            // 4. Sinon, on ouvre la modale et on applique le style orange
+            path.classList.add('highlight-selected');
+            showHistory(path.id);
+        }
+    });
+});
 // Gestion Clavier
 document.addEventListener("keydown", (e) => {
     if (e.key === "Enter") checkAnswer();

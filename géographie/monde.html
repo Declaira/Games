@@ -176,6 +176,11 @@ path {
   stroke-width: 0.5;
   transition: fill 0.3s;
 }
+:root {
+  --color-success: green;
+  --color-error: red;
+  --color-highlight: orange;
+}
 path.highlight {
   fill: orange;
 }
@@ -295,7 +300,7 @@ path.partial-correct {
       <p>Score : <span id="score" style="font-weight: bold; font-size: 20px; color: #2c3e50;">0</span> / <span id="total-display">196</span></p>
       <div style="position: relative; width: 100%; display: flex; justify-content: center;">
     
-    <button id="toggle-continents" onclick="toggleContinentSelector()">Afficher les continents</button>
+    <button id="toggle-continents" onclick="toggleContinentSelector()">Filtrer les continents</button>
 
     <div id="continent-selector">
         <button id="bulk-toggle" onclick="toggleAllCheckboxes()">Tout décocher</button>
@@ -900,10 +905,10 @@ path.partial-correct {
       const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
       defs.innerHTML = `
         <linearGradient id="partialGradient" x1="0" y1="0" x2="20" y2="20" gradientUnits="userSpaceOnUse" spreadMethod="repeat">
-          <stop offset="0%" stop-color="#2ecc71" />
-          <stop offset="50%" stop-color="#2ecc71" />
-          <stop offset="50%" stop-color="#e74c3c" />
-          <stop offset="100%" stop-color="#e74c3c" />
+          <stop offset="0%" stop-color="green" />
+          <stop offset="50%" stop-color="green" />
+          <stop offset="50%" stop-color="red" />
+          <stop offset="100%" stop-color="red" />
         </linearGradient>
       `;
       svg.appendChild(defs);
