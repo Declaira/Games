@@ -24,8 +24,7 @@ svg path.highlight {
 }
 svg path.highlight-selected {
   stroke: orange !important;
-  stroke-width: 2 !important; /* On épaissit le trait pour bien le voir */
-
+  stroke-width: 2 !important;
 }
 svg path.correct {
   fill: green !important;
@@ -33,6 +32,12 @@ svg path.correct {
 svg path.incorrect {
   fill: red !important;
 }
+
+
+svg path.partial {
+  fill: url(#partialGradient) !important;
+}
+
 
 svg {
   width: 100%;
@@ -213,12 +218,38 @@ body {
     </div>
 </div>
 <div id="info-modal" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 25px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.3); z-index: 1001; text-align: center; max-width: 300px; width: 90%; font-family: 'Quicksand', sans-serif;">
-    <h3 id="info-title" style="margin-bottom: 15px; color: #2c3e50;"></h3>
-    <p style="margin-bottom: 10px;"><strong>Votre proposition :</strong> <br><span id="info-guess" style="font-size: 1.1em;"></span></p>
-    <p><strong>La bonne réponse :</strong> <br><span id="info-correct" style="color: green; font-weight: bold; font-size: 1.1em;"></span></p>
-  </div>
+
+  <!-- Bouton fermer -->
+    <span id="close-modal-btn"
+        onmouseover="this.style.color='#000'" 
+        onmouseout="this.style.color='#888'"
+        style="position: absolute; top: 10px; right: 15px; cursor: pointer; font-size: 22px; font-weight: bold; color: #888;">
+    ✖
+    </span>
+
+  <h3 id="info-title" style="margin-bottom: 15px; color: #2c3e50;"></h3>
+
+  <p style="margin-bottom: 10px;">
+    <strong>Votre proposition :</strong><br>
+    <span id="info-guess" style="font-size: 1.1em;"></span>
+  </p>
+
+  <p>
+    <strong>La bonne réponse :</strong><br>
+    <span id="info-correct" style="color: green; font-weight: bold; font-size: 1.1em;"></span>
+  </p>
+
+</div>
 <div class="carte">
 <svg version="1.1" viewbox="0 0 667 578" x="0px" xml:space="preserve" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
+<defs>
+  <linearGradient id="partialGradient" x1="0" y1="0" x2="20" y2="20" gradientUnits="userSpaceOnUse" spreadMethod="repeat">
+    <stop offset="0%" stop-color="green" />
+    <stop offset="50%" stop-color="green" />
+    <stop offset="50%" stop-color="red" />
+    <stop offset="100%" stop-color="red" />
+  </linearGradient>
+</defs>
 <path class="region-01 departement departement-971 departement-guadeloupe" d="M35.87,487.13l0.7,7.2l-4.5-1.1l-2,1.7l-5.8-0.6l-1.7-1.2l4.9,0.5l3.2-4.4L35.87,487.13z M104.87,553.63 l-4.4-1.8l-1.9,0.8l0.2,2.1l-1.9,0.3l-2.2,4.9l0.7,2.4l1.7,2.9l3.4,1.2l3.4-0.5l5.3-5l-0.4-2.5L104.87,553.63z M110.27,525.53 l-6.7-2.2l-2.4-4.2l-11.1-2.5l-2.7-5.7l-0.7-7.7l-6.2-4.7l-5.9,5.5l-0.8,2.9l1.2,4.5l3.1,1.2l-1,3.4l-2.6,1.2l-2.5,5.1l-1.9-0.2 l-1,1.9l-4.3-0.7l1.8-0.7l-3.5-3.7l-10.4-4.1l-3.4,1.6l-2.4,4.8l-0.5,3.5l3.1,9.7l0.6,12l6.3,9l0.6,2.7c3-1.2,6-2.5,9.1-3.7l5.9-6.9 l-0.4-8.7l-2.8-5.3l0.2-5.5l3.6,0.2l0.9-1.7l1.4,3.1l6.8,2l13.8-4.9L110.27,525.53z" id="971" title="Guadeloupe"></path>
 <path class="region-02 departement departement-972 departement-martinique" d="m44.23,433.5l1.4-4.1l-6.2-7.5l0.3-5.8l4.8-4 l4.9-0.9l17,9.9l7,8.8l9.4-5.2l1.8,2.2l-2.8,0.8l0.7,2.6l-2.9,1l-2.2-2.4l-1.9,1.7l0.6,2.5l5.1,1.6l-5.3,4.9l1.6,2.3l4.5-1.5 l-0.8,5.6l3.7,0.2l7.6,19l-1.8,5.5l-4.1,5.1h-2.6l-2-3l3.7-5.7l-4.3,1.7l-2.5-2.5l-2.4,1.2l-6-2.8l-5.5,0.1l-5.4,3.5l-2.4-2.1 l0.2-2.7l-2-2l2.5-4.9l3.4-2.5l4.9,3.4l3.2-1.9l-4.4-4.7l0.2-2.4l-1.8,1.2l-7.2-1.1l-7.6-7L44.23,433.5z" id="972" title="Martinique"></path>
 <path class="region-03 departement departement-973 departement-guyane" d="m95.2,348.97l-11.7,16.4l0.3,2.4l-7.3,14.9 l-4.4,3.9l-2.6,1.3l-2.3-1.7l-4.4,0.8l0.7-1.8l-10.6-0.3l-4.3,0.8l-4.1,4.1l-9.1-4.4l6.6-11.8l0.3-6l4.2-10.8l-8.3-9.6l-2.7-8 l-0.6-11.4l3.8-7.5l5.9-5.4l1-4l4.2,0.5l-2.3-2l24.7,8.6l9.2,8.8l3.1,0.3l-0.7,1.2l6.1,4l1.4,4.1l-2.4,3.1l2.6-1.6l0.1-5.5l4,3.5 l2.4,7L95.2,348.97z" id="973" title="Guyane"></path>
@@ -568,7 +599,7 @@ function resetQuiz() {
     remainingDepartments = [...activeDepartments];
     sessionHistory = {};
     document.querySelectorAll('svg path').forEach(p => {
-        p.classList.remove('correct', 'incorrect', 'highlight');
+        p.classList.remove('correct', 'incorrect', 'highlight', 'partial');
         p.style.cursor = 'default';
     });
     document.getElementById("score").textContent = "0";
@@ -579,7 +610,6 @@ function resetQuiz() {
 }
 window.resetQuiz = resetQuiz;
 
-// --- LOGIQUE COMMUNE D'AFFICHAGE ---
 // --- LOGIQUE COMMUNE D'AFFICHAGE ---
 function applySessionToUI(data) {
     // IMPORTANT : On se base sur la liste filtrée !
@@ -602,6 +632,9 @@ function applySessionToUI(data) {
             if (status === 'correct') {
                 el.classList.add('correct');
                 score++;
+            } else if (status === 'partial') {
+                    el.classList.add('partial');
+                    score += 0.5;
             } else {
                 el.classList.add('incorrect');
             }
@@ -638,6 +671,7 @@ function getRandomDepartment() {
     document.getElementById("result").textContent = "";
     document.getElementById("dept-name").focus();
 }
+
 
 async function handleGameOver() {
     const totalSelected = activeDepartments.length; // Calcul sur les régions choisies
@@ -683,38 +717,83 @@ async function checkAnswer() {
     const prefInput = document.getElementById("prefecture").value;
     const path = document.getElementById(current.number);
 
-    // Fonction de normalisation (accents, minuscules)
-    const normalize = (str) => str.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const normalize = (str) =>
+        str.trim().toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/-/g, " ")
+        .replace(/\s+/g, " ");
 
-    const isCorrect = normalize(deptInput) === normalize(current.name) && 
-                      normalize(prefInput) === normalize(current.prefecture);
+    const deptCorrect = normalize(deptInput) === normalize(current.name);
+    const prefCorrect = normalize(prefInput) === normalize(current.prefecture);
 
-    if (isCorrect) {
+    let status = "wrong";
+
+    // ✅ CAS 1 : tout correct
+    if (deptCorrect && prefCorrect) {
         if(window.playSound) playSound("correct");
-        document.getElementById("result").textContent = "✅ Bonne réponse !";
-        score++;
-        if (path) { path.classList.remove("highlight"); path.classList.add("correct"); }
-    } else {
-        if(window.playSound) playSound("incorrect");
-        document.getElementById("result").textContent = `❌ Perdu ! C'était ${current.name} (${current.prefecture})`;
-        if (path) { path.classList.remove("highlight"); path.classList.add("incorrect"); }
+
+        document.getElementById("result").textContent = "✅ Parfait !";
+        score += 1;
+        status = "correct";
+
+        if (path) {
+            path.classList.remove("highlight");
+            path.classList.add("correct");
+        }
     }
 
-document.getElementById("score").textContent = score;
+    // 🟡 CAS 2 : demi point
+    else if (deptCorrect || prefCorrect) {
+        // ✅ Si le DÉPARTEMENT est correct
+        if (deptCorrect) {
+            document.getElementById("result").textContent =
+                `Presque ! La préfecture était : ${current.prefecture}`;
+        } 
+        // ✅ Si la PRÉFECTURE est correcte
+        else {
+            document.getElementById("result").textContent =
+                `Presque ! Le département était : ${current.name}`;
+        }
+        score += 0.5;
+        status = "partial";
+        if (path) {
+            path.classList.remove("highlight");
+            path.classList.add("partial");
+        }
+    }
 
-    // NOUVEAU : On crée un objet de session détaillé
+    // ❌ CAS 3 : faux
+    else {
+        if(window.playSound) playSound("incorrect");
+
+        document.getElementById("result").textContent =
+            `❌ Faux ! C’était ${current.name} (${current.prefecture})`;
+
+        status = "wrong";
+
+        if (path) {
+            path.classList.remove("highlight");
+            path.classList.add("incorrect");
+        }
+    }
+
+    document.getElementById("score").textContent = score;
+
+    // session
     const sessionData = {
-        status: isCorrect ? 'correct' : 'wrong',
+        status: status,
         guessedDept: deptInput || '(vide)',
         guessedPref: prefInput || '(vide)'
     };
-    
+
     sessionHistory[current.number] = sessionData;
     if (path) path.style.cursor = 'pointer';
 
-    // Mise à jour Firebase ou LocalStorage avec l'objet complet
     if (currentUserUid) {
-        update(ref(db, `users/${currentUserUid}/games/france/session`), { [current.number]: sessionData });
+        update(ref(db, `users/${currentUserUid}/games/france/session`), {
+            [current.number]: sessionData
+        });
     } else {
         const localSess = JSON.parse(localStorage.getItem('france_session_guest') || '{}');
         localSess[current.number] = sessionData;
@@ -725,8 +804,6 @@ document.getElementById("score").textContent = score;
 
     setTimeout(() => { getRandomDepartment(); }, 1500);
 }
-
-// --- INITIALISATION ---
 
 // --- INITIALISATION ---
 
@@ -784,11 +861,30 @@ window.showHistory = function(deptNum) {
 
     document.getElementById('info-title').textContent = `Département ${deptNum}`;
     
-    const guessDisplay = document.getElementById('info-guess');
-    guessDisplay.innerHTML = `${history.guessedDept} <br> ${history.guessedPref}`;
-    guessDisplay.style.color = history.status === 'correct' ? 'green' : 'red';
+    // 1. Normalisation pour comparer correctement
+    const normalize = (str) =>
+        str.trim().toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/-/g, " ")
+        .replace(/\s+/g, " ");
+    // 2. Comparaison individuelle
+    const isDeptGood = normalize(history.guessedDept) === normalize(deptInfo.name);
+    const isPrefGood = normalize(history.guessedPref) === normalize(deptInfo.prefecture);
 
-    document.getElementById('info-correct').innerHTML = `${deptInfo.name} <br> ${deptInfo.prefecture}`;
+    // 3. Attribution des couleurs
+    const deptColor = isDeptGood ? "green" : "red";
+    const prefColor = isPrefGood ? "green" : "red";
+
+    // 4. Injection avec span pour colorer chaque ligne séparément
+    const guessDisplay = document.getElementById('info-guess');
+    guessDisplay.innerHTML = `
+        <span style="color: ${deptColor}">${history.guessedDept}</span> <br> 
+        <span style="color: ${prefColor}">${history.guessedPref}</span>
+    `;
+
+    document.getElementById('info-correct').innerHTML = 
+        `<span style="color: green">${deptInfo.name} <br> ${deptInfo.prefecture}</span>`;
 
     document.getElementById('info-modal').style.display = 'block';
 };
@@ -797,31 +893,74 @@ window.showHistory = function(deptNum) {
 document.querySelectorAll('svg path.departement').forEach(path => {
     path.addEventListener('click', () => {
         const infoModal = document.getElementById('info-modal');
-        
+
         // 1. On retire le contour orange de tous les autres départements
         document.querySelectorAll('svg path.highlight-selected').forEach(p => {
             p.classList.remove('highlight-selected');
         });
 
-        // 2. Si le département n'a pas été joué, on ferme la modale et on arrête
+        // 2. Si le département n'a pas été joué (gris)
         if (!sessionHistory[path.id]) {
-            infoModal.style.display = 'none';
+
+            const dept = remainingDepartments.find(d => d.number === path.id);
+
+            if (dept) {
+
+                // enlever highlight "question actuelle"
+                if (current) {
+                    const prevPath = document.getElementById(current.number);
+                    if (prevPath) prevPath.classList.remove("highlight");
+                }
+
+                // ✅ PAS de contour orange ici !
+
+                // définir comme question ACTIVE
+                current = dept;
+
+                // update UI
+                document.getElementById("dept-number").textContent = current.number;
+
+                path.classList.add("highlight");
+
+                document.getElementById("dept-name").value = "";
+                document.getElementById("prefecture").value = "";
+                document.getElementById("result").textContent = "";
+
+            } else {
+                infoModal.style.display = 'none';
+            }
+
             return;
         }
 
-        // 3. Vérification si on veut fermer la modale (Toggle)
+        // 3. Département déjà joué ✅ (rouge / vert)
         const currentTitle = document.getElementById('info-title').textContent;
         const isAlreadyOpen = infoModal.style.display === 'block';
 
         if (isAlreadyOpen && currentTitle.includes(path.id)) {
             infoModal.style.display = 'none';
         } else {
-            // 4. Sinon, on ouvre la modale et on applique le style orange
+            // ✅ contour orange UNIQUEMENT ici
             path.classList.add('highlight-selected');
+
             showHistory(path.id);
         }
     });
 });
+
+
+document.getElementById("close-modal-btn").addEventListener("click", (e) => {
+    e.stopPropagation(); // important pour éviter interaction avec la carte
+
+    const infoModal = document.getElementById("info-modal");
+
+    document.querySelectorAll('svg path.highlight-selected').forEach(p => {
+        p.classList.remove('highlight-selected');
+    });
+
+    infoModal.style.display = "none";
+});
+
 // Gestion Clavier
 document.addEventListener("keydown", (e) => {
     if (e.key === "Enter") checkAnswer();

@@ -57,6 +57,10 @@ body {
   margin-bottom: 5px;
 }
 
+#flag {
+    cursor: pointer;
+}
+
 /* --- INPUTS ET BOUTONS (LARGEUR UNIFIÉE) --- */
 .quiz-section input, 
 .quiz-section button {
@@ -162,7 +166,15 @@ button:active { transform: scale(0.98); }
   align-items: flex-start;
 }
 
+#zoomContainer {
+    overflow: hidden;
+    position: relative;
+}
+
+
+
 svg {
+  transform-origin: 0 0;
   width: 100%;
   height: auto;
   display: block;
@@ -183,6 +195,10 @@ path {
 }
 path.highlight {
   fill: orange;
+}
+path.highlight-selected {
+  stroke: orange;
+  stroke-width: 2.5px;
 }
 path.correct {
   fill: green !important;
@@ -321,13 +337,28 @@ path.partial-correct {
 </div>
     </div>
     <div id="end-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; flex-direction: column; color: white; font-family: 'Quicksand', sans-serif;">
-    <div style="background: white; color: #2c3e50; padding: 30px; border-radius: 20px; text-align: center; max-width: 400px; width: 90%;">
-        <h2 style="color: #e67e22;">Bravo !</h2>
-        <p style="font-size: 1.2em;">Score final : <span id="final-score" style="font-weight: bold; color: #ff6f00;">0</span>%</p>
-        <p>Moyenne globale : <span id="global-average" style="font-weight: bold;">--</span>%</p>
-        <button onclick="startNewGame()" style="margin-top: 20px; width: 100%; padding: 10px; background: #e67e22; color: white; border: none; border-radius: 5px; cursor: pointer;">Rejouer</button>
+      <div style="background: white; color: #2c3e50; padding: 30px; border-radius: 20px; text-align: center; max-width: 400px; width: 90%;">
+          <h2 style="color: #e67e22;">Bravo !</h2>
+          <p style="font-size: 1.2em;">Score final : <span id="final-score" style="font-weight: bold; color: #ff6f00;">0</span>%</p>
+          <p>Moyenne globale : <span id="global-average" style="font-weight: bold;">--</span>%</p>
+          <button onclick="startNewGame()" style="margin-top: 20px; width: 100%; padding: 10px; background: #e67e22; color: white; border: none; border-radius: 5px; cursor: pointer;">Rejouer</button>
+      </div>
     </div>
-</div>
+    <div id="info-modal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:white; padding:25px; border-radius:15px; box-shadow:0 5px 20px rgba(0,0,0,0.3); z-index:1001; text-align:center; max-width:300px; width:90%;">
+      <span id="close-modal-btn"
+            style="position:absolute; top:10px; right:15px; cursor:pointer; font-size:22px; color:#888;">
+        ✖
+      </span>
+      <h3 id="info-title"></h3>
+      <p>
+        <strong>Votre réponse :</strong><br>
+        <span id="info-guess"></span>
+      </p>
+      <p>
+        <strong>Bonne réponse :</strong><br>
+        <span id="info-correct" style="color:green; font-weight:bold;"></span>
+      </p>
+    </div>
   <div class="zoom-wrapper" id="zoomContainer">
     <svg id="map" baseprofile="tiny" fill="#ececec" height="857" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width=".2" version="1.2" viewbox="0 0 2000 857" width="2000" xmlns="http://www.w3.org/2000/svg">
       <path d="M1383 261.6l1.5 1.8-2.9 0.8-2.4 1.1-5.9 0.8-5.3 1.3-2.4 2.8 1.9 2.7 1.4 3.2-2 2.7 0.8 2.5-0.9 2.3-5.2-0.2 3.1 4.2-3.1 1.7-1.4 3.8 1.1 3.9-1.8 1.8-2.1-0.6-4 0.9-0.2 1.7-4.1 0-2.3 3.7 0.8 5.4-6.6 2.7-3.9-0.6-0.9 1.4-3.4-0.8-5.3 1-9.6-3.3 3.9-5.8-1.1-4.1-4.3-1.1-1.2-4.1-2.7-5.1 1.6-3.5-2.5-1 0.5-4.7 0.6-8 5.9 2.5 3.9-0.9 0.4-2.9 4-0.9 2.6-2-0.2-5.1 4.2-1.3 0.3-2.2 2.9 1.7 1.6 0.2 3 0 4.3 1.4 1.8 0.7 3.4-2 2.1 1.2 0.9-2.9 3.2 0.1 0.6-0.9-0.2-2.6 1.7-2.2 3.3 1.4-0.1 2 1.7 0.3 0.9 5.4 2.7 2.1 1.5-1.4 2.2-0.6 2.5-2.9 3.8 0.5 5.4 0z" id="AF" name="Afghanistan">
@@ -900,77 +931,116 @@ path.partial-correct {
        </div>
 
 <script type="module">
-      const svg = document.getElementById("map");
-      // Création du motif de hachures Vert/Rouge
-      const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
-      defs.innerHTML = `
-        <linearGradient id="partialGradient" x1="0" y1="0" x2="20" y2="20" gradientUnits="userSpaceOnUse" spreadMethod="repeat">
-          <stop offset="0%" stop-color="green" />
-          <stop offset="50%" stop-color="green" />
-          <stop offset="50%" stop-color="red" />
-          <stop offset="100%" stop-color="red" />
-        </linearGradient>
-      `;
-      svg.appendChild(defs);
-      const container = document.getElementById("zoomContainer");
+const svg = document.getElementById("map");
+// Création du motif (gardé tel quel)
+const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+defs.innerHTML = `
+    <linearGradient id="partialGradient" x1="0" y1="0" x2="20" y2="20" gradientUnits="userSpaceOnUse" spreadMethod="repeat">
+        <stop offset="0%" stop-color="green" />
+        <stop offset="50%" stop-color="green" />
+        <stop offset="50%" stop-color="red" />
+        <stop offset="100%" stop-color="red" />
+    </linearGradient>
+`;
+svg.appendChild(defs);
+
+const container = document.getElementById("zoomContainer");
+
+let scale = 1;
+let panX = 0;
+let panY = 0;
+let isPanning = false;
+let start = { x: 0, y: 0 };
+
+async function updateTransform() {
+    svg.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
     
-      let scale = 1;
-      let panX = 0;
-      let panY = 0;
-      let isPanning = false;
-      let start = { x: 0, y: 0 };
+    // Log de suivi pour le débogage
+    //console.log(`%c[VUE SAUVEGARDÉE] scale: ${scale.toFixed(2)}, panX: ${panX.toFixed(0)}, panY: ${panY.toFixed(0)}`, 'background: #2c3e50; color: #fff; padding: 5px; border-radius: 3px;');
+
+    // On prépare l'objet de sauvegarde
+    const saveObject = {
+        session: sessionHistory,
+        view: { scale, panX, panY }
+    };
+
+    // Sauvegarde persistante
+    if (currentUserUid) {
+        // Optionnel : utilisez set() ou update() selon votre besoin de performance
+        // update() est préférable ici pour ne pas écraser tout si vous n'avez pas tout le contexte
+        try {
+            await update(ref(db, `users/${currentUserUid}/games/monde/session`), { view: { scale, panX, panY } });
+        } catch (e) { console.error("Erreur save view Firebase:", e); }
+    } else {
+        const localSess = JSON.parse(localStorage.getItem('monde_session_guest') || '{}');
+        localSess.view = { scale, panX, panY };
+        localStorage.setItem('monde_session_guest', JSON.stringify(localSess));
+    }
+}
+
+// 1. Zoom Molette
+container.addEventListener("wheel", function (e) {
+    e.preventDefault();
+    const rect = container.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    const worldX = (mouseX - panX) / scale;
+    const worldY = (mouseY - panY) / scale;
+
+    const zoomIntensity = 0.1;
+    const delta = e.deltaY > 0 ? -1 : 1;
+    const zoom = 1 + delta * zoomIntensity;
+
+    const newScale = Math.max(0.4, Math.min(10, scale * zoom)); // Limites
     
-      function updateTransform() {
-        svg.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
-      }
-    
-      container.addEventListener("wheel", function (e) {
+    scale = newScale;
+    panX = mouseX - worldX * scale;
+    panY = mouseY - worldY * scale;
+
+    updateTransform();
+});
+
+// 2. Gestion Clics (Déplacement ET Reset)
+container.addEventListener("mousedown", (e) => {
+    // A. Reset au clic molette (bouton 1)
+    if (e.button === 1) {
         e.preventDefault();
-        const zoomIntensity = 0.1;
-        const rect = container.getBoundingClientRect();
-        const mouseX = e.clientX - rect.left;
-        const mouseY = e.clientY - rect.top;
-    
-        const offsetX = (mouseX - panX) / scale;
-        const offsetY = (mouseY - panY) / scale;
-    
-        const delta = e.deltaY > 0 ? -1 : 1;
-        const zoom = 1 + delta * zoomIntensity;
-    
-        const newScale = scale * zoom;
-        if (newScale < 0.4 || newScale > 10) return;
-    
-        panX -= offsetX * (zoom - 1) * scale;
-        panY -= offsetY * (zoom - 1) * scale;
-        scale = newScale;
-    
+        scale = 1;
+        panX = 0;
+        panY = 0;
         updateTransform();
-      });
-    
-      container.addEventListener("mousedown", (e) => {
+        return; // On arrête là
+    }
+
+    // B. Déplacement (clic gauche)
+    if (e.button === 0) {
         isPanning = true;
         start = { x: e.clientX - panX, y: e.clientY - panY };
         container.style.cursor = "grabbing";
-      });
-    
-      container.addEventListener("mousemove", (e) => {
-        if (!isPanning) return;
-        panX = e.clientX - start.x;
-        panY = e.clientY - start.y;
-        updateTransform();
-      });
-    
-      container.addEventListener("mouseup", () => {
-        isPanning = false;
-        container.style.cursor = "grab";
-      });
-    
-      container.addEventListener("mouseleave", () => {
-        isPanning = false;
-        container.style.cursor = "grab";
-      });
-    
-      updateTransform();
+    }
+});
+
+// 3. Déplacement de la souris
+container.addEventListener("mousemove", (e) => {
+    if (!isPanning) return;
+    panX = e.clientX - start.x;
+    panY = e.clientY - start.y;
+    updateTransform();
+});
+
+// 4. Fin de déplacement
+container.addEventListener("mouseup", () => {
+    isPanning = false;
+    container.style.cursor = "grab";
+});
+
+container.addEventListener("mouseleave", () => {
+    isPanning = false;
+    container.style.cursor = "grab";
+});
+
+updateTransform();
 const countries = [
   { id: "AF", name: "Afghanistan", capital: "Kaboul", flag: "https://flagcdn.com/af.svg" },
   { id: "AL", name: "Albanie", capital: "Tirana", flag: "https://flagcdn.com/al.svg" },
@@ -1190,7 +1260,7 @@ const db = getDatabase(app);
 
 let currentUserUid = null;
 let score = 0, current = null, activeCountries = [], remainingCountries = [];
-
+let sessionHistory = {};
 // --- GESTION DES FILTRES ---
 
 async function saveFilters(selected) {
@@ -1203,20 +1273,12 @@ async function saveFilters(selected) {
     }
 }
 
+
 // --- LOGIQUE DU JEU ---
+function displayCurrentCountry() {
+    if (!current) return;
 
-function getRandomCountry() {
-    if (remainingCountries.length === 0) {
-        if (activeCountries.length === 0) return alert("Sélectionnez au moins un continent !");
-        handleGameOver();
-        return;
-    }
-
-    if (current) document.getElementById(current.id)?.classList.remove('highlight');
-    const index = Math.floor(Math.random() * remainingCountries.length);
-    current = remainingCountries.splice(index, 1)[0];
-
-    // Mise à jour Drapeau
+    // ✅ flag
     const flagImg = document.getElementById("flag");
     if (current.flag) {
         flagImg.src = current.flag;
@@ -1225,109 +1287,297 @@ function getRandomCountry() {
         flagImg.style.display = "none";
     }
 
-    document.getElementById(current.id)?.classList.add("highlight");
+    // ✅ reset inputs
     document.getElementById("country").value = "";
     document.getElementById("capital").value = "";
     document.getElementById("result").textContent = "";
+
+    // ✅ focus
     document.getElementById("country").focus();
+}
+
+function getRandomCountry() {
+    if (remainingCountries.length === 0) {
+        if (activeCountries.length === 0) return alert("Sélectionnez au moins un continent !");
+        handleGameOver();
+        return;
+    }
+
+    // On retire la surbrillance de l'ancien s'il n'est pas validé
+    if (current) {
+        const prevPath = document.getElementById(current.id);
+        if (prevPath && !prevPath.classList.contains('correct') && !prevPath.classList.contains('incorrect') && !prevPath.classList.contains('partial-correct')) {
+            prevPath.classList.remove('highlight');
+        }
+    }
+
+    const index = Math.floor(Math.random() * remainingCountries.length);
+    current = remainingCountries[index]; 
+
+    document.getElementById(current.id)?.classList.add("highlight");
+
+    displayCurrentCountry();
 }
 
 async function checkCountryAnswer() {
     if (!current) return;
 
-    // 1. Récupération sécurisée des inputs
-    const cInput = document.getElementById("country")?.value || "";
-    const capInput = document.getElementById("capital")?.value || "";
+    const cInput = document.getElementById("country").value || "";
+    const capInput = document.getElementById("capital").value || "";
     const path = document.getElementById(current.id);
 
-    // 2. Fonction de normalisation (sécurisée contre les erreurs de type)
     const normalize = (s) => {
-        if (!s || typeof s !== 'string') return ""; 
+        if (!s || typeof s !== "string") return "";
         return s.trim()
-                .toLowerCase()
-                .normalize("NFD")
-                .replace(/[\u0300-\u036f]/g, "") // Supprime les accents
-                .replace(/-/g, " ");             // Remplace tirets par espaces
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/-/g, " ");
     };
 
-    // 3. Préparation des listes de réponses (Noms et Capitales)
     const expectedNames = Array.isArray(current.name) ? current.name : [current.name];
-    const expectedCapitals = Array.isArray(current.capital) ? current.capital : [current.capital];
-    
-    // 4. Vérification individuelle
-    const isNameCorrect = expectedNames.some(n => normalize(cInput) === normalize(n));
-    const isCapCorrect = expectedCapitals.some(c => normalize(capInput) === normalize(c));
+    const expectedCaps = Array.isArray(current.capital) ? current.capital : [current.capital];
 
-    // 5. Logique de score et application des styles
-    let status = 'wrong'; // Valeur par défaut pour Firebase
-    
-    // Nettoyage des anciennes classes au cas où
+    const isNameCorrect = expectedNames.some(n => normalize(cInput) === normalize(n));
+    const isCapCorrect = expectedCaps.some(c => normalize(capInput) === normalize(c));
+
+    let status = "wrong";
+
     path?.classList.remove("correct", "incorrect", "partial-correct", "highlight");
 
     if (isNameCorrect && isCapCorrect) {
-        // TOUT JUSTE : 1 point
         score += 1;
-        status = 'correct';
+        status = "correct";
         path?.classList.add("correct");
         document.getElementById("result").textContent = "✅ Bonne réponse !";
     } 
     else if (isNameCorrect || isCapCorrect) {
-        // UN SEUL DES DEUX : 0.5 point
         score += 0.5;
-        status = 'partial';
+        status = "partial";
         path?.classList.add("partial-correct");
 
-        const displayName = expectedNames[0];
-        const displayCap = expectedCapitals[0];
-
-        if (isNameCorrect) {
-            // Le pays est bon, on affiche la capitale manquante
-            document.getElementById("result").textContent = `Presque ! La capitale était : ${displayCap}`;
-        } else {
-            // La capitale est bonne, on affiche le pays manquant
-            document.getElementById("result").textContent = `Presque ! Le pays était : ${displayName}`;
-        }
+        document.getElementById("result").textContent =
+            isNameCorrect
+                ? `Presque ! Capitale : ${expectedCaps[0]}`
+                : `Presque ! Pays : ${expectedNames[0]}`;
     }
     else {
-        // TOUT FAUX : 0 point
-        status = 'wrong';
+        status = "wrong";
         path?.classList.add("incorrect");
-        const displayName = expectedNames[0];
-        const displayCap = expectedCapitals[0];
-        document.getElementById("result").textContent = `❌ Faux. C'était ${displayName} (${displayCap})`;
+        document.getElementById("result").textContent =
+            `❌ ${expectedNames[0]} (${expectedCaps[0]})`;
     }
 
-    // 6. Mise à jour de l'affichage du score (propre)
-    // On utilise Number.isInteger pour ne pas afficher ".0" inutilement
-    document.getElementById("score").textContent = Number.isInteger(score) ? score : score.toFixed(1);
+    document.getElementById("score").textContent =
+        Number.isInteger(score) ? score : score.toFixed(1);
 
-    // 7. Enregistrement Firebase
+    // ✅ 1. Crée UNE structure unique (comme France)
+    const sessionData = {
+        guess: {
+            country: cInput || "(vide)",
+            capital: capInput || "(vide)"
+        },
+        correct: {
+            country: expectedNames[0],
+            capital: expectedCaps[0]
+        },
+        status: status
+    };
+
+    // ✅ 2. Mémoire JS
+    sessionHistory[current.id] = sessionData;
+
+    // ✅ 3. Sauvegarde (UNE SEULE FOIS)
     if (currentUserUid) {
-        // Sauvegarde sur ton profil
-        update(ref(db, `users/${currentUserUid}/games/monde/session`), { [current.id]: status })
-        .catch(e => console.error("Erreur save Firebase:", e));
+        await update(ref(db, `users/${currentUserUid}/games/monde/session`), {
+            [current.id]: sessionData
+        });
     } else {
-        // Sauvegarde locale pour l'invité
         const localSess = JSON.parse(localStorage.getItem('monde_session_guest') || '{}');
-        localSess[current.id] = status;
+        localSess[current.id] = sessionData;
         localStorage.setItem('monde_session_guest', JSON.stringify(localSess));
     }
 
-    // 8. Prochain pays
-    setTimeout(getRandomCountry, 2000); // 2 secondes pour laisser le temps de lire la correction
-}
+    // ✅ 4. Enlever du pool
+    remainingCountries = remainingCountries.filter(c => c.id !== current.id);
 
-function resetQuiz() {
-    score = 0;
-    remainingCountries = [...activeCountries];
-    // On retire absolument toutes les classes de statut sur tous les pays
-    document.querySelectorAll('svg path').forEach(p => {
-        p.classList.remove('correct', 'incorrect', 'partial-correct', 'highlight');
-    });
-    document.getElementById("score").textContent = "0";
-    document.getElementById("result").textContent = "Carte réinitialisée";
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // AJOUT : Retour automatique à la vue continentale
+    restoreContinentView();
     getRandomCountry();
 }
+
+function getRealBBox(path) {
+    const rect = path.getBoundingClientRect();
+    const containerRect = container.getBoundingClientRect();
+    
+    // 1. Taille du pays dans l'espace logique (en px)
+    const w = rect.width / scale;
+    const h = rect.height / scale;
+    
+    // 2. Calcul de la marge adaptative :
+    // Si le pays est petit (< 100px), on réduit la marge.
+    // Si le pays est grand, on garde une marge confortable.
+    const minSize = Math.min(w, h);
+    const marginFactor = minSize < 20 ? 1.0 : 1.5; // 10% pour les petits, 60% pour les grands
+    
+    const width = w * marginFactor;
+    const height = h * marginFactor;
+    
+    // 3. Calcul du centre
+    const centerX = (rect.left - containerRect.left) / scale - (panX / scale) + (w / 2);
+    const centerY = (rect.top - containerRect.top) / scale - (panY / scale) + (h / 2);
+
+    return {
+        x: centerX - (width / 2),
+        y: centerY - (height / 2),
+        width: width,
+        height: height
+    };
+}
+
+async function zoomToCountry(countryId) {
+    const path = document.getElementById(countryId);
+    if (!path) return;
+
+    // 1. Récupération de la BBox normalisée
+    const bbox = getRealBBox(path);
+    
+    // 2. Dimensions visibles du conteneur
+    const padding = 40;
+    const availableWidth = container.clientWidth - padding;
+    const availableHeight = container.clientHeight - padding;
+
+    // 3. Calcul du nouveau scale cible
+    // On veut que le pays remplisse l'espace disponible
+    const targetScale = Math.min(
+        availableWidth / bbox.width,
+        availableHeight / bbox.height
+    );
+
+    // 4. Calcul de la position (centrage)
+    // On calcule le centre du pays dans l'espace "brut" du SVG
+    // puis on applique le nouveau scale pour centrer
+    scale = targetScale;
+    panX = (container.clientWidth / 2) - (bbox.x + bbox.width / 2) * scale;
+    panY = (container.clientHeight / 2) - (bbox.y + bbox.height / 2) * scale;
+
+    // 5. Mise à jour visuelle (avec transition CSS fluide)
+    updateTransform();
+}
+
+function restoreContinentView() {
+    const checkboxes = document.querySelectorAll('.continent-checkbox:not(#continent-all):checked');
+    const selected = Array.from(checkboxes).map(cb => cb.value);
+    const isMobile = window.innerWidth < 768;
+
+    if (selected.length === 0) return;
+
+    if (selected.length === 1) {
+        // Vue spécifique au continent sélectionné
+        const key = isMobile ? `${selected[0]}2` : selected[0];
+        const view = continentViews[key] || continentViews[selected[0]];
+        if (view) {
+            scale = view.scale;
+            panX = view.panX;
+            panY = view.panY;
+        }
+    } else {
+        // --- MODIFICATION ICI ---
+        // Vue globale "All" quand plus d'un continent est sélectionné
+        const view = continentViews['All'];
+        if (view) {
+            scale = view.scale;
+            panX = view.panX;
+            panY = view.panY;
+        }
+    }
+    
+    // updateTransform est appelé ici, ce qui déclenchera la sauvegarde automatique 
+    // puisque vous avez lié updateTransform() à votre logique de persistante.
+    updateTransform();
+}
+
+document.getElementById("flag").addEventListener("click", () => {
+    if (!current) return;
+    zoomToCountry(current.id);
+});
+
+function showHistory(countryId) {
+    const data = sessionHistory[countryId];
+    if (!data) return;
+
+    const infoModal = document.getElementById("info-modal");
+    infoModal.dataset.current = countryId;
+
+    const country = countries.find(c => c.id === countryId);
+    const name = country ? (Array.isArray(country.name) ? country.name[0] : country.name) : countryId;
+
+    document.getElementById("info-title").textContent = name;
+
+    // --- LOGIQUE DE COULEUR INDÉPENDANTE ---
+    // On normalise pour comparer (pour éviter les erreurs de casse/accents)
+    const normalize = (s) => (s || "").toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+    const isCountryGood = normalize(data.guess.country) === normalize(data.correct.country);
+    const isCapitalGood = normalize(data.guess.capital) === normalize(data.correct.capital);
+
+    // Attribution des couleurs
+    const countryColor = isCountryGood ? "green" : "red";
+    const capitalColor = isCapitalGood ? "green" : "red";
+
+    // Injection dans le DOM
+    document.getElementById("info-guess").innerHTML = `
+        <span style="color: ${countryColor}">${data.guess.country}</span> / 
+        <span style="color: ${capitalColor}">${data.guess.capital}</span>
+    `;
+
+    document.getElementById("info-correct").innerHTML =
+        `<span style="color: green">${data.correct.country} / ${data.correct.capital}</span>`;
+
+    infoModal.style.display = "block";
+}
+
+async function resetQuiz() {
+    // ✅ reset score
+    score = 0;
+    document.getElementById("score").textContent = "0";
+
+    // ✅ reset liste pays
+    remainingCountries = [...activeCountries];
+    current = null;
+
+    // ✅ vider l'historique en mémoire
+    sessionHistory = {};
+
+    // ✅ reset vue (échelle et position)
+    scale = 1;
+    panX = 0;
+    panY = 0;
+    updateTransform();
+
+    // ✅ vider stockage (firebase ou local)
+    // On supprime toute la session (qui contient maintenant 'session' et 'view')
+    if (currentUserUid) {
+        try {
+            await remove(ref(db, `users/${currentUserUid}/games/monde/session`));
+        } catch (e) {
+            console.error("Erreur reset Firebase:", e);
+        }
+    } else {
+        localStorage.removeItem('monde_session_guest');
+    }
+
+    // ✅ reset couleurs carte
+    document.querySelectorAll('svg path').forEach(p => {
+        p.classList.remove('correct', 'incorrect', 'partial-correct', 'highlight', 'highlight-selected');
+    });
+
+    // ✅ relancer le jeu
+    getRandomCountry();
+}
+
 window.resetQuiz = resetQuiz; // Pour l'accès depuis le bouton HTML
 
 // --- EXPOSITION DES FONCTIONS (Fix ReferenceError) ---
@@ -1387,6 +1637,21 @@ function updatePreviewCount() {
     if (totalDisplay) totalDisplay.textContent = count;
 }
 // --- FILTRAGE ---
+const continentViews = {
+    'Africa': { scale: 2.10, panX: -766, panY: -326 },
+    'Africa2': { scale: 1.46, panX: -210, panY: -133 },
+    'Asia': { scale: 2.10, panX: -1303, panY: -143 },
+    'Asia2': { scale: 1.65, panX: -612, panY: -88 },
+    'Europe': { scale: 4.38, panX: -2141, panY: -158 },
+    'Europe2': { scale: 3.05, panX: -830, panY: -59 },
+    'North America': { scale: 2.04, panX: -25, panY: -32 },
+    'North America2': { scale: 1.57, panX: 99, panY: -11 },
+    'South America': { scale: 2.04, panX: -239, panY: -484 },
+    'South America2': { scale: 1.60, panX: 4, panY: -256 },
+    'Oceania': { scale: 1.74, panX: -1458, panY: -306 },
+    'Oceania2': { scale: 1.75, panX: -835, panY: -259 },
+    'All': { scale: 1, panX: 0, panY: 0 }
+};
 
 window.applyContinentFilter = async () => { // Ajoute async ici
     const checkboxes = document.querySelectorAll('.continent-checkbox:not(#continent-all):checked');
@@ -1413,9 +1678,30 @@ window.applyContinentFilter = async () => { // Ajoute async ici
     updatePreviewCount();
     
     document.getElementById('continent-selector').style.display = "none";
-    
-    // 4. On relance le quiz proprement
     resetQuiz();
+    // --- NOUVELLE LOGIQUE DE VUE ADAPTATIVE ---
+    if (selected.length === 1) {
+        const continent = selected[0];
+        // On définit un seuil pour le mobile (ex: 768px)
+        const isMobile = window.innerWidth < 768;
+        
+        // Si mobile, on cherche "Continent2", sinon le nom simple
+        const viewKey = isMobile ? `${continent}2` : continent;
+        const view = continentViews[viewKey] || continentViews[continent];
+
+        if (view) {
+            scale = view.scale;
+            panX = view.panX;
+            panY = view.panY;
+            updateTransform();
+        }
+    } else {
+        // Vue globale si plusieurs sélectionnés
+        scale = 1;
+        panX = 0;
+        panY = 0;
+        updateTransform();
+    }
 };
 
 async function restoreFilters() {
@@ -1510,19 +1796,68 @@ function restoreLocalGuestSession() {
     applySessionData(data);
 }
 
+
 // --- APPLICATION VISUELLE (COMMUN) ---
 function applySessionData(data) {
-    Object.keys(data).forEach(id => {
-        const status = data[id];
+    // 1. Extraire la partie historique et la vue
+    // Si data contient { session: {...}, view: {...} }, on utilise ces clés
+    const history = data.session || data; 
+    const view = data.view;
+
+    // 2. Traiter l'historique des réponses
+    Object.keys(history).forEach(id => {
+        // On ignore la clé 'view' si elle est présente au premier niveau
+        if (id === "view") return;
+
+        const entry = history[id];
+        const status = typeof entry === "string" ? entry : entry.status;
+
+        // ✅ RECONSTRUIRE COMPLET
+        sessionHistory[id] = typeof entry === "string"
+            ? {
+                guess: { country: "?", capital: "?" },
+                correct: {
+                    country: countries.find(c => c.id === id)?.name || id,
+                    capital: countries.find(c => c.id === id)?.capital || "?"
+                },
+                status
+            }
+            : entry;
+
         const el = document.getElementById(id);
+
         if (el) {
             el.classList.remove('correct', 'incorrect', 'partial-correct');
-            if (status === 'correct') { el.classList.add('correct'); score += 1; }
-            else if (status === 'partial') { el.classList.add('partial-correct'); score += 0.5; }
-            else if (status === 'wrong') { el.classList.add('incorrect'); }
+
+            if (status === 'correct') {
+                el.classList.add('correct');
+                score += 1;
+            } else if (status === 'partial') {
+                el.classList.add('partial-correct');
+                score += 0.5;
+            } else {
+                el.classList.add('incorrect');
+            }
+
+            el.style.cursor = 'pointer';
         }
+
         remainingCountries = remainingCountries.filter(c => c.id !== id);
     });
+
+    // 3. APPLIQUER LA VUE SI ELLE EXISTE
+    if (view && view.scale !== undefined) {
+        console.log("Restauration de la vue :", view); // DEBUG
+        scale = view.scale;
+        panX = view.panX;
+        panY = view.panY;
+        updateTransform();
+    } else {
+        console.log("Pas de vue trouvée, restauration continentale.");
+        restoreContinentView();
+    }
+    
+    // 4. Mise à jour du score
     document.getElementById("score").textContent = Number.isInteger(score) ? score : score.toFixed(1);
 }
 // --- INITIALISATION ---
@@ -1565,16 +1900,64 @@ document.getElementById('continent-all').addEventListener('change', (e) => {
     });
 });
 
-document.querySelectorAll('.continent-checkbox').forEach(cb => {
-    cb.addEventListener('change', () => {
-        const checkboxes = document.querySelectorAll('.continent-checkbox:not(#continent-all):checked');
-        const currentSelected = Array.from(checkboxes).map(cb => cb.value);
-        const count = countries.filter(c => currentSelected.includes(c.continent)).length;
-        
-        const previewEl = document.getElementById('preview-count');
-        if (previewEl) previewEl.textContent = count;
+document.querySelectorAll('svg path').forEach(path => {
+    path.addEventListener('click', () => {
+
+        const infoModal = document.getElementById('info-modal');
+
+        // enlever contour orange
+        document.querySelectorAll('svg path.highlight-selected').forEach(p => {
+            p.classList.remove('highlight-selected');
+        });
+
+        // ✅ 1. PAS ENCORE JOUÉ
+        if (!sessionHistory[path.id]) {
+
+            const country = remainingCountries.find(c => c.id === path.id);
+
+            if (country) {
+
+                if (current) {
+                    document.getElementById(current.id)?.classList.remove("highlight");
+                }
+
+                current = country;
+
+                document.getElementById(current.id)?.classList.add("highlight");
+
+                displayCurrentCountry(); // ✅ IMPORTANT
+
+            } else {
+                infoModal.style.display = 'none';
+            }
+
+            return;
+        }
+
+        // ✅ 2. DÉJÀ JOUÉ → MODAL
+        const currentTitle = document.getElementById('info-title').textContent;
+        const isOpen = infoModal.style.display === 'block';
+
+        if (isOpen && infoModal.dataset.current === path.id) {
+            infoModal.style.display = 'none';
+        } else {
+            path.classList.add('highlight-selected');
+            showHistory(path.id);
+        }
     });
 });
+
+
+document.getElementById("close-modal-btn").addEventListener("click", (e) => {
+    e.stopPropagation();
+
+    document.querySelectorAll('svg path.highlight-selected').forEach(p => {
+        p.classList.remove('highlight-selected');
+    });
+
+    document.getElementById("info-modal").style.display = "none";
+});
+
 
 document.addEventListener("keydown", (e) => { if (e.key === "Enter") checkCountryAnswer(); });
 </script>
