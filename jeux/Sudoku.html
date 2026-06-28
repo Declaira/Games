@@ -97,6 +97,7 @@
     .cell.prefilled { background: rgba(0, 0, 0, 0.08); }
     .cell.selected { background: rgba(255, 235, 59, 0.5) !important; outline: 2px solid #ff6f00; z-index: 2; }
     .cell.highlight-same { background-color: rgba(255, 160, 0, 0.3) !important; }
+    .cell.highlight-zone { background-color: rgba(255, 230, 120, 0.35) !important; }
     .cell.error input { background-color: rgba(233, 30, 99, 0.2); color: #d32f2f; }
 
     .cell:nth-child(3n) { border-right: 2px solid #ffb347; }
@@ -430,6 +431,20 @@ function isValid(grid, r, c, n) {
     return true;
 }
 
+
+function getPossibleNumbers(r, c) {
+    let possibles = new Set();
+
+    for (let n = 1; n <= 9; n++) {
+        if (isValid(state, r, c, n)) {
+            possibles.add(n);
+        }
+    }
+
+    return possibles;
+}
+
+
 function renderGrid() {
     gridEl.innerHTML = '';
     // On crée un fragment pour améliorer les performances
@@ -482,17 +497,54 @@ function renderGrid() {
 }
 
 function select(cell) {
-    if(!cell) return;
-    document.querySelectorAll('.cell').forEach(c => c.classList.remove('selected', 'highlight-same'));
+    if (!cell) return;
+
+    // Reset
+    document.querySelectorAll('.cell').forEach(c => 
+        c.classList.remove('selected', 'highlight-same', 'highlight-zone')
+    );
+
     selectedCell = cell;
     cell.classList.add('selected');
-    const val = state[cell.dataset.r][cell.dataset.c];
+
+    const r = parseInt(cell.dataset.r);
+    const c = parseInt(cell.dataset.c);
+    const val = state[r][c];
+
     if (val) {
-        document.querySelectorAll('.cell').forEach(c => {
-            if (state[c.dataset.r][c.dataset.c] == val) c.classList.add('highlight-same');
+        const br = Math.floor(r / 3) * 3;
+        const bc = Math.floor(c / 3) * 3;
+
+        document.querySelectorAll('.cell').forEach(cel => {
+            const rr = parseInt(cel.dataset.r);
+            const cc = parseInt(cel.dataset.c);
+            const cellValue = state[rr][cc];
+
+            // ✅ Même chiffre (inchangé)
+            if (cellValue == val) {
+                cel.classList.add('highlight-same');
+            }
+
+            // ✅ Highlight SEULEMENT si la case est VIDE
+            if (cellValue === 0) {
+
+                // même ligne ou colonne
+                if (rr === r || cc === c) {
+                    cel.classList.add('highlight-zone');
+                }
+
+                // même carré 3x3
+                if (
+                    rr >= br && rr < br + 3 &&
+                    cc >= bc && cc < bc + 3
+                ) {
+                    cel.classList.add('highlight-zone');
+                }
+            }
         });
     }
 }
+
 
 function updateCellNotes(r, c, cell) {
     const notesDiv = cell.querySelector('.pencil-notes');
@@ -512,30 +564,64 @@ function updateCellNotes(r, c, cell) {
 
 async function handleInput(n) {
     if (!selectedCell) return;
-    const r = parseInt(selectedCell.dataset.r), c = parseInt(selectedCell.dataset.c);
-    
-    // Sécurité : Si notes[r] n'existe pas pour une raison quelconque, on le recrée
+
+    const r = parseInt(selectedCell.dataset.r);
+    const c = parseInt(selectedCell.dataset.c);
+
+    if (puzzle[r][c] !== 0) return; // case fixe
+
     if (!notes[r]) notes[r] = Array.from({length:9}, () => new Set());
     if (!notes[r][c]) notes[r][c] = new Set();
 
-    if (puzzle[r][c] !== 0) return;
 
+    // ✅ MODE NOTE
     if (isNoteMode && n !== 0) {
-        if (notes[r][c].has(n)) notes[r][c].delete(n);
-        else notes[r][c].add(n);
-        state[r][c] = 0; 
-    } else {
+        const possibles = getPossibleNumbers(r, c);
+
+        if (!possibles.has(n)) return; // interdit
+
+        if (notes[r][c].has(n)) {
+            notes[r][c].delete(n);
+        } else {
+            notes[r][c].add(n);
+        }
+
+        state[r][c] = 0;
+    }
+
+    // ✅ MODE NORMAL (⚠️ IL MANQUAIT CE BLOC)
+    else {
         state[r][c] = n;
         notes[r][c].clear();
+
+        // ✅ mise à jour des notes uniquement si correct
+        if (n !== 0 && n === solution[r][c]) {
+
+            // ligne + colonne
+            for (let i = 0; i < 9; i++) {
+                notes[r]?.[i]?.delete(n);
+                notes[i]?.[c]?.delete(n);
+            }
+
+            // carré
+            const br = Math.floor(r / 3) * 3;
+            const bc = Math.floor(c / 3) * 3;
+
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0; j < 3; j++) {
+                    notes[br + i]?.[bc + j]?.delete(n);
+                }
+            }
+        }
     }
-    
+
     renderGrid();
-    // Replacer le focus sur la cellule après le render
+
     const newCell = document.querySelector(`[data-r="${r}"][data-c="${c}"]`);
-    if(newCell) select(newCell);
-    
+    if (newCell) select(newCell);
+
     updateNumPad();
-    saveSession(); 
+    saveSession();
     checkWin();
 }
 
@@ -699,6 +785,4 @@ document.addEventListener('keydown', (e) => {
 });
 </script>
 </body>
-
 </html>
-
